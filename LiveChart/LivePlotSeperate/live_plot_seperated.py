@@ -4,8 +4,8 @@ from dash import dcc, html
 from dash.dependencies import Input, Output
 from cryptoUtils.DataProvider import DataProvider
 from cryptoUtils.data_columns import COINS, HOURLY_COLS
-from mainPlot.LivePlotSeperate.plotly_fig_seperated import get_updated_fig
-from mainPlot.plot_utils import *
+from LiveChart.LivePlotSeperate.plotly_fig_seperated import get_updated_fig
+from LiveChart.plot_utils import *
 
 data_path = os.path.join(os.getcwd(), 'resources')
 

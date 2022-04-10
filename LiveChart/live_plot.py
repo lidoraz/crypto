@@ -2,10 +2,10 @@ import dash
 import os
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
-from cryptoUtils.DataProvider import DataProvider
-from cryptoUtils.data_columns import COINS, HOURLY_COLS
-from mainPlot.plotly_fig import get_updated_fig
-from plot_utils import *
+from DataPreprocessing.DataProvider import DataProvider
+from DataPreprocessing.data_columns import COINS, HOURLY_COLS
+from Plots.plot_utils import *
+from Plots.plotly_fig import get_updated_fig
 import dash_bootstrap_components as dbc
 
 data_path = os.path.join(os.getcwd(), 'resources.nosync')
@@ -16,17 +16,14 @@ resample_keywords = list(INTERVAL_CANDLE_LOOKBACK_TABLE.keys())
 
 resample_radio_options = {k: f' {k} |' for k in resample_keywords}
 
-price_provider = DataProvider(start_date=START_DATA_DATE, path=os.path.join(data_path, 'data'), cols=coins)
-hourly_provider = DataProvider(start_date=START_DATA_DATE, path=os.path.join(data_path, 'data_hourly'),
-                               cols=hourly_cols)
-providers = dict(price_provider=price_provider,
-                 hourly_provider=hourly_provider)
+price_provider = DataProvider(START_DATA_DATE, os.path.join(data_path, 'data'), coins)
+hourly_provider = DataProvider(START_DATA_DATE, os.path.join(data_path, 'data_hourly'), hourly_cols)
+providers = dict(price_provider=price_provider, hourly_provider=hourly_provider)
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.CYBORG])
 app.title = 'Live Crypto Market'
-app.layout = html.Div(children=
-html.Div([
-    html.Div([
+app.layout = html.Div([
+    html.Div(children=[
         html.H4('Crypto Live Feed by Shushu', style={'padding-right': '5%', 'margin-left': '2%'}),
         dcc.Dropdown(COINS, COINS[0], id='coin-type', clearable=False, style=dict(width='20%')),
         html.Div(id='live-update-text', style={'width': '20%'}),
@@ -43,8 +40,7 @@ html.Div([
         dcc.Graph(id='live-update-graph', config={'scrollZoom': True, 'displayModeBar': False}),
         dcc.Interval(id='interval-component', interval=UPDATE_INTERVAL_SECONDS * 1000, n_intervals=0)
     ])
-]),
-)
+])
 
 
 @app.callback(
@@ -66,7 +62,7 @@ def update_metrics(n):
 
 @app.callback(Output('interval-component', 'n_intervals'),
               Input('coin-type', 'value'))
-def interval_update(_):  # add other args for additional inputs
+def interval_update(_):
     return 0
 
 

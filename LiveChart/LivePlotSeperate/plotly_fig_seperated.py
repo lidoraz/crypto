@@ -1,6 +1,6 @@
 from plotly.subplots import make_subplots
 from cryptoUtils.crypto_utils import *
-from mainPlot.plot_utils import *
+from LiveChart.plot_utils import *
 
 
 # https://plotly.com/python/time-series/
