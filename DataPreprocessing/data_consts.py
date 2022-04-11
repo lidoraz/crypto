@@ -1,3 +1,4 @@
+START_DATA_DATE = '2022-03-26'  # '2022-04-02'
 COINS = ['BTC', 'ETH', 'SOL', 'ROSE', 'RMRK', 'MOVR', 'DOT', 'LUNA', 'KDA', 'KSM', 'HTR', 'VRA', 'TEL', 'QRDO', 'FLUX',
          'RNDR', 'MATIC', 'GLMR', 'EGLD', 'LYXE', 'SOUL', 'ACA', 'GCOIN', 'CRV', 'BNB', 'ADA', 'AXS', 'XRP', 'APE',
          'SHIB', 'GALA', 'SAND', 'FTM', 'MANA', 'XLM', 'RUNE', 'OGN', 'CAKE']

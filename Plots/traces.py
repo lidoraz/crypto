@@ -5,11 +5,11 @@ from .plot_utils import calc_rsi
 # TODO: probably a good way to do this is by creating a class of metrics, then, each child will have calc and plot.
 #  plot will create a trace, while calc will enable to use the calculated data.
 
-def get_pct_change(coin, df_hourly):
-    pct_hourly = df_hourly[f'{coin}_CHANGEPCTHOUR']
-    pct_color = pct_hourly.apply(lambda x: 'Green' if x > 0 else 'Red')
-    trace = go.Bar(x=df_hourly.index, y=pct_hourly, marker_color=pct_color)
-    return trace
+# def get_pct_change(coin, df_hourly):
+#     pct_hourly = df_hourly[f'{coin}_CHANGEPCTHOUR']
+#     pct_color = pct_hourly.apply(lambda x: 'Green' if x > 0 else 'Red')
+#     trace = go.Bar(x=df_hourly.index, y=pct_hourly, marker_color=pct_color)
+#     return trace
 
 
 def get_candle_stick(df_coin):
@@ -22,15 +22,17 @@ def get_candle_stick(df_coin):
     return trace
 
 
-def get_pct_change_c(prices, resample=False):
-    if resample:
-        prices = prices.resample('1H').ffill()
-        s = resample
-    else:
-        s = ""
+def calc_pct_change(prices, resample, closed='right'):
+    prices = prices.resample(resample, closed=closed).ffill()
+    print('calc_pct_change', resample)
     close_pct = prices.pct_change() * 100
+    return close_pct
+
+
+def get_fig_pct_change_c(prices, resample):
+    close_pct = calc_pct_change(prices, resample)
     close_pct_color = close_pct.apply(lambda x: 'Green' if x > 0 else 'Red')
-    return go.Bar(x=close_pct.index, y=close_pct, marker_color=close_pct_color, name=f'PCTChange({s})')
+    return go.Bar(x=close_pct.index, y=close_pct, marker_color=close_pct_color, name=f'PCTChange({resample})')
 
 
 def get_volume(volume):

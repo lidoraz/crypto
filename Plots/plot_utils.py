@@ -1,10 +1,9 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
+import numpy as np
 import pandas as pd
 
-# TODO: combine functions for plots from crypto utils into here
+TIME_CONV = "%Y-%m-%dT%H:%M:%S"  # strftime
 UPDATE_INTERVAL_SECONDS = 20
-START_DATA_DATE = '2022-03-26'  # '2022-04-02'
-START_DATA_DATETIME = pd.to_datetime(START_DATA_DATE, utc=True)
 INTERVAL_CANDLE_LOOKBACK_DISPLAY_MULTIPLAYER = 1  # this will alter the display, also differs for how much data is loaded
 INTERVAL_CANDLE_LOOKBACK_TABLE = {
     '2Min': timedelta(hours=6),
@@ -17,30 +16,6 @@ INTERVAL_CANDLE_LOOKBACK_TABLE = {
     '1D': timedelta(days=30 * 6)
 }
 INTERVAL_CANDLE_LOOKBACK_LOAD_MULTIPLAYER = 2 * INTERVAL_CANDLE_LOOKBACK_DISPLAY_MULTIPLAYER
-
-
-# TODO: rename this function
-def get_graph_start_datetime(interval_length: str, is_display=False, tz_isr=True):
-    time_now = pd.to_datetime(datetime.utcnow(), utc=True)
-    start_datetime = time_now.tz_convert('Israel') if tz_isr else time_now
-
-    if interval_length in INTERVAL_CANDLE_LOOKBACK_TABLE:
-        if is_display:
-            delta = INTERVAL_CANDLE_LOOKBACK_TABLE[interval_length] * INTERVAL_CANDLE_LOOKBACK_DISPLAY_MULTIPLAYER
-        else:
-            delta = INTERVAL_CANDLE_LOOKBACK_TABLE[interval_length] * INTERVAL_CANDLE_LOOKBACK_LOAD_MULTIPLAYER
-        filter_datetime = (start_datetime - delta)
-        if filter_datetime > start_datetime:
-            filter_datetime = start_datetime
-        # print(f'filter_datetime = {filter_datetime}')
-    else:
-        filter_datetime = START_DATA_DATE
-    return filter_datetime
-
-
-import numpy as np
-
-TIME_CONV = "%Y-%m-%dT%H:%M:%S"  # .strftime
 
 
 def human_format(num):
@@ -75,7 +50,8 @@ def calc_rsi(df_coin, n, col='close'):
 
 def fig_update_xylimits(fig, df_ohlc, resample):
     # x axis
-    start_display_dt = get_graph_start_datetime(resample, is_display=True)
+    from DataPreprocessing.data_utils import adjust_plot_start_datetime
+    start_display_dt = adjust_plot_start_datetime(resample, is_display=True)
     start_display_dt = max(df_ohlc.index[0], start_display_dt)
     print('display date:', start_display_dt)
     time_now = df_ohlc.index[-1] + pd.to_timedelta(resample) * 5
@@ -108,7 +84,7 @@ def fig_update_layout_combined_view(fig):
                       )
 
     fig.update_layout(xaxis_showticklabels=True, xaxis2_showticklabels=False)
-    #     fig.for_each_xaxis(lambda x: x.update(xaxis_showticklabels=True))
+    # fig.for_each_xaxis(lambda x: x.update(xaxis_showticklabels=True))
     fig.for_each_yaxis(lambda x: x.update(side="right"))
     fig.update_xaxes(showgrid=True, zeroline=False,  # rangeslider_visible=False, showticklabels=False,
                      showspikes=True, spikemode='across', spikesnap='cursor', showline=True,
@@ -121,3 +97,14 @@ def fig_update_layout_combined_view(fig):
     # fig.update_yaxes(autorange=False)
     # fig.update_xaxes(fixedrange=True)  # does not fix the problem. it limits x from both sides, need to limit only 1 side.
     fig.update_layout(height=700, dragmode='pan')
+
+    # Customizing Tick Label Formatting by Zoom Level
+    # does not work quite well
+    # fig.update_layout(xaxis_tickformatstops=[
+    #     dict(dtickrange=[None, 60*1000], value="%H:%M:%S s"),
+    #     dict(dtickrange=[60000, 3600000], value="%H:%M m"),
+    #     dict(dtickrange=[3600000, 86400000], value="%H:%M"),  # hourly
+    #     dict(dtickrange=[86400000, 604800000], value="%b %e"),  # daily
+    #     dict(dtickrange=[604800000, "M1"], value="%e. %b w"),
+    #     dict(dtickrange=["M1", "M12"], value="%b '%y M"),
+    #     dict(dtickrange=["M12", None], value="%Y Y")])

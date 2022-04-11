@@ -24,3 +24,5 @@ import pandas as pd
 filter_date = pd.to_datetime('2022-04-09', utc=True).tz_convert('Israel')  # TODO: unused
 fig = get_updated_fig(providers, filter_date, resample, coin)
 fig.show()
+
+print()

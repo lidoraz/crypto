@@ -6,3 +6,8 @@ scp -i "/Volumes/GoogleDrive/My Drive/Work/notebooks/unrelated/Crypto/shushu_ent
 # ps -ef | grep python
 nohup python3 crypto_crawler.py > coin.out &
 nohup python3 crypto_crawler_hourly.py > hourly.out &
+
+
+# copy missing file from local to remote (caution!)
+# 2022-04-08_FIXED_MOVE_TO_REMOTE.csv
+# scp -i "/Volumes/GoogleDrive/My Drive/Work/notebooks/unrelated/Crypto/shushu_entrance.pem" "/Users/lidorazulay/Library/Mobile Documents/com~apple~CloudDocs/DS/Crypto/2022-04-08_FIXED_MOVE_TO_REMOTE.csv" ec2-user@ec2-18-134-142-217.eu-west-2.compute.amazonaws.com:data/2022-04-08.csv

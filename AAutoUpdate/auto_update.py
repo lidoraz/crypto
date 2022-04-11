@@ -19,7 +19,7 @@ start_date = '2022-03-26'
 # # sync with remote:
 # while True:
 #     time_now = datetime.utcnow()
-#     if time_now.second <= 3:
+#     if 3 < time_now.second < 6:
 #         break
 #     time.sleep(1)
 
