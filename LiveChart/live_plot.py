@@ -16,7 +16,9 @@ import dash_bootstrap_components as dbc
 # providers = get_data_providers()
 #
 title = 'Crypto Live Feed'
+
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.CYBORG])
+server = app.server  # needed for deployment
 app.title = title
 
 title_html = html.H4(title, style={'padding-right': '5%', 'margin-left': '2%'})

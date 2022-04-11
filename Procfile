@@ -1,1 +1,1 @@
-web: gunicorn live_plot:server
+web: gunicorn LiveChart/live_plot:server
