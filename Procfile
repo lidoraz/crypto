@@ -1,1 +1,1 @@
-web: gunicorn app:server
+web: gunicorn live_plot:server
