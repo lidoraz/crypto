@@ -1,19 +1,19 @@
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
-# from DataPreprocessing.data_utils import get_data_providers
-# from DataPreprocessing.data_utils import adjust_plot_start_datetime
-# from DataPreprocessing.data_consts import *
-# from Plots.plot_utils import *
-# from Plots.plotly_fig import get_updated_fig
+from DataPreprocessing.data_utils import get_data_providers
+from DataPreprocessing.data_utils import adjust_plot_start_datetime
+from DataPreprocessing.data_consts import *
+from Plots.plot_utils import *
+from Plots.plotly_fig import get_updated_fig
 import dash_bootstrap_components as dbc
 
-# coins = COINS
-# hourly_cols = HOURLY_COLS
-# resample_keywords = list(INTERVAL_CANDLE_LOOKBACK_TABLE.keys())
-# resample_radio_options = {k: f' {k} |' for k in resample_keywords}
-#
-# providers = get_data_providers()
+coins = COINS
+hourly_cols = HOURLY_COLS
+resample_keywords = list(INTERVAL_CANDLE_LOOKBACK_TABLE.keys())
+resample_radio_options = {k: f' {k} |' for k in resample_keywords}
+
+providers = get_data_providers()
 #
 title = 'Crypto Live Feed'
 
@@ -22,19 +22,19 @@ server = app.server  # needed for deployment
 app.title = title
 
 title_html = html.H4(title, style={'padding-right': '5%', 'margin-left': '2%'})
-coin_html = html.Div(  # dcc.Dropdown(COINS, COINS[0], id='coin-type', clearable=False),
-    style=dict(width='6%'))
+coin_html = html.Div(dcc.Dropdown(COINS, COINS[0], id='coin-type', clearable=False),
+                     style=dict(width='6%'))
 live_update_html = html.Div(id='live-update-text', style={'margin': 'auto'}, children="")  # 'width': '20%',
-# resample_selector_html = dcc.RadioItems(options=resample_radio_options, value=resample_keywords[2], id='resample-type',
-#                                         inline=True)
+resample_selector_html = dcc.RadioItems(options=resample_radio_options, value=resample_keywords[2], id='resample-type',
+                                        inline=True)
 live_update_switch_html = dbc.Checklist(options=[{"label": "Live Update", "value": 1}], value=[1],
                                         id="live-update-button", switch=True)
 
 right_portion_html = html.Div(id='right-portion',
-                              children=[  # html.Div(resample_selector_html),
-                                  html.Div(id='live-switch-update-container',
-                                           children=live_update_switch_html,
-                                           style={'padding-left': '3%'})],
+                              children=[html.Div(resample_selector_html),
+                                        html.Div(id='live-switch-update-container',
+                                                 children=live_update_switch_html,
+                                                 style={'padding-left': '3%'})],
                               style={'display': 'flex', 'width': '40%'})
 
 app.layout = html.Div([
@@ -69,21 +69,21 @@ def update_metrics(n):
     ]
 
 
-# @app.callback(Output('interval-component', 'n_intervals'),
-#               Input('coin-type', 'value'))
-# def interval_update(_):
-#     return 0
+@app.callback(Output('interval-component', 'n_intervals'),
+              Input('coin-type', 'value'))
+def interval_update(_):
+    return 0
 
 
-# @app.callback(Output('live-update-graph', 'figure'),
-#               Input('interval-component', 'n_intervals'),
-#               Input('coin-type', 'value'),
-#               Input('resample-type', 'value'))
-# def update_graph_live(n, coin, resample):
-#     print(n, resample, coin)
-#     filter_datetime = adjust_plot_start_datetime(resample)
-#     fig = get_updated_fig(providers, filter_datetime, resample, coin)
-#     return fig
+@app.callback(Output('live-update-graph', 'figure'),
+              Input('interval-component', 'n_intervals'),
+              Input('coin-type', 'value'),
+              Input('resample-type', 'value'))
+def update_graph_live(n, coin, resample):
+    print(n, resample, coin)
+    filter_datetime = adjust_plot_start_datetime(resample)
+    fig = get_updated_fig(providers, filter_datetime, resample, coin)
+    return fig
 
 
 if __name__ == '__main__':
