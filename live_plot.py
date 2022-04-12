@@ -88,4 +88,4 @@ def update_graph_live(n, coin, resample):
 
 if __name__ == '__main__':
     # https://dash.plotly.com/live-updates
-    app.run_server(debug=True)
+    app.run_server(debug=False)
