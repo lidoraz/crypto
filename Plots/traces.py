@@ -1,6 +1,6 @@
 from plotly import graph_objects as go
 
-from AdvancedAnalytics.PatternDetection.identify_candlestick import recognize_candles
+# from AdvancedAnalytics.PatternDetection.identify_candlestick import recognize_candles
 from .plot_utils import calc_rsi
 
 
@@ -63,13 +63,13 @@ def get_EMA(coin_ohlc, pts, col='close', color='orange'):
     return go.Scatter(x=ema.index, y=ema, name=f'EMA({pts})', line_color=color)
 
 
-def get_pattern_fig(coin_ohlc):
-    df_patterns = recognize_candles(coin_ohlc)
-    df_patterns['plot_value'] = (104 - df_patterns['ranking']) * df_patterns['trend']
-    marker_color = ['Green' if x > 0 else 'Red' for x in df_patterns['plot_value']]
-    trace = go.Bar(y=df_patterns['plot_value'], x=df_patterns.index, text=df_patterns['pattern'],
-                   marker_color=marker_color)
-    return trace
+# def get_pattern_fig(coin_ohlc):
+#     df_patterns = recognize_candles(coin_ohlc)
+#     df_patterns['plot_value'] = (104 - df_patterns['ranking']) * df_patterns['trend']
+#     marker_color = ['Green' if x > 0 else 'Red' for x in df_patterns['plot_value']]
+#     trace = go.Bar(y=df_patterns['plot_value'], x=df_patterns.index, text=df_patterns['pattern'],
+#                    marker_color=marker_color)
+#     return trace
 
 def _fib_seq(length):
     fib_i = 0
