@@ -1,9 +1,9 @@
-from DataPreprocessing.data_columns import COINS, HOURLY_COLS
+from DataProcessing.data_consts import COINS, HOURLY_COLS, START_DATA_DATE
 import os
 
-from Plots.plot_utils import START_DATA_DATETIME
+# from Plots.plot_utils import START_DATA_DATETIME
 from Plots.plotly_fig import get_updated_fig
-from DataPreprocessing.DataProvider import DataProvider
+from DataProcessing.DataProvider import DataProvider
 
 data_path = os.path.join(os.getcwd(), 'resources.nosync')
 
@@ -12,7 +12,7 @@ hourly_cols = HOURLY_COLS
 resample_keywords = ['5Min', '15Min', '1H', '4H', '1D']
 coin = COINS[1]
 resample = resample_keywords[1]
-start_date = START_DATA_DATETIME  # '2022-03-26'
+start_date = START_DATA_DATE  # '2022-03-26'
 
 price_provider = DataProvider(start_date=start_date, path=os.path.join(data_path, 'data'), cols=coins)
 hourly_provider = DataProvider(start_date=start_date, path=os.path.join(data_path, 'data_hourly'), cols=hourly_cols)

@@ -1,9 +1,9 @@
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
-from DataPreprocessing.data_utils import get_data_providers
-from DataPreprocessing.data_utils import adjust_plot_start_datetime
-from DataPreprocessing.data_consts import *
+from DataProcessing.data_utils import get_data_providers
+from DataProcessing.data_utils import adjust_plot_start_datetime
+from DataProcessing.data_consts import *
 from Plots.plot_utils import *
 from Plots.plotly_fig import get_updated_fig
 import dash_bootstrap_components as dbc

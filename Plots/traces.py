@@ -1,4 +1,6 @@
 from plotly import graph_objects as go
+
+from AdvancedAnalytics.PatternDetection.identify_candlestick import recognize_candles
 from .plot_utils import calc_rsi
 
 
@@ -29,13 +31,21 @@ def calc_pct_change(prices, resample, closed='right'):
     return close_pct
 
 
+def get_pct_change_color(close_pct):
+    close_pct_color = close_pct.apply(lambda x: 'Green' if x > 0 else 'Red')
+    return close_pct_color
+
+
 def get_fig_pct_change_c(prices, resample):
     close_pct = calc_pct_change(prices, resample)
-    close_pct_color = close_pct.apply(lambda x: 'Green' if x > 0 else 'Red')
+    close_pct_color = get_pct_change_color(close_pct)
     return go.Bar(x=close_pct.index, y=close_pct, marker_color=close_pct_color, name=f'PCTChange({resample})')
 
 
 def get_volume(volume):
+    # TODO - add here color, need to redesign this function
+    # close_pct = calc_pct_change(prices, resample)
+    # close_pct_color = get_pct_change_color(close_pct)
     # VOLUMEHOURTO
     # VOLUMEHOUR
     return go.Bar(x=volume.index, y=volume, name='Volume')
@@ -52,6 +62,14 @@ def get_EMA(coin_ohlc, pts, col='close', color='orange'):
     #     ra = coin_ohlc['close'].resample(f'{days}D').mean()
     return go.Scatter(x=ema.index, y=ema, name=f'EMA({pts})', line_color=color)
 
+
+def get_pattern_fig(coin_ohlc):
+    df_patterns = recognize_candles(coin_ohlc)
+    df_patterns['plot_value'] = (104 - df_patterns['ranking']) * df_patterns['trend']
+    marker_color = ['Green' if x > 0 else 'Red' for x in df_patterns['plot_value']]
+    trace = go.Bar(y=df_patterns['plot_value'], x=df_patterns.index, text=df_patterns['pattern'],
+                   marker_color=marker_color)
+    return trace
 
 def _fib_seq(length):
     fib_i = 0

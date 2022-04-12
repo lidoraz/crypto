@@ -50,7 +50,7 @@ def calc_rsi(df_coin, n, col='close'):
 
 def fig_update_xylimits(fig, df_ohlc, resample):
     # x axis
-    from DataPreprocessing.data_utils import adjust_plot_start_datetime
+    from DataProcessing.data_utils import adjust_plot_start_datetime
     start_display_dt = adjust_plot_start_datetime(resample, is_display=True)
     start_display_dt = max(df_ohlc.index[0], start_display_dt)
     print('display date:', start_display_dt)

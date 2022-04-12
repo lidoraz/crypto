@@ -76,3 +76,7 @@ def adjust_plot_start_datetime(interval_length: str, is_display=False, tz_isr=Tr
     else:
         filter_datetime = START_DATA_DATE
     return filter_datetime
+
+
+def get_coin_ohlc(df, coin, resample_keyword):
+    return df[coin].resample(resample_keyword, closed='right').ohlc()

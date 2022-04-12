@@ -1,5 +1,5 @@
-from DataPreprocessing.data_utils import get_data_providers, adjust_plot_start_datetime, prepare_data
-from DataPreprocessing.data_consts import COINS
+from DataProcessing.data_utils import get_data_providers, adjust_plot_start_datetime, prepare_data
+from DataProcessing.data_consts import COINS
 from Plots.traces import calc_pct_change
 import pandas as pd
 
