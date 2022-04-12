@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 TIME_CONV = "%Y-%m-%dT%H:%M:%S"  # strftime
-UPDATE_INTERVAL_SECONDS = 20
+UPDATE_INTERVAL_SECONDS = 1
 INTERVAL_CANDLE_LOOKBACK_DISPLAY_MULTIPLAYER = 1  # this will alter the display, also differs for how much data is loaded
 INTERVAL_CANDLE_LOOKBACK_TABLE = {
     '2Min': timedelta(hours=6),
@@ -63,7 +63,7 @@ def fig_update_xylimits(fig, df_ohlc, resample):
     max_val = df_ohlc_f['high'].max() + max_std
 
     # start_display_dt is half of the data loaded;  time_now takes 5 resample timedelta to have more room
-    fig.update_xaxes(range=[start_display_dt, time_now])
+    fig.update_xaxes(type="date", range=[start_display_dt, time_now])
     # Done: update only candle chart and not other figs
     # https://stackoverflow.com/questions/66842973/plotly-how-to-change-the-range-of-the-y-axis-of-a-subplot
     fig.update_layout(
@@ -96,7 +96,7 @@ def fig_update_layout_combined_view(fig):
     # fig.update_xaxes(autorange=False)
     # fig.update_yaxes(autorange=False)
     # fig.update_xaxes(fixedrange=True)  # does not fix the problem. it limits x from both sides, need to limit only 1 side.
-    fig.update_layout(height=700, dragmode='pan')
+    fig.update_layout(height=900, dragmode='pan')
 
     # Customizing Tick Label Formatting by Zoom Level
     # does not work quite well

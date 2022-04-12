@@ -1,5 +1,6 @@
 from AdvancedAnalytics.PatternDetection.identify_candlestick import recognize_candles
 from DataProcessing.data_utils import *
+from Plots.traces import get_pattern_fig
 
 coin = 'ETH'
 interval = '4H'

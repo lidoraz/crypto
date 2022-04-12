@@ -1,6 +1,6 @@
 from plotly import graph_objects as go
 
-# from AdvancedAnalytics.PatternDetection.identify_candlestick import recognize_candles
+from AdvancedAnalytics.PatternDetection.identify_candlestick import recognize_candles
 from .plot_utils import calc_rsi
 
 
@@ -63,13 +63,18 @@ def get_EMA(coin_ohlc, pts, col='close', color='orange'):
     return go.Scatter(x=ema.index, y=ema, name=f'EMA({pts})', line_color=color)
 
 
-# def get_pattern_fig(coin_ohlc):
-#     df_patterns = recognize_candles(coin_ohlc)
-#     df_patterns['plot_value'] = (104 - df_patterns['ranking']) * df_patterns['trend']
-#     marker_color = ['Green' if x > 0 else 'Red' for x in df_patterns['plot_value']]
-#     trace = go.Bar(y=df_patterns['plot_value'], x=df_patterns.index, text=df_patterns['pattern'],
-#                    marker_color=marker_color)
-#     return trace
+def get_pattern_fig(coin_ohlc, normalize_detected_patterns=True):
+    print('get_pattern_fig:: normalize_detected_patterns:', normalize_detected_patterns)
+    df_patterns = recognize_candles(coin_ohlc)
+    df_patterns['plot_value'] = (104 - df_patterns['best_ranking']) * df_patterns['best_trend']
+    if normalize_detected_patterns:
+        df_patterns['plot_value_norm'] = df_patterns['plot_value'] * (1 / df_patterns['n_patterns'])
+    marker_color = ['Green' if x > 0 else 'Red' for x in df_patterns['plot_value']]
+    text = df_patterns['best_pattern'] + '(' + df_patterns['n_patterns'].astype(str) + ')'
+    trace = go.Bar(y=df_patterns['plot_value_norm'], x=df_patterns.index, text=text,
+                   name=f'Pattern(power)',  # textposition="outside",
+                   marker_color=marker_color)
+    return trace
 
 def _fib_seq(length):
     fib_i = 0

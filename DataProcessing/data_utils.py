@@ -19,7 +19,7 @@ def get_data_providers():
 
 
 def prepare_data(providers, start_datetime):
-    print('load date:', start_datetime)
+    print('prepare_data:: load date start:', start_datetime)
     price_provider = providers['price_provider']
     hourly_provider = providers['hourly_provider']
     df_prices = price_provider.serve()

@@ -46,9 +46,9 @@ app.layout = html.Div([
         style={'display': 'flex', 'align-items': 'center'},
     ),
     html.Div([
-        dcc.Graph(id='live-update-graph', config={'scrollZoom': True, 'displayModeBar': False}),
+        dcc.Graph(id='live-update-graph', config={'scrollZoom': True, 'displayModeBar': False}, ),
         dcc.Interval(id='interval-component', interval=5 * 1000, n_intervals=0)
-    ])
+    ])  # style=dict(height='100vh')
 ])
 
 
@@ -80,9 +80,16 @@ def interval_update(_):
               Input('coin-type', 'value'),
               Input('resample-type', 'value'))
 def update_graph_live(n, coin, resample):
-    print(n, resample, coin)
+    print(n, coin, resample)
     filter_datetime = adjust_plot_start_datetime(resample)
-    fig = get_updated_fig(providers, filter_datetime, resample, coin)
+    keep_with_interval = True  # move this
+
+    fig = get_updated_fig(providers, filter_datetime, resample, coin, xy_limit=not keep_with_interval)
+    # used to keep figure with changes when this function is triggered.
+    # can add option for figure to be limited with XY when interval==0, after that this function will be disabled.
+    if keep_with_interval:
+        fig.update_layout({'uirevision': f'{coin}{resample}'})
+    # fig.update_layout(height=110)
     return fig
 
 
