@@ -27,7 +27,10 @@ coin_html = html.Div(dcc.Dropdown(COINS, COINS[0], id='coin-type', clearable=Fal
 live_update_html = html.Div(id='live-update-text', style={'margin': 'auto'}, children="")  # 'width': '20%',
 resample_selector_html = dcc.RadioItems(options=resample_radio_options, value=resample_keywords[2], id='resample-type',
                                         inline=True)
-live_update_switch_html = dbc.Checklist(options=[{"label": "Live Update", "value": 1}], value=[1],
+# https://dash-bootstrap-components.opensource.faculty.ai/docs/components/input/ # RadioItems and Checklist
+# disabled toggle: "disabled": True in options dict
+# on toggle: set value=[1] in order to make it on when page loads
+live_update_switch_html = dbc.Checklist(options=[{"label": "Live Update", "value": 1}], value=[],
                                         id="live-update-button", switch=True)
 
 right_portion_html = html.Div(id='right-portion',
