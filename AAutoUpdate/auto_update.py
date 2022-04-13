@@ -16,13 +16,13 @@ print('Running forever keeping data files updated...')
 
 start_date = '2022-03-26'
 
-# # sync with remote:
-# while True:
-#     time_now = datetime.utcnow()
-#     if 3 < time_now.second < 6:
-#         break
-#     time.sleep(1)
-
+# sync with remote:
+while True:
+    time_now = datetime.utcnow()
+    if 3 < time_now.second < 6:
+        break
+    time.sleep(1)
+print('synced with remote time..')
 # get for the first time hourly data
 get_data_from_remote(start_date, str(datetime.utcnow().date()), 'data_hourly', pwd, remote_address, private_key)
 

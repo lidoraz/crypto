@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 TIME_CONV = "%Y-%m-%dT%H:%M:%S"  # strftime
-UPDATE_INTERVAL_SECONDS = 1
+INTERVAL_UPDATE_SECONDS = 60
 INTERVAL_CANDLE_LOOKBACK_DISPLAY_MULTIPLAYER = 1  # this will alter the display, also differs for how much data is loaded
 INTERVAL_CANDLE_LOOKBACK_TABLE = {
     '2Min': timedelta(hours=6),
@@ -15,7 +15,7 @@ INTERVAL_CANDLE_LOOKBACK_TABLE = {
     '12H': timedelta(days=30 * 3),
     '1D': timedelta(days=30 * 6)
 }
-INTERVAL_CANDLE_LOOKBACK_LOAD_MULTIPLAYER = 2 * INTERVAL_CANDLE_LOOKBACK_DISPLAY_MULTIPLAYER
+INTERVAL_CANDLE_LOOKBACK_LOAD_MULTIPLAYER = INTERVAL_CANDLE_LOOKBACK_DISPLAY_MULTIPLAYER * 3
 
 
 def human_format(num):
@@ -97,6 +97,7 @@ def fig_update_layout_combined_view(fig):
     # fig.update_yaxes(autorange=False)
     # fig.update_xaxes(fixedrange=True)  # does not fix the problem. it limits x from both sides, need to limit only 1 side.
     fig.update_layout(height=900, dragmode='pan')
+    # fig.update_layout(uirevision='True') # TODO: does not work well when interval fires when zoomed in
 
     # Customizing Tick Label Formatting by Zoom Level
     # does not work quite well

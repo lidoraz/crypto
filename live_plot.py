@@ -30,7 +30,7 @@ resample_selector_html = dcc.RadioItems(options=resample_radio_options, value=re
 # https://dash-bootstrap-components.opensource.faculty.ai/docs/components/input/ # RadioItems and Checklist
 # disabled toggle: "disabled": True in options dict
 # on toggle: set value=[1] in order to make it on when page loads
-live_update_switch_html = dbc.Checklist(options=[{"label": "Live Update", "value": 1}], value=[],
+live_update_switch_html = dbc.Checklist(options=[{"label": "Live Update", "value": 1}], value=[1],
                                         id="live-update-button", switch=True)
 
 right_portion_html = html.Div(id='right-portion',
@@ -50,7 +50,7 @@ app.layout = html.Div([
     ),
     html.Div([
         dcc.Graph(id='live-update-graph', config={'scrollZoom': True, 'displayModeBar': False}, ),
-        dcc.Interval(id='interval-component', interval=5 * 1000, n_intervals=0)
+        dcc.Interval(id='interval-component', interval=INTERVAL_UPDATE_SECONDS * 1000, n_intervals=0)
     ])  # style=dict(height='100vh')
 ])
 
@@ -87,15 +87,18 @@ def update_graph_live(n, coin, resample):
     filter_datetime = adjust_plot_start_datetime(resample)
     keep_with_interval = True  # move this
 
-    fig = get_updated_fig(providers, filter_datetime, resample, coin, xy_limit=not keep_with_interval)
+    fig = get_updated_fig(providers, filter_datetime, resample, coin, xy_limit=True)
     # used to keep figure with changes when this function is triggered.
     # can add option for figure to be limited with XY when interval==0, after that this function will be disabled.
-    if keep_with_interval:
-        fig.update_layout({'uirevision': f'{coin}{resample}'})
+    # if keep_with_interval:
+    #     fig.update_layout({'uirevision': f'foo'}) # {coin}{resample}
     # fig.update_layout(height=110)
+    # print('fig:::', fig.layout.figure.layout.xaxis.range)
     return fig
 
 
 if __name__ == '__main__':
     # https://dash.plotly.com/live-updates
+    # live-updates keep the plot intact:
+    # https://stackoverflow.com/questions/63876187/plotly-dash-how-to-show-the-same-selected-area-of-a-figure-between-callbacks
     app.run_server(debug=True)

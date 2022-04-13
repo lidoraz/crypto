@@ -19,7 +19,7 @@ def get_updated_fig(providers, start_datetime, resample_keyword, coin, xy_limit=
 
     stats = get_coin_status(df_hourly, coin)
     print(f"{coin}:: {stats} :: agg every {resample_keyword}, Price: {df_ohlc.close.iloc[-1]}")
-    n_rsi = 14
+    n_rsi = 30
     calculated_rsi = calc_rsi(df_ohlc, n_rsi)
     # change_pct_resample =  # TODO: maybe add here
     traces = [
