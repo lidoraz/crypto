@@ -48,10 +48,11 @@ app.layout = html.Div([
         right_portion_html],
         style={'display': 'flex', 'align-items': 'center'},
     ),
-    html.Div([
+    html.Div(id='graph-container', children=[
         dcc.Graph(id='live-update-graph', config={'scrollZoom': True, 'displayModeBar': False}, ),
         dcc.Interval(id='interval-component', interval=INTERVAL_UPDATE_SECONDS * 1000, n_intervals=0)
-    ])  # style=dict(height='100vh')
+    ], style=dict(display="None")
+             )  # style=dict(height='100vh')
 ])
 
 
@@ -78,6 +79,17 @@ def interval_update(_):
     return 0
 
 
+# show graph only when ready to display, to avoid blank white figure
+@app.callback(Output('graph-container', 'style'),
+              Input('live-update-graph', 'figure'))
+def show_graph_when_loaded(figure):
+    # print("show_graph_when_loaded", figure)
+    if figure is None:
+        return {'display': 'None'}
+    else:
+        return None
+
+
 @app.callback(Output('live-update-graph', 'figure'),
               Input('interval-component', 'n_intervals'),
               Input('coin-type', 'value'),
@@ -88,6 +100,7 @@ def update_graph_live(n, coin, resample):
     keep_with_interval = True  # move this
 
     fig = get_updated_fig(providers, filter_datetime, resample, coin, xy_limit=True)
+
     # used to keep figure with changes when this function is triggered.
     # can add option for figure to be limited with XY when interval==0, after that this function will be disabled.
     # if keep_with_interval:
