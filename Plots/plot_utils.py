@@ -37,7 +37,7 @@ def calc_rsi(df_coin, n, col='close'):
         ak = a ** np.arange(len(x) - 1, -1, -1)
         return np.r_[np.full(n, np.nan), y0, np.cumsum(ak * x) / ak / n + y0 * a ** np.arange(1, len(x) + 1)]
 
-    df = df_coin.copy()
+    df = df_coin.copy().dropna()
     df['change'] = df[col].diff()
     df['gain'] = df.change.mask(df.change < 0, 0.0)
     df['loss'] = -df.change.mask(df.change > 0, -0.0)
@@ -45,6 +45,7 @@ def calc_rsi(df_coin, n, col='close'):
     df['avg_loss'] = rma(df.loss[n + 1:].to_numpy(), n, np.nansum(df.loss.to_numpy()[:n + 1]) / n)
     df['rs'] = df.avg_gain / df.avg_loss
     df['rsi_n'] = 100 - (100 / (1 + df.rs))
+    print('rsi_n', df['rsi_n'].tail(30))
     return df['rsi_n']
 
 

@@ -50,6 +50,13 @@ app.layout = html.Div([
     ),
     html.Div(id='graph-container', children=[
         dcc.Graph(id='live-update-graph', config={'scrollZoom': True, 'displayModeBar': False}, ),
+        # https://stackoverflow.com/questions/68188107/how-to-add-create-a-custom-loader-with-dash-plotly
+        dcc.Loading(
+            id="loading-2",
+            children=[html.Div([html.Div(id="loading-output-2")])],
+            type="circle",
+            loading_state={}
+        ),
         dcc.Interval(id='interval-component', interval=INTERVAL_UPDATE_SECONDS * 1000, n_intervals=0)
     ], style=dict(display="None")
              )  # style=dict(height='100vh')
@@ -110,8 +117,18 @@ def update_graph_live(n, coin, resample):
     return fig
 
 
+import sys
+
 if __name__ == '__main__':
+    args = sys.argv[1:]
+    print('args:', args)
+    # -port 80
+    if len(args) == 2 and args[0] == '-port':
+        app.run_server(port=args[1], host='0.0.0.0')
+    else:
+        app.run_server(debug=True)
     # https://dash.plotly.com/live-updates
     # live-updates keep the plot intact:
     # https://stackoverflow.com/questions/63876187/plotly-dash-how-to-show-the-same-selected-area-of-a-figure-between-callbacks
-    app.run_server(debug=True)
+
+    # app.run_server(debug=True, port=80, host='0.0.0.0' )

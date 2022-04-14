@@ -51,10 +51,10 @@ def get_volume(volume):
     return go.Bar(x=volume.index, y=volume, name='Volume')
 
 
-def get_MAD(coin_ohlc, pts, col='close', color='purple'):
+def get_SMA(coin_ohlc, pts, col='close', color='purple'):
     ra = coin_ohlc[col].rolling(pts).mean()
     # visible='legendonly' - appears but grayed out
-    return go.Scatter(x=ra.index, y=ra, name=f'MA({pts})', line_color=color, line_width=1)
+    return go.Scatter(x=ra.index, y=ra, name=f'SMA({pts})', line_color=color, line_width=1)
 
 
 def get_EMA(coin_ohlc, pts, col='close', color='orange'):
@@ -75,7 +75,7 @@ def get_pattern_fig(coin_ohlc, normalize_detected_patterns=True):
     # marker_color = ['Green' if x > 0 else 'Red' for x in df_patterns['plot_value']]
     text = df_patterns['best_pattern'] + '(' + df_patterns['n_patterns'].astype(str) + ')'
     trace = go.Bar(y=df_patterns['plot_value_norm'], x=df_patterns.index, text=text,
-                   name=f'Pattern(power)',  # textposition="outside",
+                   name=f'Pattern/Certainty',  # textposition="outside",
                    marker_color=marker_color)
     return trace
 
