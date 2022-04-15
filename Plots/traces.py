@@ -25,7 +25,7 @@ def get_candle_stick(df_coin):
 
 
 def calc_pct_change(prices, resample, closed='right'):
-    prices = prices.resample(resample, closed=closed).ffill()
+    prices = prices.resample(resample, closed=closed).last()
     print('calc_pct_change', resample)
     close_pct = prices.pct_change() * 100
     return close_pct
@@ -42,13 +42,13 @@ def get_fig_pct_change_c(prices, resample):
     return go.Bar(x=close_pct.index, y=close_pct, marker_color=close_pct_color, name=f'PCTChange({resample})')
 
 
-def get_volume(volume):
-    # TODO - add here color, need to redesign this function
-    # close_pct = calc_pct_change(prices, resample)
-    # close_pct_color = get_pct_change_color(close_pct)
+def get_volume(volume, coin_ohlc):
+    marker_color = get_marker_color_candle(coin_ohlc)
     # VOLUMEHOURTO
     # VOLUMEHOUR
-    return go.Bar(x=volume.index, y=volume, name='Volume')
+    return go.Bar(x=volume.index, y=volume, name='Volume', opacity=0.9,
+                  # yaxis='y2',
+                  marker_color=marker_color)
 
 
 def get_SMA(coin_ohlc, pts, col='close', color='purple'):
@@ -63,6 +63,10 @@ def get_EMA(coin_ohlc, pts, col='close', color='orange'):
     return go.Scatter(x=ema.index, y=ema, name=f'EMA({pts})', line_color=color)
 
 
+def get_marker_color_candle(coin_ohlc):
+    marker_color = ['Green' if x > 0 else 'Red' for x in coin_ohlc['close'] > coin_ohlc['open']]
+    return marker_color
+
 def get_pattern_fig(coin_ohlc, normalize_detected_patterns=True):
     print('get_pattern_fig:: normalize_detected_patterns:', normalize_detected_patterns)
     df_patterns = recognize_candles(coin_ohlc)
@@ -71,7 +75,7 @@ def get_pattern_fig(coin_ohlc, normalize_detected_patterns=True):
         df_patterns['plot_value_norm'] = df_patterns['plot_value'] * (1 / df_patterns['n_patterns'])
 
     #  match candle color to pattern color
-    marker_color = ['Green' if x > 0 else 'Red' for x in coin_ohlc['close'] > coin_ohlc['open']]
+    marker_color = get_marker_color_candle(coin_ohlc)
     # marker_color = ['Green' if x > 0 else 'Red' for x in df_patterns['plot_value']]
     text = df_patterns['best_pattern'] + '(' + df_patterns['n_patterns'].astype(str) + ')'
     trace = go.Bar(y=df_patterns['plot_value_norm'], x=df_patterns.index, text=text,

@@ -11,7 +11,9 @@ import dash_bootstrap_components as dbc
 coins = COINS
 hourly_cols = HOURLY_COLS
 resample_keywords = list(INTERVAL_CANDLE_LOOKBACK_TABLE.keys())
-resample_radio_options = {k: f' {k} |' for k in resample_keywords}
+resample_keywords_text = [f" {k} | " for k in resample_keywords[:-1]] + [f" {resample_keywords[-1]}"]
+resample_radio_options = dict(
+    zip(resample_keywords, resample_keywords_text))  # {k: f' {k} |' for k in resample_keywords}
 
 providers = get_data_providers()
 #
@@ -51,7 +53,8 @@ app.layout = html.Div([
     ),
     html.Div(id='graph-container', children=[
         dcc.Graph(id='live-update-graph', config={'scrollZoom': True, 'displayModeBar': False},
-                  style={'width': 'auto', 'height': '92vh'}  # TODO important
+                  style={'width': 'auto', 'height': '92vh'}
+                  # TODO important https://stackoverflow.com/questions/46287189/how-can-i-change-the-size-of-my-dash-graph
                   ),
         # https://stackoverflow.com/questions/68188107/how-to-add-create-a-custom-loader-with-dash-plotly
         dcc.Loading(

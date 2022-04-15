@@ -72,7 +72,9 @@ def fig_update_xylimits(fig, df_ohlc, resample):
     # fig.update_yaxes(range=[min_val, max_val])
     # lock other axes to be fixed (TODO: should be the patterns)
     fig.update_layout(
-        yaxis2=dict(range=[-100, 100], fixedrange=True)
+        yaxis2=dict(fixedrange=True),  # range=[-100, 100]
+        yaxis3=dict(fixedrange=True),
+        yaxis4=dict(fixedrange=True),
     )
 
 

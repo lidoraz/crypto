@@ -56,7 +56,7 @@ def extract_volume(df_agg, coin, interval, cols=('VOLUMEHOUR', 'VOLUMEHOURTO')):
 
     g = df_agg[coin_cols].groupby(df_agg.index.floor('h'))
     df_cols_r = g.transform(inverse_cumsum)  # apply function column-by-column to the grouped
-    df_cols_r = df_cols_r.resample(interval, closed='right').ffill()
+    df_cols_r = df_cols_r.resample(interval, closed='right').sum()  # ffill()
     return df_cols_r[coin_cols[0]], df_cols_r[coin_cols[1]]
 
 
