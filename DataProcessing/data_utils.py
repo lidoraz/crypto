@@ -52,6 +52,7 @@ def extract_volume(df_agg, coin, interval, cols=('VOLUMEHOUR', 'VOLUMEHOURTO')):
     else:
         interval = interval
     coin_cols = [f'{coin}_{col}' for col in cols]
+    # before this time all volume is crap
     df_agg = df_agg[df_agg.index > pd.to_datetime('2022-04-09', utc=True).tz_convert('Israel')]
 
     g = df_agg[coin_cols].groupby(df_agg.index.floor('h'))

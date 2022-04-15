@@ -26,7 +26,7 @@ def get_updated_fig(providers, start_datetime, resample_keyword, coin, xy_limit=
         ('pattern', get_pattern_fig(df_ohlc)),
         ('volume', get_volume(volumehourto, df_ohlc)),
         ('RSI', get_RSI_from_calucated(calculated_rsi, n_rsi)),
-        # get_fig_pct_change_c(df_ohlc['close'], resample=resample_keyword),  # resample='1H'
+        # ('PCT_CHG', get_fig_pct_change_c(df_ohlc['close'], resample=resample_keyword)),  # resample='1H'
         # TODO: add here maybe option to take 2 times high granularity for 4 hourly change for 15 min chart.
     ]
     # change_pct_resample =  # TODO: maybe add here

@@ -43,10 +43,12 @@ def get_fig_pct_change_c(prices, resample):
 
 
 def get_volume(volume, coin_ohlc):
+    coin_ohlc = coin_ohlc.copy()
+    df_coin = coin_ohlc.join(volume)
     marker_color = get_marker_color_candle(coin_ohlc)
     # VOLUMEHOURTO
     # VOLUMEHOUR
-    return go.Bar(x=volume.index, y=volume, name='Volume', opacity=0.9,
+    return go.Bar(x=df_coin.index, y=df_coin[volume.name], name='Volume', opacity=0.9,
                   # yaxis='y2',
                   marker_color=marker_color)
 
@@ -66,6 +68,7 @@ def get_EMA(coin_ohlc, pts, col='close', color='orange'):
 def get_marker_color_candle(coin_ohlc):
     marker_color = ['Green' if x > 0 else 'Red' for x in coin_ohlc['close'] > coin_ohlc['open']]
     return marker_color
+
 
 def get_pattern_fig(coin_ohlc, normalize_detected_patterns=True):
     print('get_pattern_fig:: normalize_detected_patterns:', normalize_detected_patterns)

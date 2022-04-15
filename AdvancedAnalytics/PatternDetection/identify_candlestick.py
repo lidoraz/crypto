@@ -10,7 +10,7 @@ def recognize_candles(df):
     'best_trend - best strength pattern multiplied by bull / bear (1, -1)
     'n_patterns - number of matching patterns found'
     """
-
+    df = df.copy()
     op = df['open'].astype(float)
     hi = df['high'].astype(float)
     lo = df['low'].astype(float)

@@ -1,0 +1,71 @@
+"install env in ec2:"
+ssh -i shushu_entrance.pem ec2-user@ec2-35-177-26-175.eu-west-2.compute.amazonaws.com
+#sudo yum groupinstall "Development Tools"
+
+sudo apt-get -y install build-essential
+wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
+tar -xzf ta-lib-0.4.0-src.tar.gz
+cd ta-lib
+./configure --prefix=/usr
+sudo make
+sudo make install
+cd ..
+
+
+# # install python
+# sudo yum -y install openssl-devel bzip2-devel libffi-devel
+# wget https://www.python.org/ftp/python/3.9.10/Python-3.9.10.tgz
+# tar xvf Python-3.9.10.tgz
+# cd Python-*/
+# ./configure --enable-optimizations
+# sudo make altinstall
+
+# ## trt different
+# sudo yum install -y amazon-linux-extras
+# yes | sudo amazon-linux-extras enable python3.8
+# sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
+# curl -O https://bootstrap.pypa.io/get-pip.py
+
+# sudo apt -y install python3-pip
+#clone project
+git clone https://lidoraz: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@github.com/lidoraz/crypto.git
+cd crypto 
+# pip install -r requirements.txt
+
+
+sudo iptables -t nat -A OUTPUT -o lo -p tcp --dport 80 -j REDIRECT --to-port 8050
+
+pip3 install dash
+pip3 install dash_bootstrap_components
+pip3 install TA-Lib
+
+
+chmod 400 shushu_entrance.pem
+nohup python3 AAutoUpdate/auto_update.py &
+
+
+#app.run_server(debug=True, port=80, host='0.0.0.0' )
+sudo nohup python3 live_plot.py -port 80 &
+
+
+http://ec2-35-177-26-175.eu-west-2.compute.amazonaws.com:8050/
+
+# git 
+git init
+git remote add origin $url_of_clone_source
+git fetch origin
+git checkout -b master --track origin/master # origin/master is clone's default
+
+
+# works:
+git checkout develop
+git checkout master -- .
+
+git pull
+
+#####
+tmux
+tmux attach -t 0 # main
+tmux attach -t 1 # updater.
+
+
