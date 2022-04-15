@@ -30,8 +30,8 @@ def get_updated_fig(providers, start_datetime, resample_keyword, coin, xy_limit=
         get_volume(volumehourto)
     ]
 
-    # row_heights = [len(traces) * 3] + [1 for _ in traces]  # relative height of main frame compared to all traces
-    row_heights = [6, 3, 1, 1]
+    row_heights = [len(traces) * 2] + [1 for _ in traces]  # relative height of main frame compared to all traces
+    # row_heights = [6, 3, 1, 1]
     # row_heights = [2] + [1 for _ in traces]
 
     fig = make_subplots(rows=len(traces) + 1, cols=1,

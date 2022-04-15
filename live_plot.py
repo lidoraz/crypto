@@ -17,7 +17,8 @@ providers = get_data_providers()
 #
 title = 'Crypto Live Feed'
 
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.CYBORG])
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.CYBORG],
+                meta_tags=[{'name': 'viewport', 'content': 'width=device-width, initial-scale=1'}])
 server = app.server  # needed for deployment
 app.title = title
 
@@ -49,7 +50,9 @@ app.layout = html.Div([
         style={'display': 'flex', 'align-items': 'center'},
     ),
     html.Div(id='graph-container', children=[
-        dcc.Graph(id='live-update-graph', config={'scrollZoom': True, 'displayModeBar': False}, ),
+        dcc.Graph(id='live-update-graph', config={'scrollZoom': True, 'displayModeBar': False},
+                  style={'width': 'auto', 'height': '92vh'}  # TODO important
+                  ),
         # https://stackoverflow.com/questions/68188107/how-to-add-create-a-custom-loader-with-dash-plotly
         dcc.Loading(
             id="loading-2",

@@ -75,7 +75,8 @@ def get_pattern_fig(coin_ohlc, normalize_detected_patterns=True):
     # marker_color = ['Green' if x > 0 else 'Red' for x in df_patterns['plot_value']]
     text = df_patterns['best_pattern'] + '(' + df_patterns['n_patterns'].astype(str) + ')'
     trace = go.Bar(y=df_patterns['plot_value_norm'], x=df_patterns.index, text=text,
-                   name=f'Pattern/Certainty',  # textposition="outside",
+                   # f'PatternCertainty'
+                   name=f'PTRN(STR)',  # textposition="outside",
                    marker_color=marker_color)
     return trace
 

@@ -37,7 +37,7 @@ def calc_rsi(df_coin, n, col='close'):
         ak = a ** np.arange(len(x) - 1, -1, -1)
         return np.r_[np.full(n, np.nan), y0, np.cumsum(ak * x) / ak / n + y0 * a ** np.arange(1, len(x) + 1)]
 
-    df = df_coin.copy().dropna()
+    df = df_coin.copy()  # .dropna()
     df['change'] = df[col].diff()
     df['gain'] = df.change.mask(df.change < 0, 0.0)
     df['loss'] = -df.change.mask(df.change > 0, -0.0)
@@ -45,7 +45,6 @@ def calc_rsi(df_coin, n, col='close'):
     df['avg_loss'] = rma(df.loss[n + 1:].to_numpy(), n, np.nansum(df.loss.to_numpy()[:n + 1]) / n)
     df['rs'] = df.avg_gain / df.avg_loss
     df['rsi_n'] = 100 - (100 / (1 + df.rs))
-    print('rsi_n', df['rsi_n'].tail(30))
     return df['rsi_n']
 
 
@@ -67,9 +66,14 @@ def fig_update_xylimits(fig, df_ohlc, resample):
     fig.update_xaxes(type="date", range=[start_display_dt, time_now])
     # Done: update only candle chart and not other figs
     # https://stackoverflow.com/questions/66842973/plotly-how-to-change-the-range-of-the-y-axis-of-a-subplot
+
     fig.update_layout(
         yaxis1=dict(range=[min_val, max_val]))  # may not be the best solution if using separate graphs
     # fig.update_yaxes(range=[min_val, max_val])
+    # lock other axes to be fixed (TODO: should be the patterns)
+    fig.update_layout(
+        yaxis2=dict(range=[-100, 100], fixedrange=True)
+    )
 
 
 def fig_update_layout_combined_view(fig):
@@ -81,10 +85,11 @@ def fig_update_layout_combined_view(fig):
                       yaxis={"side": "right"},
                       #                       title=f'{coin} agg every {resample_keyword}, close price change %. ',
                       legend=dict(x=-0.07, y=1, font=dict(family="sans-serif", size=10, color="white"),
-                                  traceorder="normal", )
+                                  traceorder="normal", ),
+                      dragmode='pan'
                       )
 
-    fig.update_layout(xaxis_showticklabels=True, xaxis2_showticklabels=False)
+    fig.update_layout(xaxis_showticklabels=True, xaxis2_showticklabels=False, )
     # fig.for_each_xaxis(lambda x: x.update(xaxis_showticklabels=True))
     fig.for_each_yaxis(lambda x: x.update(side="right"))
     fig.update_xaxes(showgrid=True, zeroline=False,  # rangeslider_visible=False, showticklabels=False,
@@ -97,7 +102,8 @@ def fig_update_layout_combined_view(fig):
     # fig.update_xaxes(autorange=False)
     # fig.update_yaxes(autorange=False)
     # fig.update_xaxes(fixedrange=True)  # does not fix the problem. it limits x from both sides, need to limit only 1 side.
-    fig.update_layout(height=900, dragmode='pan')
+    # fig.update_layout(height=900, )
+    # fig.update_layout(height=750, dragmode='pan')
     # fig.update_layout(uirevision='True') # TODO: does not work well when interval fires when zoomed in
 
     # Customizing Tick Label Formatting by Zoom Level
