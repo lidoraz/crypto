@@ -10,11 +10,7 @@ from .traces import *
 
 def get_updated_fig(providers, start_datetime, resample_keyword, coin, xy_limit=True):
     df_prices, df_hourly = prepare_data(providers, start_datetime)
-
-    # TODO workout this
-    # df_hourly = df_hourly[df_hourly.index.minute == 59]  # cutout only last mintue
-    # df_hourly = df_hourly.resample(interval_hour, closed='right').ffill()
-    volume_hour, volumehourto = extract_volume(df_hourly, coin, resample_keyword)
+    volume_hour, volume_hourto = extract_volume(df_hourly, coin, resample_keyword)
     df_ohlc = get_coin_ohlc(df_prices, coin, resample_keyword)
 
     stats = get_coin_status(df_hourly, coin)
@@ -24,17 +20,14 @@ def get_updated_fig(providers, start_datetime, resample_keyword, coin, xy_limit=
     calculated_rsi = calc_rsi(df_ohlc, n_rsi)
     traces = [
         ('pattern', get_pattern_fig(df_ohlc)),
-        ('volume', get_volume(volumehourto, df_ohlc)),
+        ('volume', get_volume(volume_hourto, df_ohlc)),
         ('RSI', get_RSI_from_calucated(calculated_rsi, n_rsi)),
         # ('PCT_CHG', get_fig_pct_change_c(df_ohlc['close'], resample=resample_keyword)),  # resample='1H'
-        # TODO: add here maybe option to take 2 times high granularity for 4 hourly change for 15 min chart.
     ]
-    # change_pct_resample =  # TODO: maybe add here
+    # change_pct_resample =  # TODO: maybe add here, add here maybe option to take 2 times high granularity for 4 hourly change for 15 min chart.
 
     row_heights = [len(traces) * 2] + [1 for _ in traces]  # relative height of main frame compared to all traces
     # row_heights = [6, 3, 1, 1]
-    # row_heights = [2] + [1 for _ in traces]
-
     fig = make_subplots(rows=len(traces) + 1, cols=1,
                         row_heights=row_heights,
                         vertical_spacing=0.05,

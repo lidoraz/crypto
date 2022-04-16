@@ -9,10 +9,11 @@ data_path = os.path.join(os.getcwd(), 'resources.nosync')
 
 coins = COINS
 hourly_cols = HOURLY_COLS
-resample_keywords = ['5Min', '15Min', '1H', '4H', '1D']
+resample_keywords = ['2Min', '5Min', '15Min', '1H', '4H', '1D']
 coin = COINS[1]
-resample = resample_keywords[1]
+resample = resample_keywords[0]
 start_date = START_DATA_DATE  # '2022-03-26'
+print(start_date, coin, resample)
 
 price_provider = DataProvider(start_date=start_date, path=os.path.join(data_path, 'data'), cols=coins)
 hourly_provider = DataProvider(start_date=start_date, path=os.path.join(data_path, 'data_hourly'), cols=hourly_cols)
