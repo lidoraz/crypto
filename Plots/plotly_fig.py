@@ -1,6 +1,6 @@
 from plotly.subplots import make_subplots
 from DataProcessing.data_utils import prepare_data, extract_volume, get_coin_status, get_coin_ohlc
-from .add_to_fig import add_moving_avgs, add_bollinger_bands
+from .add_to_fig import add_moving_avgs, add_bollinger_bands, add_special_moving_avgs
 from .plot_utils import *
 from .traces import *
 
@@ -39,7 +39,7 @@ def get_updated_fig(providers, start_datetime, resample_keyword, coin, xy_limit=
     add_moving_avgs(fig, df_ohlc)
     add_bollinger_bands(fig, df_ohlc)
 
-    # add_special_moving_avgs(fig, df_coin_ohlc, show=False)
+    add_special_moving_avgs(fig, df_ohlc)
     # fig.add_trace(traces[0], row=1, col=1)
 
     for idx, tup in enumerate(traces):

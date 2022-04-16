@@ -43,7 +43,6 @@ def get_fig_pct_change_c(prices, resample):
 
 
 def get_volume(volume, coin_ohlc):
-    coin_ohlc = coin_ohlc.copy()
     # drop na will fix spaces when granularity is lower than 15min
     coin_ohlc = coin_ohlc.join(volume).dropna()
     marker_color = get_marker_color_candle(coin_ohlc)
@@ -52,6 +51,7 @@ def get_volume(volume, coin_ohlc):
                   marker_color=marker_color)
 
 
+# TODO: deprectead
 def get_SMA(coin_ohlc, pts, col='close', color='purple'):
     ra = coin_ohlc[col].rolling(pts).mean()
     # visible='legendonly' - appears but grayed out
@@ -102,7 +102,7 @@ def _fib_seq(length):
 
 def FMA(data):
     fib_seq = _fib_seq(len(data))
-    return data[::-1].iloc[fib_seq][::-1].mean()
+    return data.iloc[fib_seq[::-1]].mean()
 
 
 def get_FibMAD(coin_ohlc, pts, col='close', color='cyan'):

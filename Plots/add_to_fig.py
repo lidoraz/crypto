@@ -9,6 +9,7 @@ def add_moving_avgs(fig, ohlc, col='close', loc=(1, 1)):
         fig.add_trace(get_SMA(ohlc, lookahead, col=col, color=color), row=loc[0], col=loc[1])
 
 
+# TODO: deprectead
 def add_bollinger_bands(fig, ohlc, col='close', loc=(1, 1)):
     lookahead = 25
     std = 2
@@ -24,7 +25,6 @@ def add_bollinger_bands(fig, ohlc, col='close', loc=(1, 1)):
                              legendgroup=name, opacity=0.2, visible='legendonly'))
 
 
-def add_special_moving_avgs(fig, ohlc, col='close', show=True):
-    if show:
-        fig.add_trace(get_FibMAD(ohlc, 7, col=col, color='yellow'), row=1, col=1)
-        fig.add_trace(get_EMA(ohlc, 7, col=col, color='orange'), row=1, col=1)
+def add_special_moving_avgs(fig, ohlc, col='close'):
+    fig.add_trace(get_FibMAD(ohlc, 25, col=col, color='Pink'), row=1, col=1)
+    fig.add_trace(get_EMA(ohlc, 25, col=col, color='Red'), row=1, col=1)
