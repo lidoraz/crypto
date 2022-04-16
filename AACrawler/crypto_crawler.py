@@ -8,6 +8,7 @@ import requests
 import json
 from datetime import datetime, timedelta
 
+# TODO: can use Scheduler, looks much more smooth.
 api_key = '90d6d0bc6a720716f80e6bf38272c4fd39cc71b88b1b77fe8da86e5c0a210054'
 path_data_dir = 'data'
 coins = [

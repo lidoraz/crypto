@@ -49,6 +49,7 @@ sudo nohup python3 live_plot.py -port 80 &
 
 
 http://ec2-35-177-26-175.eu-west-2.compute.amazonaws.com:8050/
+# ec2-35-177-26-175.eu-west-2.compute.amazonaws.com:8050
 
 # git 
 git init
@@ -68,4 +69,6 @@ tmux
 tmux attach -t 0 # main
 tmux attach -t 1 # updater.
 
+
+# cut -c 1-20 #  get only first 20 characters from every line.
 

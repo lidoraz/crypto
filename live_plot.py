@@ -52,7 +52,7 @@ app.layout = html.Div([
         style={'display': 'flex', 'align-items': 'center'},
     ),
     html.Div(id='graph-container', children=[
-        dcc.Graph(id='live-update-graph', config={'scrollZoom': True, 'displayModeBar': False},
+        dcc.Graph(id='live-update-graph', config={'scrollZoom': True, 'displayModeBar': True},
                   style={'width': 'auto', 'height': '92vh'}
                   # TODO important https://stackoverflow.com/questions/46287189/how-can-i-change-the-size-of-my-dash-graph
                   ),
