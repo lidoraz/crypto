@@ -45,9 +45,9 @@ def get_fig_pct_change_c(prices, resample):
 def get_volume(volume, coin_ohlc):
     coin_ohlc = coin_ohlc.copy()
     # drop na will fix spaces when granularity is lower than 15min
-    volume = coin_ohlc.join(volume)[volume.name].dropna()
+    coin_ohlc = coin_ohlc.join(volume).dropna()
     marker_color = get_marker_color_candle(coin_ohlc)
-    return go.Bar(x=volume.index, y=volume, name='Volume', opacity=0.9,
+    return go.Bar(x=coin_ohlc.index, y=coin_ohlc[volume.name], name='Volume', opacity=0.9,
                   # yaxis='y2',
                   marker_color=marker_color)
 
