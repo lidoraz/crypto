@@ -18,11 +18,14 @@ def add_bollinger_bands(fig, ohlc, col='close', loc=(1, 1)):
     top_BB = sma + rolling_func.std() * std
     bot_BB = sma - rolling_func.std() * std
     name = f'BB({lookahead})'
-    # fig.add_trace(go.Scatter(x=sma.index, y=sma, name=f'SMA({lookahead})', line_color='purple', legendgroup=name, line_width=1))
-    fig.add_trace(go.Scatter(x=top_BB.index, y=top_BB, name=name, line_color='purple', line_width=1, legendgroup=name,
-                             opacity=0.2, visible='legendonly'))
-    fig.add_trace(go.Scatter(x=bot_BB.index, y=bot_BB, fill='tonexty', name=name, line_color='purple', line_width=1,
-                             legendgroup=name, opacity=0.2, visible='legendonly'))
+    plot_kwargs = dict(name=name, line_color='DarkViolet', line_width=0.2, legendgroup=name, visible='legendonly')
+    fig.add_trace(go.Scatter(x=sma.index, y=sma, name=f'SMA({lookahead})',
+                             line_color='purple', legendgroup=name, line_width=0.2))
+    fig.add_trace(go.Scatter(x=top_BB.index, y=top_BB, fill=None, mode='lines',
+                             **plot_kwargs))
+    fig.add_trace(go.Scatter(x=bot_BB.index, y=bot_BB, fill='tonexty', mode='lines',
+                             fillcolor="rgba(148, 0, 211, 0.15)",
+                             **plot_kwargs))
 
 
 def add_special_moving_avgs(fig, ohlc, col='close'):
