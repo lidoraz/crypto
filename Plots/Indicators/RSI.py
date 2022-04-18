@@ -36,6 +36,8 @@ class RSI:
 
     def plot(self, fig, loc=(0, 0), color='white'):
         ra = self.ra
-        fig.add_trace(go.Scatter(x=ra.index, y=ra, name=f'RSI({self.lookahead})', line_color=color, line_width=1),
-                      row=loc[0], col=[1])
+        trace = go.Scatter(x=ra.index, y=ra, name=f'RSI({self.lookahead})', line_color=color, line_width=1)
+        fig.add_trace(trace, row=loc[0], col=[1])
+        fig.add_hline(y=70, row=loc[0], col=[1], line_width=1, line_color='green', line_dash="dash")
+        fig.add_hline(y=30, row=loc[0], col=[1], line_width=1, line_color='red', line_dash="dash")
         return fig

@@ -52,7 +52,7 @@ class DataProvider:
     def _add_if_exists(self):
         list_files = self._get_files()
         list_files = [f for f in list_files if f not in self.li_file]
-        print('adding:', list_files)
+        # print('adding:', list_files)
         self._read_csv_and_append_multi(list_files)
 
     def _read_csv_and_append_multi(self, list_files):

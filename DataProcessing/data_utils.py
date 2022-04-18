@@ -19,13 +19,15 @@ def get_data_providers():
 
 
 def prepare_data(providers, start_datetime):
+    # TODO: can take strings if using: datetime.fromisoformat(start_datetime) # but still tz is missing
     print('prepare_data:: load date start:', start_datetime)
     price_provider = providers['price_provider']
     hourly_provider = providers['hourly_provider']
     df_prices = price_provider.serve()
     df_hourly = hourly_provider.serve()
-    df_prices = df_prices[df_prices.index.to_pydatetime() > start_datetime]
-    df_hourly = df_hourly[df_hourly.index.to_pydatetime() > start_datetime]
+    if start_datetime != START_DATA_DATE:
+        df_prices = df_prices[df_prices.index.to_pydatetime() > start_datetime]
+        df_hourly = df_hourly[df_hourly.index.to_pydatetime() > start_datetime]
     # is_ok_time_diff = len(df_prices[list(df_prices.reset_index()['timestamp'].diff().dt.total_seconds() > 120)]) == 0
     # assert is_ok_time_diff, 'There are instances with larger time diff'
     return df_prices, df_hourly

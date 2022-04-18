@@ -36,7 +36,7 @@ def get_updated_fig(providers, start_datetime, resample_keyword, coin, xy_limit=
 
     fig.add_trace(get_candle_stick(df_ohlc), row=1, col=1)
 
-    add_moving_avgs(fig, df_ohlc)
+    # add_moving_avgs(fig, df_ohlc)
     add_bollinger_bands(fig, df_ohlc)
 
     # add_special_moving_avgs(fig, df_ohlc)
