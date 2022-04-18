@@ -14,19 +14,26 @@ class BollingerBands:
         sma = rolling_func.mean()
         top_BB = sma + rolling_func.std() * self.std_m
         bot_BB = sma - rolling_func.std() * self.std_m
-        cols = ['SMA_{}', 'BBTOP_{}', 'BBBOT_{}']
-        self.cols = [x.format(self.lookahead) for x in cols]
+        self.cols = [f'BBTOP_{self.lookahead}', f'SMA_{self.lookahead}', f'BBBOT_{self.lookahead}']
         self.bb = pd.DataFrame(dict(zip(self.cols, [top_BB, sma, bot_BB])))
         return self.bb
 
-    def plot(self, fig):
+    def plot(self, fig, loc=(1, 1)):
         name = f'BB({self.lookahead})'
-        top_trace = go.Scatter(x=self.bb[self.cols[0]].index, y=self.bb[self.cols[0]], name=name, line_color='purple',
-                               line_width=1,
-                               legendgroup=name, opacity=0.2, visible='legendonly')
-        bot_trace = go.Scatter(x=self.bb[self.cols[2]].index, y=self.bb[self.cols[2]], fill='tonexty', name=name,
-                               line_color='purple', line_width=1,
-                               legendgroup=name, opacity=0.2, visible='legendonly')
-        fig.add_trace(top_trace)
-        fig.add_trace(bot_trace)
+        bb = self.bb
+        cols = self.cols
+        plot_kwargs = dict(name=name, line_color='DarkViolet', line_width=0.5, legendgroup=name, visible='legendonly')
+        trace_mid = go.Scatter(x=bb[f'SMA_{self.lookahead}'].index, y=bb[cols[1]],  # name=f'SMA({self.lookahead})'
+                               **plot_kwargs)
+        trace_top = go.Scatter(x=bb[f'BBTOP_{self.lookahead}'].index, y=bb[f'BBTOP_{self.lookahead}'], fill=None,
+                               mode='lines',
+                               **plot_kwargs)
+        trace_bot = go.Scatter(x=bb[f'BBBOT_{self.lookahead}'].index, y=bb[f'BBBOT_{self.lookahead}'],
+                               fill='tonexty',
+                               mode='lines',
+                               fillcolor="rgba(148, 0, 211, 0.15)",
+                               **plot_kwargs)
+        fig.add_trace(trace_mid, row=loc[0], col=loc[1])
+        fig.add_trace(trace_top, row=loc[0], col=loc[1])
+        fig.add_trace(trace_bot, row=loc[0], col=loc[1])
         return fig

@@ -4,7 +4,7 @@ from DataProcessing.data_consts import COINS, START_DATA_DATE
 from Plots.traces import calc_pct_change
 import pandas as pd
 from DataProcessing.data_utils import extract_volume
-
+from datetime import datetime
 from Plots.Indicators import RSI, BollingerBands, SMA
 
 
@@ -26,7 +26,7 @@ def add_indicators(df, ind_ahead, n_rsi_soon=10):
 
     # buy condition
     df[f'RSI_BELOW_30_ROWS{n_rsi_soon}'] = df['RSI_30'].rolling(n_rsi_soon).sum() > 0
-    df['OVER_MID_BB'] = df['close'] >= df[f'SMA_{ind_ahead}']
+    df['OVER_MID_BB'] = df['close'] > df[f'SMA_{ind_ahead}']
 
     # sell condition
     df[f'RSI_OVER_70_ROWS{n_rsi_soon}'] = df['RSI_70'].rolling(n_rsi_soon).sum() > 0
@@ -82,14 +82,12 @@ def mark_enter_exit_points(df_prices, df_agg, tf, indicators_lookahead=14, set_p
                 should_sell = False
                 # if hours_holding < 1:  # must hold for atleast an 2 hours
                 #     continue
-                if sell_cause in ['SELL_ALGO_BBRSI',
-                                  'SELL_WIN_STOP']:  # sell cause we passed M Bollinder bands and RSI passed 70 # ▲▼
-                    if profit_pct > set_profit_pct:
-                        should_sell = True
-                elif sell_cause == 'SELL_LOSE_STOP':
+                win_causes = ['SELL_ALGO_BBRSI', 'SELL_WIN_STOP']
+                if sell_cause in win_causes and profit_pct > set_profit_pct:  # sell cause we passed M Bollinder bands and RSI passed 70 # ▲▼
                     should_sell = True
-                else:
-                    raise ValueError('not valid')
+                elif sell_cause == 'SELL_LOSE_STOP' and abs(profit_pct) > set_profit_pct / 2:
+                    should_sell = True
+
                 if should_sell:
                     coin_trade[-1]['sell'] = sell_idx.strftime(TIME_CONV)
                     coin_trade[-1]['profit_pct'] = profit_pct
@@ -106,7 +104,8 @@ def mark_enter_exit_points(df_prices, df_agg, tf, indicators_lookahead=14, set_p
 
 
 if __name__ == '__main__':
-
+    time = datetime.now().strftime(TIME_CONV)
+    print(time)
     # filter_datetime = adjust_plot_start_datetime(tf)
     providers = get_data_providers()
     df_prices, df_agg = prepare_data(providers, START_DATA_DATE)
@@ -144,10 +143,15 @@ if __name__ == '__main__':
     print("Total trades:", len(win_trades))
 
     # save df
-    from datetime import datetime
 
     time = datetime.now().strftime(TIME_CONV)
-    df_name = f'{time}_Trade-RSI_BB.csv'
-    df.to_csv(f'AdvancedAnalytics/strategy_output/{df_name}')
+    df_name = f'{time}_RSI_BB_stats.csv'
+    win_trades_name = f'{time}_RSI_BB_trades.txt'
+    output_path = 'AdvancedAnalytics/strategy_output/'
+    df.to_csv(output_path + df_name)
+    with open(output_path + win_trades_name, 'w') as f:
+        for trade in win_trades:
+            print(trade, file=f)
+
     # TODO: Save win strategy, or whole trades with a JSON format.
     # df.tail()

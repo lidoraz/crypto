@@ -11,7 +11,7 @@ coins = COINS
 hourly_cols = HOURLY_COLS
 resample_keywords = ['2Min', '5Min', '15Min', '1H', '4H', '1D']
 coin = COINS[1]
-resample = resample_keywords[0]
+resample = resample_keywords[3]
 start_date = START_DATA_DATE  # '2022-03-26'
 print(start_date, coin, resample)
 

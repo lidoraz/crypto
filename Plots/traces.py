@@ -1,8 +1,6 @@
 from plotly import graph_objects as go
 
 from AdvancedAnalytics.PatternDetection.identify_candlestick import recognize_candles
-from .plot_utils import calc_rsi
-
 
 # TODO: probably a good way to do this is by creating a class of metrics, then, each child will have calc and plot.
 #  plot will create a trace, while calc will enable to use the calculated data.
@@ -49,13 +47,6 @@ def get_volume(volume, coin_ohlc):
     return go.Bar(x=coin_ohlc.index, y=coin_ohlc[volume.name], name='Volume', opacity=0.9,
                   # yaxis='y2',
                   marker_color=marker_color)
-
-
-# TODO: deprectead
-def get_SMA(coin_ohlc, pts, col='close', color='purple'):
-    ra = coin_ohlc[col].rolling(pts).mean()
-    # visible='legendonly' - appears but grayed out
-    return go.Scatter(x=ra.index, y=ra, name=f'SMA({pts})', line_color=color, line_width=1)
 
 
 def get_EMA(coin_ohlc, pts, col='close', color='orange'):
@@ -108,12 +99,3 @@ def FMA(data):
 def get_FibMAD(coin_ohlc, pts, col='close', color='cyan'):
     fma = coin_ohlc[col].rolling(pts).apply(FMA)
     return go.Scatter(x=fma.index, y=fma, name=f'FibMA({pts})', line_color=color)
-
-
-def get_RSI_from_calucated(ra, pts, color='white'):
-    return go.Scatter(x=ra.index, y=ra, name=f'RSI({pts})', line_color=color, line_width=1)
-
-
-def get_RSI(df_coin, pts, col='close', color='white'):
-    ra = calc_rsi(df_coin, pts, col=col)
-    return go.Scatter(x=ra.index, y=ra, name=f'RSI({pts})', line_color=color, line_width=1)
