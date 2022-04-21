@@ -39,17 +39,22 @@ def get_y_finance_data():
 
 
 def run_on_nasdaq():
+    from tqdm import tqdm
     import pandas as pd
     import os
     prepath = 'Tests/yahoo_data/'
 
-    for idx, f in enumerate(os.listdir(prepath)):
-        print(f)
+    print('filtering to last 2 years.')
+    for idx, f in tqdm(enumerate(os.listdir(prepath))):
+        # print(f)
         symbol = f.split('_')[0]
         df = pd.read_csv(prepath + f, index_col='Date')
+        df.index = pd.to_datetime(df.index)
+        df = df[df.index > pd.to_datetime('2020-01-01')]
         df.columns = [c.lower() for c in df.columns]
-        find_cupnhandle_and_show_on_data(symbol, df, col='close', cupnhandle_treshold=0.04)
-        if idx > 4:
+        detected_parts = find_cupnhandle_and_show_on_data(symbol, df, col='close', cupnhandle_treshold=0.017,
+                                                          show=True)  # =0.0185
+        if idx > 1000:
             break
 
 

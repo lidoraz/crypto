@@ -24,7 +24,7 @@ def generate_cupnhandle(cupnhandle_length=100, small_cup_ratio=0.25, small_cup_l
         cupnhandle = np.r_[cupnhandle, [cupnhandle[-1]]]
     return cupnhandle
 
-
+# best used in daily nasdaq data
 def detect_cupnhandle(coin, data: pd.Series, cupnhandle_treshold=0.05):
     # https://school.stockcharts.com/doku.php?id=chart_analysis:chart_patterns:cup_with_handle_continuation
     # cup n handle usually works on month to a year.
@@ -34,12 +34,15 @@ def detect_cupnhandle(coin, data: pd.Series, cupnhandle_treshold=0.05):
     # differnet types of handles
     cupnhandle_forms = [
         # dict(small_cup_ratio=0.2, small_cup_lowest=0.3), ## too narrow low
-        dict(small_cup_ratio=0.2, small_cup_lowest=0.2),
+        # dict(small_cup_ratio=0.2, small_cup_lowest=0.2),
+        dict(small_cup_ratio=0.25, small_cup_lowest=0.4),
+        dict(small_cup_ratio=0.3, small_cup_lowest=0.5),
         dict(small_cup_ratio=0.4, small_cup_lowest=0.5),
         # dict(small_cup_ratio=0.3, small_cup_lowest=0.4), ## too narrow low
         dict(small_cup_ratio=0.25, small_cup_lowest=0.6)]
 
-    for windows_size in [300]:  # 7 weeks to a year   [150, 300]
+    ## daily data
+    for windows_size in [60, 150, 300]:  # 7 weeks to a year   [150, 300]
         last_found = -1
         for rolling_window in data.rolling(windows_size):
             if len(rolling_window) < windows_size:  # ignore first rows that are not full sized
@@ -72,21 +75,25 @@ def detect_cupnhandle(coin, data: pd.Series, cupnhandle_treshold=0.05):
     return detected_parts
 
 
-def find_cupnhandle_and_show_on_data(coin, df, cupnhandle_treshold, col='close'):
-    detected_parts = detect_cupnhandle(coin, df[col], cupnhandle_treshold)
-    if len(detected_parts) > 0:
-        for part in detected_parts:
-            fig = go.Figure(data=[go.Candlestick(x=df.index,
-                                                 open=df.open,
-                                                 high=df.high,
-                                                 low=df.low,
-                                                 close=df.close, )])
-            fig.add_trace(go.Scatter(x=df[col].index, y=df[col], name='org_close'))
-            fig.add_trace(go.Scatter(x=part.index, y=part['cupnhandle'], name='cupnhandle'))
-            fig.add_trace(go.Scatter(x=part.index, y=part['signal'], name='related_signal'))
-            fig.update_layout(title=part.attrs['title'])
-            fig.show()
+def plot_cupnhandle(df, part):
+    fig = go.Figure(data=[go.Candlestick(x=df.index,
+                                         open=df.open,
+                                         high=df.high,
+                                         low=df.low,
+                                         close=df.close, )])
+    # fig.add_trace(go.Scatter(x=df[col].index, y=df[col], name='org_close'))
+    fig.add_trace(go.Scatter(x=part.index, y=part['cupnhandle'], name='cupnhandle', marker_color='Blue'))
+    fig.add_trace(go.Scatter(x=part.index, y=part['signal'], name='related_signal', marker_color='Black'))
+    fig.update_layout(title=part.attrs['title'])
+    fig.show()
+    # can plot volume as other form of verification of the pattern
 
+
+def find_cupnhandle_and_show_on_data(coin, df, cupnhandle_treshold, col='close', show=True):
+    detected_parts = detect_cupnhandle(coin, df[col], cupnhandle_treshold)
+    if show and len(detected_parts) > 0:
+        for part in detected_parts:
+            plot_cupnhandle(df, part)
             # show them on graph
             # plt.plot(df[col], label='org')
             # plt.plot(part['cupnhandle'], label='cupnhandle')
@@ -94,7 +101,7 @@ def find_cupnhandle_and_show_on_data(coin, df, cupnhandle_treshold, col='close')
             # plt.title(part.attrs['title'])
             # plt.legend()
             # plt.show()
-
+    return detected_parts
 
 if __name__ == '__main__':
     tf = '1H'
