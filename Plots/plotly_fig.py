@@ -8,7 +8,7 @@ from Plots.Indicators import SMA, RSI, MACD, BollingerBands
 # https://stackoverflow.com/questions/67459925/plotly-set-showgrid-false-for-all-subplots
 
 
-def get_updated_fig(providers, start_datetime, resample_keyword, coin, xy_limit=True):
+def get_updated_fig(providers, start_datetime, resample_keyword, coin, lookahead=25, xy_limit=True):
     df_prices, df_hourly = prepare_data(providers, start_datetime)
     volume_hour, volume_hourto = extract_volume(df_hourly, coin, resample_keyword)
     df_ohlc = get_coin_ohlc(df_prices, coin, resample_keyword)
@@ -39,19 +39,18 @@ def get_updated_fig(providers, start_datetime, resample_keyword, coin, xy_limit=
     fig.add_trace(get_candle_stick(df_ohlc), row=1, col=1)
     fig.add_trace(get_pattern_fig(df_ohlc), row=2, col=1)
 
-    # ind_rsi = RSI(30)
-    # ind_rsi.calc(df_ohlc['close'])
-    # ind_rsi.plot(fig, loc=(3, 1))
-
     fig.add_trace(get_volume(volume_hourto, df_ohlc), row=4, col=1)
 
     add_moving_avgs(fig, df_ohlc)
 
-    ind_bb = MACD()
-    ind_bb.calc(df_ohlc['close'])
-    ind_bb.plot(fig, loc=(3, 1))
+    # ind_bb = MACD()
+    # ind_bb.calc(df_ohlc['close'])
+    # ind_bb.plot(fig, loc=(3, 1))
+    ind_rsi = RSI(lookahead)
+    ind_rsi.calc(df_ohlc['close'])
+    ind_rsi.plot(fig, loc=(3, 1))
 
-    ind_bb = BollingerBands(25, 2)
+    ind_bb = BollingerBands(lookahead, 2, visible=True)
     ind_bb.calc(df_ohlc['close'])
     ind_bb.plot(fig, loc=(1, 1))
     # add_bollinger_bands(fig, df_ohlc)

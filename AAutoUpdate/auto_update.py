@@ -27,6 +27,8 @@ print('synced with remote time..')
 get_data_from_remote(start_date, str(datetime.utcnow().date()), 'data_hourly', pwd, remote_address, private_key)
 
 # TODO: can use Scheduler, looks much more smooth.
+# TODO: Workaround with two functions - get to recent - with downloading all missing csv.
+# TODO: then sync with latest csv.
 while True:
     time_now = datetime.utcnow()
     date_now_s = str(time_now.date())

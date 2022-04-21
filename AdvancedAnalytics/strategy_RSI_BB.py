@@ -41,7 +41,6 @@ def add_indicators(df, ind_ahead, n_rsi_soon=10):
     return df
 
 
-# TODO: RSI divergence  or MaCD divergence
 def mark_enter_exit_points(df_prices, df_agg, tf, indicators_lookahead=14, set_profit_pct=0.05):
     """
     # BUY ENTRY: First candle that closes on the middle BB, soon after RSI was < 30
@@ -55,6 +54,7 @@ def mark_enter_exit_points(df_prices, df_agg, tf, indicators_lookahead=14, set_p
     trades = []
     trades_str = []
     open_trades = 0
+    # tODO: Arrange this trade vs trade_str - quite different
     for coin in COINS:
         _, volume = extract_volume(df_agg=df_agg, coin=coin, interval=tf)
         df = get_coin_ohlc(df_prices, coin, tf)
@@ -91,7 +91,10 @@ def mark_enter_exit_points(df_prices, df_agg, tf, indicators_lookahead=14, set_p
                 if should_sell:
                     coin_trade[-1]['sell'] = sell_idx.strftime(TIME_CONV)
                     coin_trade[-1]['profit_pct'] = profit_pct
-                    transaction = f'Trade: {coin}\t{sell_cause}\t{buy_idx}\t{sell_idx}\t{hours_holding}\t{profit_pct:.2%} '
+                    trade_arr = [coin, sell_cause, buy_idx, buy_price, sell_idx, sell_price, hours_holding,
+                                 f'{profit_pct:.2%}']
+                    trade_arr = list(map(str, trade_arr))
+                    transaction = 'Trade:' + "\t".join(trade_arr)
                     trades_str.append(transaction)
                     sum_pct += profit_pct
                     buy_idx = None
@@ -103,12 +106,16 @@ def mark_enter_exit_points(df_prices, df_agg, tf, indicators_lookahead=14, set_p
     return sum_pct, trades, trades_str, open_trades
 
 
-if __name__ == '__main__':
-    time = datetime.now().strftime(TIME_CONV)
-    print(time)
+def find_optimal_BBRSI_strategy():
+    print(datetime.now().strftime(TIME_CONV))
     # filter_datetime = adjust_plot_start_datetime(tf)
     providers = get_data_providers()
     df_prices, df_agg = prepare_data(providers, START_DATA_DATE)
+
+    time_intervals = ['15Min', '1H']
+    lookaheads = range(5, 30, 2)
+    profit_pcts = [0.03, 0.05, 0.07, 0.10, 0.15]
+
     # tf = '1H'
     # lookahead = 11
     # sum_pct, trades, trades_str = mark_enter_exit_points(df_prices, df_agg, tf, indicators_lookahead=14)
@@ -116,13 +123,16 @@ if __name__ == '__main__':
     # for trade in trades:
     #     print(trade)
 
+    # TODO: it looks like lookahead of less than 5 is very volatile, need to restrict number of transactions
+    ## Some coins do not change as frequent like GCOIN, so it is harder to count on the performance on these coins.
+    ## 15Min trade made the highest value, but number of trades was very high as well and cannot be guaranteed.
     res = []
     l_trades = []
     l_trades_str = []
-    for tf in ['15Min', '1H']:  # ['5Min', '15Min', '1H', '4H']
-        for lookahead in range(5, 30, 1):  # range(7, 30, 4):
+    for tf in time_intervals:  # ['5Min', '15Min', '1H', '4H']
+        for lookahead in lookaheads:  # range(7, 30, 4):
             # for lookahead in [19]:  # range(7, 30, 4):
-            for set_profit_pct in [0.03, 0.05, 0.07, 0.10, 0.15]:
+            for set_profit_pct in profit_pcts:
                 sum_pct, trades, trades_str, n_open_trades = mark_enter_exit_points(df_prices, df_agg, tf, lookahead,
                                                                                     set_profit_pct)
                 res.append([tf, lookahead, set_profit_pct, sum_pct, len(trades_str), n_open_trades])
@@ -146,12 +156,22 @@ if __name__ == '__main__':
 
     time = datetime.now().strftime(TIME_CONV)
     df_name = f'{time}_RSI_BB_stats.csv'
-    win_trades_name = f'{time}_RSI_BB_trades.txt'
+    win_trades_name = f'{time}_RSI_BB_trades.tsv'
     output_path = 'AdvancedAnalytics/strategy_output/'
     df.to_csv(output_path + df_name)
     with open(output_path + win_trades_name, 'w') as f:
         for trade in win_trades:
             print(trade, file=f)
 
+    # print all strats
+    with open(output_path + win_trades_name, 'a') as f:
+        for idx, trades in enumerate(l_trades_str):
+            print(f'#{idx}#', file=f)
+            for trade in trades:
+                print(trade, file=f)
+
+
+if __name__ == '__main__':
+    find_optimal_BBRSI_strategy()
     # TODO: Save win strategy, or whole trades with a JSON format.
     # df.tail()

@@ -3,11 +3,12 @@ import pandas as pd
 
 
 class BollingerBands:
-    def __init__(self, lookahead=25, std_m=2):
+    def __init__(self, lookahead=25, std_m=2, visible=True):
         self.lookahead = lookahead
         self.std_m = std_m
         self.bb = None
         self.cols = None
+        self.visible = visible
 
     def calc(self, prices) -> pd.DataFrame:
         rolling_func = prices.rolling(self.lookahead)
@@ -22,7 +23,9 @@ class BollingerBands:
         name = f'BB({self.lookahead})'
         bb = self.bb
         cols = self.cols
-        plot_kwargs = dict(name=name, line_color='DarkViolet', line_width=0.5, legendgroup=name, visible='legendonly')
+        plot_kwargs = dict(name=name, line_color='DarkViolet', line_width=0.5, legendgroup=name)
+        if not self.visible:
+            plot_kwargs['visible'] = 'legendonly'
         trace_mid = go.Scatter(x=bb[f'SMA_{self.lookahead}'].index, y=bb[cols[1]],  # name=f'SMA({self.lookahead})'
                                **plot_kwargs)
         trace_top = go.Scatter(x=bb[f'BBTOP_{self.lookahead}'].index, y=bb[f'BBTOP_{self.lookahead}'], fill=None,

@@ -6,4 +6,5 @@ from .MACD import MACD
 
 # TODO: Add PCT change, Patterns, FIB, maybe volume.
 # TODO:  The ADX Indicator
+# TODO: William fractal
 #

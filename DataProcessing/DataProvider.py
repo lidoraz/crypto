@@ -22,7 +22,7 @@ class DataProvider:
         self.convert_to_isr = convert_to_isr
         self.li_data = []
         self.li_file = sorted([f for f in self._get_files() if f >= start_date])
-        print(f'From: {self.li_file[0]}, To: {self.li_file[-1]}')
+        print(f'DataProvider:: From: {self.li_file[0]}, To: {self.li_file[-1]}')
         self._read_csv_and_append_multi(self.li_file)
 
     def serve(self):

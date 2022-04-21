@@ -25,8 +25,7 @@ server = app.server  # needed for deployment
 app.title = title
 
 title_html = html.H4(title, style={'padding-right': '5%', 'margin-left': '2%'})
-coin_html = html.Div(dcc.Dropdown(COINS, COINS[0], id='coin-type', clearable=False),
-                     style=dict(width='6%'))
+coin_html = dcc.Dropdown(COINS, COINS[0], id='coin-type', clearable=False, style=dict(width='50pt'))
 live_update_html = html.Div(id='live-update-text', style={'margin': 'auto'}, children="")  # 'width': '20%',
 resample_selector_html = dcc.RadioItems(options=resample_radio_options, value=resample_keywords[2], id='resample-type',
                                         inline=True)
@@ -41,12 +40,19 @@ right_portion_html = html.Div(id='right-portion',
                                         html.Div(id='live-switch-update-container',
                                                  children=live_update_switch_html,
                                                  style={'padding-left': '3%'})],
-                              style={'display': 'flex', 'width': '40%'})
+                              # style={'display': 'flex', 'width': '40%'}
+                              )
 
 app.layout = html.Div([
     html.Div(children=[
         title_html,
         coin_html,
+        dcc.Input(
+            id="input_lookahead",
+            type="number",
+            value=14,
+            placeholder="lookahead",
+            style=dict(width='30pt')),
         live_update_html,
         right_portion_html],
         style={'display': 'flex', 'align-items': 'center'},
@@ -109,13 +115,17 @@ def show_graph_when_loaded(figure):
 @app.callback(Output('live-update-graph', 'figure'),
               Input('interval-component', 'n_intervals'),
               Input('coin-type', 'value'),
-              Input('resample-type', 'value'))
-def update_graph_live(n, coin, resample):
-    print(n, coin, resample)
+              Input('resample-type', 'value'),
+              Input('input_lookahead', 'value'))
+def update_graph_live(n, coin, resample, input_lookahead):
+    print(n, coin, resample, input_lookahead)
     filter_datetime = adjust_plot_start_datetime(resample)
     keep_with_interval = True  # move this
+    if input_lookahead is None:
+        input_lookahead = 14
+    input_lookahead = max(min(input_lookahead, 100), 3)
 
-    fig = get_updated_fig(providers, filter_datetime, resample, coin, xy_limit=True)
+    fig = get_updated_fig(providers, filter_datetime, resample, coin, lookahead=input_lookahead, xy_limit=True)
 
     # used to keep figure with changes when this function is triggered.
     # can add option for figure to be limited with XY when interval==0, after that this function will be disabled.
