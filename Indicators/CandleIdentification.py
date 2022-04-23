@@ -89,17 +89,18 @@ def recognize_candles(df):
 
 
 class CandleIdentification(Indicator):
-    def __init__(self, normalize_detected_patterns=True):
+    def __init__(self, normalize_detected_patterns=True, plot_loc=None):
+        self.normalize_detected_patterns = normalize_detected_patterns
+        self.plot_loc = (plot_loc, 1 if plot_loc else None)
         self.res = None
         self.ohlc = None
-        self.normalize_detected_patterns = normalize_detected_patterns
 
     def calc(self, ohlc: pd.DataFrame) -> pd.DataFrame:
         self.res = recognize_candles(ohlc)
         self.ohlc = ohlc
         return self.res
 
-    def plot(self, fig, loc=(None, None)):
+    def plot(self, fig):
         df_patterns = self.res
         df_patterns['plot_value'] = (104 - df_patterns['best_ranking']) * df_patterns['best_trend']
         if self.normalize_detected_patterns:
@@ -113,5 +114,5 @@ class CandleIdentification(Indicator):
                        # f'PatternCertainty'
                        name=f'PTRN(STR)',  # textposition="outside",
                        marker_color=marker_color)
-        fig.add_trace(trace, row=loc[0], col=loc[1])
+        fig.add_trace(trace, row=self.plot_loc[0], col=self.plot_loc[1])
         return fig

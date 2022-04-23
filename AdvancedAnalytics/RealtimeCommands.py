@@ -1,8 +1,10 @@
-from DataProcessing.data_utils import get_data_providers, adjust_plot_start_datetime, prepare_data, get_coin_ohlc
+from DataProcessing.data_utils import get_data_providers, adjust_plot_start_datetime, prepare_data
 from DataProcessing.data_consts import COINS
 from datetime import datetime
 from AdvancedAnalytics.strategy_RSI_BB import add_indicators
 import pytz
+
+from Indicators import CandleStick
 
 
 def get_latest_buy_sell(tf='1H', lookahead=14):
@@ -29,7 +31,7 @@ def get_latest_buy_sell(tf='1H', lookahead=14):
     buy_lst = []
     sell_lst = []
     for coin in COINS:
-        df = get_coin_ohlc(df_prices, coin, tf)
+        df = CandleStick(tf).calc(df_prices[coin])
         df = add_indicators(df, lookahead)
         # 'BUY_ALGO_BBRSI', 'SELL_ALGO_BBRSI', 'SELL_WIN_STOP', 'SELL_LOSE_STOP'
 

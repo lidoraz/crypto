@@ -1,10 +1,10 @@
-from DataProcessing.data_utils import get_data_providers, adjust_plot_start_datetime, prepare_data, get_coin_ohlc
+from DataProcessing.data_utils import get_data_providers, adjust_plot_start_datetime, prepare_data
 from DataProcessing.data_consts import COINS, START_DATA_DATE
 
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error
 import plotly.graph_objects as go
-import matplotlib.pyplot as plt
+from Indicators import CandleStick
 import pandas as pd
 import numpy as np
 
@@ -97,9 +97,9 @@ def plot_cupnhandle(df, part):
     fig.update_layout(title=part.attrs['title'], xaxis_rangeslider_visible=False)
 
     from Indicators import RSI
-    rsi = RSI(14)
-    rsi_v = rsi.calc(df.close)
-    rsi.plot(fig, loc=(2, 1), color='black')
+    rsi = RSI(14, plot_loc=2)
+    rsi_v = rsi.calc(df)
+    rsi.plot(fig, color='black')
     fig.show()
     # can plot volume as other form of verification of the pattern
 
@@ -130,5 +130,5 @@ if __name__ == '__main__':
     col = 'close'
     print('finding cup n handles...')
     for coin in COINS:
-        df = get_coin_ohlc(df_prices, coin, tf)
+        df = CandleStick(tf).calc(df_prices[coin])
         find_cupnhandle_and_show_on_data(coin, df, col='close', cupnhandle_treshold=0.03)

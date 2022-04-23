@@ -27,27 +27,6 @@ def human_format(num):
     return '%.2f%s' % (num, ['', 'K', 'M', 'B', 'T', 'P'][magnitude])
 
 
-def calc_rsi(df_coin, n, col='close'):
-    if n >= len(df_coin):  # fail safe in case of an error
-        n = len(df_coin) - 1
-
-    # https://stackoverflow.com/questions/57006437/calculate-rsi-indicator-from-pandas-dataframe
-    def rma(x, n, y0):
-        a = (n - 1) / n
-        ak = a ** np.arange(len(x) - 1, -1, -1)
-        return np.r_[np.full(n, np.nan), y0, np.cumsum(ak * x) / ak / n + y0 * a ** np.arange(1, len(x) + 1)]
-
-    df = df_coin.copy()  # .dropna()
-    df['change'] = df[col].diff()
-    df['gain'] = df.change.mask(df.change < 0, 0.0)
-    df['loss'] = -df.change.mask(df.change > 0, -0.0)
-    df['avg_gain'] = rma(df.gain[n + 1:].to_numpy(), n, np.nansum(df.gain.to_numpy()[:n + 1]) / n)
-    df['avg_loss'] = rma(df.loss[n + 1:].to_numpy(), n, np.nansum(df.loss.to_numpy()[:n + 1]) / n)
-    df['rs'] = df.avg_gain / df.avg_loss
-    df['rsi_n'] = 100 - (100 / (1 + df.rs))
-    return df['rsi_n']
-
-
 def fig_update_xylimits(fig, df_ohlc, resample):
     # x axis
     from DataProcessing.data_utils import adjust_plot_start_datetime
@@ -106,7 +85,7 @@ def fig_update_layout_combined_view(fig):
     # fig.update_xaxes(fixedrange=True)  # does not fix the problem. it limits x from both sides, need to limit only 1 side.
     # fig.update_layout(height=900, )
     # fig.update_layout(height=750, dragmode='pan')
-    # fig.update_layout(uirevision='True') # TODO: does not work well when interval fires when zoomed in
+    # fig.update_layout(uirevision='True') # does not work well when interval fires when zoomed in
 
     # Customizing Tick Label Formatting by Zoom Level
     # does not work quite well

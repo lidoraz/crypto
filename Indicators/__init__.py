@@ -5,8 +5,9 @@ from .BollingerBands import BollingerBands
 from .MACD import MACD
 from .CandleIdentification import CandleIdentification
 from .SupportResistanceLines import SupportResistanceLines
+from .CandleStick import CandleStick
 
-# TODO: Add PCT change, Patterns, FIB, maybe volume.
+# TODO: Add PCT change, maybe volume.
 # TODO:  The ADX Indicator
 # TODO: William fractal
 #

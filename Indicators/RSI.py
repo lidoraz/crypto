@@ -27,19 +27,22 @@ def _calc_rsi(prices, n):
 
 
 class RSI(Indicator):
-    def __init__(self, lookahead):
+    def __init__(self, lookahead, plot_loc=None):
         self.lookahead = lookahead
         self.ra = None
+        self.plot_loc = (plot_loc, 1 if plot_loc else None)
 
-    def calc(self, prices) -> pd.DataFrame:
+    def calc(self, olhc) -> pd.DataFrame:
+        prices = olhc['close']
         self.ra = _calc_rsi(prices, self.lookahead)
         self.ra.name = f"RSI_{self.lookahead}"
         return self.ra.to_frame()
 
-    def plot(self, fig, loc=(0, 0), color='white'):
+    def plot(self, fig, color='white'):
         ra = self.ra
-        trace = go.Scatter(x=ra.index, y=ra, name=f'RSI({self.lookahead})', line_color=color, line_width=1)
-        fig.add_trace(trace, row=loc[0], col=loc[1])
-        fig.add_hline(y=70, row=loc[0], col=loc[1], line_width=1, line_color='green', line_dash="dash")
-        fig.add_hline(y=30, row=loc[0], col=loc[1], line_width=1, line_color='red', line_dash="dash")
+        trace = go.Scatter(x=ra.index, y=ra, name=f'RSI({self.lookahead})', line_color=color, line_width=1.2)
+        loc = dict(row=self.plot_loc[0], col=self.plot_loc[1])
+        fig.add_trace(trace, **loc)
+        fig.add_hline(y=70, **loc, line_width=0.8, line_color='red')
+        fig.add_hline(y=30, **loc, line_width=0.8, line_color='green')
         return fig

@@ -1,11 +1,11 @@
 from DataProcessing.DataProvider import TIME_CONV
-from DataProcessing.data_utils import get_data_providers, adjust_plot_start_datetime, prepare_data, get_coin_ohlc
+from DataProcessing.data_utils import get_data_providers, adjust_plot_start_datetime, prepare_data
 from DataProcessing.data_consts import COINS, START_DATA_DATE
 from Plots.traces import calc_pct_change
 import pandas as pd
 from DataProcessing.data_utils import extract_volume
 from datetime import datetime
-from Plots.Indicators import RSI, BollingerBands, SMA
+from Indicators import RSI, BollingerBands, SMA, CandleStick
 
 
 def add_indicators(df, ind_ahead, n_rsi_soon=10):
@@ -57,7 +57,8 @@ def mark_enter_exit_points(df_prices, df_agg, tf, indicators_lookahead=14, set_p
     # tODO: Arrange this trade vs trade_str - quite different
     for coin in COINS:
         _, volume = extract_volume(df_agg=df_agg, coin=coin, interval=tf)
-        df = get_coin_ohlc(df_prices, coin, tf)
+
+        df = CandleStick(tf).calc(df_prices[coin])
         df = add_indicators(df, indicators_lookahead, n_rsi_soon=10)
 
         sell_causes = ['SELL_ALGO_BBRSI', 'SELL_WIN_STOP', 'SELL_LOSE_STOP']

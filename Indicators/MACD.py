@@ -16,16 +16,18 @@ from .Indicator import Indicator
 
 
 class MACD(Indicator):
-    def __init__(self, lookahead_short=12, lookahead_long=26, lookahead_sma=9):
+    def __init__(self, lookahead_short=12, lookahead_long=26, lookahead_sma=9, plot_loc=None):
         self.lookahead_short = lookahead_short
         self.lookahead_long = lookahead_long
         self.lookahead_sma = lookahead_sma
+        self.plot_loc = (plot_loc, 1 if plot_loc else None)
         #
         self.ema_short = EMA(lookahead_short)
         self.ema_long = EMA(lookahead_long)
         self.sma = SMA(lookahead_sma)
 
-    def calc(self, prices) -> pd.DataFrame:
+    def calc(self, olhc) -> pd.DataFrame:
+        prices = olhc['close']
         macd = self.ema_short.calc(prices) - self.ema_long.calc(prices)
         sma = self.sma.calc(macd)
         hist = macd - sma
@@ -45,6 +47,6 @@ class MACD(Indicator):
                             **kwrags)
         # fig.add_trace(t_mcad, row=loc[0], col=loc[1])
         # fig.add_trace(trace_sma, row=loc[0], col=loc[1])
-        fig.add_trace(t_hist, row=loc[0], col=loc[1])
-        fig.add_hline(y=0, row=loc[0], col=[1], line_width=0.5, line_color='Red')
+        fig.add_trace(t_hist, row=self.plot_loc[0], col=self.plot_loc[1])
+        fig.add_hline(y=0, row=self.plot_loc[0], col=self.plot_loc[1], line_width=0.5, line_color='Red')
         return fig

@@ -38,35 +38,7 @@ def get_volume(volume, coin_ohlc):
                   marker_color=marker_color)
 
 
-def get_EMA(coin_ohlc, pts, col='close', color='orange'):
-    ema = coin_ohlc[col].ewm(span=pts).mean()  # closed to the right!!
-    #     ra = coin_ohlc['close'].resample(f'{days}D').mean()
-    return go.Scatter(x=ema.index, y=ema, name=f'EMA({pts})', line_color=color)
-
-
 def get_marker_color_candle(coin_ohlc):
     marker_color = ['Green' if x > 0 else 'Red' for x in coin_ohlc['close'] > coin_ohlc['open']]
     return marker_color
 
-def _fib_seq(length):
-    fib_i = 0
-    next_fib_i = 1
-    fib_seq = []
-    while fib_i < length:
-        fib_seq.append(fib_i)
-        tmp = fib_i
-        fib_i = fib_i + next_fib_i
-        next_fib_i = tmp
-    if len(fib_seq) > 1:
-        fib_seq.remove(1)
-    return fib_seq
-
-
-def FMA(data):
-    fib_seq = _fib_seq(len(data))
-    return data.iloc[fib_seq[::-1]].mean()
-
-
-def get_FibMAD(coin_ohlc, pts, col='close', color='cyan'):
-    fma = coin_ohlc[col].rolling(pts).apply(FMA)
-    return go.Scatter(x=fma.index, y=fma, name=f'FibMA({pts})', line_color=color)
