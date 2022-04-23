@@ -13,9 +13,9 @@ def add_indicators(df, ind_ahead, n_rsi_soon=10):
     ind_rsi = RSI(ind_ahead)
     ind_bb = BollingerBands(ind_ahead)
     ind_sma = SMA(100)
-    df = df.join(ind_rsi.calc(df['close']))
-    df = df.join(ind_bb.calc(df['close']))
-    df = df.join(ind_sma.calc(df['close']))
+    df = df.join(ind_rsi.calc(df))
+    df = df.join(ind_bb.calc(df))
+    df = df.join(ind_sma.calc(df))
     df = df.dropna()
 
     rsi_col = f"RSI_{ind_ahead}"
@@ -113,9 +113,13 @@ def find_optimal_BBRSI_strategy():
     providers = get_data_providers()
     df_prices, df_agg = prepare_data(providers, START_DATA_DATE)
 
-    time_intervals = ['15Min', '1H']
-    lookaheads = range(5, 30, 2)
-    profit_pcts = [0.03, 0.05, 0.07, 0.10, 0.15]
+    # time_intervals = ['15Min', '1H']
+    # lookaheads = range(5, 30, 2)
+    # profit_pcts = [0.03, 0.05, 0.07, 0.10, 0.15]
+
+    time_intervals = ['1H']
+    lookaheads = range(10, 17, 2)
+    profit_pcts = [0.07]
 
     # tf = '1H'
     # lookahead = 11
