@@ -33,6 +33,6 @@ class SMSNotify:
                 to=self.creds['TWILIO_TO_NUMBER'],
                 from_=self.creds['TWILIO_FROM_NUMBER'],
                 body=txt)
-            # print(message.sid)
+            print(message.sid)
         except TwilioRestException:
             print('Something is wrong with sms sending')

@@ -1,18 +1,7 @@
 from plotly import graph_objects as go
 
-from AdvancedAnalytics.PatternDetection.identify_candlestick import recognize_candles
 
-# TODO: probably a good way to do this is by creating a class of metrics, then, each child will have calc and plot.
-#  plot will create a trace, while calc will enable to use the calculated data.
-
-# def get_pct_change(coin, df_hourly):
-#     pct_hourly = df_hourly[f'{coin}_CHANGEPCTHOUR']
-#     pct_color = pct_hourly.apply(lambda x: 'Green' if x > 0 else 'Red')
-#     trace = go.Bar(x=df_hourly.index, y=pct_hourly, marker_color=pct_color)
-#     return trace
-
-
-def get_candle_stick(df_coin):
+def get_candlestick(df_coin):
     trace = go.Candlestick(x=df_coin.index,
                            open=df_coin.open,
                            high=df_coin.high,
@@ -58,24 +47,6 @@ def get_EMA(coin_ohlc, pts, col='close', color='orange'):
 def get_marker_color_candle(coin_ohlc):
     marker_color = ['Green' if x > 0 else 'Red' for x in coin_ohlc['close'] > coin_ohlc['open']]
     return marker_color
-
-
-def get_pattern_fig(coin_ohlc, normalize_detected_patterns=True):
-    print('get_pattern_fig:: normalize_detected_patterns:', normalize_detected_patterns)
-    df_patterns = recognize_candles(coin_ohlc)
-    df_patterns['plot_value'] = (104 - df_patterns['best_ranking']) * df_patterns['best_trend']
-    if normalize_detected_patterns:
-        df_patterns['plot_value_norm'] = df_patterns['plot_value'] * (1 / df_patterns['n_patterns'])
-
-    #  match candle color to pattern color
-    marker_color = get_marker_color_candle(coin_ohlc)
-    # marker_color = ['Green' if x > 0 else 'Red' for x in df_patterns['plot_value']]
-    text = df_patterns['best_pattern'] + '(' + df_patterns['n_patterns'].astype(str) + ')'
-    trace = go.Bar(y=df_patterns['plot_value_norm'], x=df_patterns.index, text=text,
-                   # f'PatternCertainty'
-                   name=f'PTRN(STR)',  # textposition="outside",
-                   marker_color=marker_color)
-    return trace
 
 def _fib_seq(length):
     fib_i = 0

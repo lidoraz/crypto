@@ -1,6 +1,7 @@
-from AdvancedAnalytics.PatternDetection.identify_candlestick import recognize_candles
+import plotly.graph_objects as go
 from DataProcessing.data_utils import *
-from Plots.traces import get_pattern_fig
+# from Plots.traces import get_pattern_fig
+from Indicators import CandleIdentification
 
 coin = 'ETH'
 interval = '4H'
@@ -10,12 +11,8 @@ providers = get_data_providers()
 df_prices, df_hourly = prepare_data(providers, filter_datetime)
 df = get_coin_ohlc(df_prices, coin, interval)
 
-import plotly.graph_objects as go
-
-# import plotly.express as px
-
-# pattern_value > 0
-fig = go.Figure(get_pattern_fig(df))
+ind = CandleIdentification()
+ind.calc(df)
+fig = go.Figure()
+ind.plot(fig)
 fig.show()
-
-# ADD THIS AS TRACE

@@ -1,8 +1,9 @@
 from plotly import graph_objects as go
+from .Indicator import Indicator
 import pandas as pd
 
 
-class BollingerBands:
+class BollingerBands(Indicator):
     def __init__(self, lookahead=25, std_m=2, visible=True):
         self.lookahead = lookahead
         self.std_m = std_m

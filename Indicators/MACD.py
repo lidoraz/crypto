@@ -3,7 +3,6 @@ import pandas as pd
 from . import EMA
 from . import SMA
 
-
 # MACD = EMA(CLOSE, 12)-EMA(CLOSE, 26)
 #
 # SIGNAL = SMA(MACD, 9)
@@ -13,7 +12,10 @@ from . import SMA
 # SMA – the Simple Moving Average;
 # SIGNAL – the signal line of the indicator.
 # https://cdn.website-editor.net/25dd89c80efb48d88c2c233155dfc479/files/uploaded/The-Complete-Guide-to-Trading.pdf
-class MACD:
+from .Indicator import Indicator
+
+
+class MACD(Indicator):
     def __init__(self, lookahead_short=12, lookahead_long=26, lookahead_sma=9):
         self.lookahead_short = lookahead_short
         self.lookahead_long = lookahead_long

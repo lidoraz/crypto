@@ -26,6 +26,8 @@ def generate_cupnhandle(cupnhandle_length=100, small_cup_ratio=0.25, small_cup_l
 
 # best used in daily nasdaq data
 def detect_cupnhandle(coin, data: pd.Series, cupnhandle_treshold=0.05):
+    # TODO: Add different cupnhandle tresholds to match coressponding window size.
+    # TODO: w: 70, t: 0.017, w:150, t: 0.02, w:300, t:0.03 # maybe function like : 0.017 * ((150/70)/2)
     # https://school.stockcharts.com/doku.php?id=chart_analysis:chart_patterns:cup_with_handle_continuation
     # cup n handle usually works on month to a year.
     # worked well with window_size: 150, t=0.027, but cupnhandle is a longer term indicator
@@ -42,7 +44,7 @@ def detect_cupnhandle(coin, data: pd.Series, cupnhandle_treshold=0.05):
         dict(small_cup_ratio=0.25, small_cup_lowest=0.6)]
 
     ## daily data
-    for windows_size in [60, 150, 300]:  # 7 weeks to a year   [150, 300]
+    for windows_size in [70, 160, 300]:  # 7 weeks to a year   [150, 300]
         last_found = -1
         for rolling_window in data.rolling(windows_size):
             if len(rolling_window) < windows_size:  # ignore first rows that are not full sized
@@ -76,15 +78,28 @@ def detect_cupnhandle(coin, data: pd.Series, cupnhandle_treshold=0.05):
 
 
 def plot_cupnhandle(df, part):
-    fig = go.Figure(data=[go.Candlestick(x=df.index,
-                                         open=df.open,
-                                         high=df.high,
-                                         low=df.low,
-                                         close=df.close, )])
+    from plotly.subplots import make_subplots
+    fig = make_subplots(rows=2, cols=1)
+    fig.add_trace(go.Candlestick(x=df.index,
+                                 open=df.open,
+                                 high=df.high,
+                                 low=df.low,
+                                 close=df.close), row=1, col=1)
+    # fig = go.Figure(data=[go.Candlestick(x=df.index,
+    #                                      open=df.open,
+    #                                      high=df.high,
+    #                                      low=df.low,
+    #                                      close=df.close)])
     # fig.add_trace(go.Scatter(x=df[col].index, y=df[col], name='org_close'))
-    fig.add_trace(go.Scatter(x=part.index, y=part['cupnhandle'], name='cupnhandle', marker_color='Blue'))
-    fig.add_trace(go.Scatter(x=part.index, y=part['signal'], name='related_signal', marker_color='Black'))
-    fig.update_layout(title=part.attrs['title'])
+    fig.add_trace(go.Scatter(x=part.index, y=part['cupnhandle'], name='cupnhandle', marker_color='Blue'), row=1, col=1)
+    fig.add_trace(go.Scatter(x=part.index, y=part['signal'], name='related_signal', marker_color='Black'), row=1, col=1)
+
+    fig.update_layout(title=part.attrs['title'], xaxis_rangeslider_visible=False)
+
+    from Indicators import RSI
+    rsi = RSI(14)
+    rsi_v = rsi.calc(df.close)
+    rsi.plot(fig, loc=(2, 1), color='black')
     fig.show()
     # can plot volume as other form of verification of the pattern
 

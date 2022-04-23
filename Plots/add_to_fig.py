@@ -1,6 +1,6 @@
 from plotly import graph_objects as go
 from .traces import get_FibMAD, get_EMA
-from Plots.Indicators import SMA
+from Indicators import SMA
 
 
 def add_moving_avgs(fig, ohlc, col='close', loc=(1, 1)):
