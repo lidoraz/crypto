@@ -12,8 +12,8 @@ class BollingerBands(Indicator):
         self.bb = None
         self.cols = None
 
-    def calc(self, olhc) -> pd.DataFrame:
-        prices = olhc['close']
+    def calc(self, ohlc) -> pd.DataFrame:
+        prices = ohlc['close']
         rolling_func = prices.rolling(self.lookahead)
         sma = rolling_func.mean()
         top_BB = sma + rolling_func.std() * self.std_m

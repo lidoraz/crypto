@@ -8,8 +8,8 @@ class EMA(Indicator):
         self.plot_loc = (plot_loc, 1 if plot_loc else None)
         self.ra = None
 
-    def calc(self, olhc, to_frame=False):
-        prices = olhc['close']
+    def calc(self, ohlc, to_frame=False):
+        prices = ohlc['close']
         # https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.ewm.html
         self.ra = prices.ewm(span=self.lookahead).mean()  # closed to the right!!
         self.ra.name = f'EWM_{self.lookahead}'

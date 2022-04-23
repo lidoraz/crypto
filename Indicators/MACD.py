@@ -26,8 +26,8 @@ class MACD(Indicator):
         self.ema_long = EMA(lookahead_long)
         self.sma = SMA(lookahead_sma)
 
-    def calc(self, olhc) -> pd.DataFrame:
-        prices = olhc['close']
+    def calc(self, ohlc) -> pd.DataFrame:
+        prices = ohlc['close']
         macd = self.ema_short.calc(prices) - self.ema_long.calc(prices)
         sma = self.sma.calc(macd)
         hist = macd - sma

@@ -1,5 +1,5 @@
 from plotly import graph_objects as go
-from Indicators import SMA
+from Indicators import SMA, FibMA, EMA
 
 
 def add_moving_avgs(fig, ohlc, col='close', loc=1):
@@ -10,6 +10,14 @@ def add_moving_avgs(fig, ohlc, col='close', loc=1):
         ind.calc(ohlc)
         ind.plot(fig, colors[i])
 
-# def add_special_moving_avgs(fig, ohlc, col='close'):
-#     fig.add_trace(get_FibMAD(ohlc, 25, col=col, color='Pink'), row=1, col=1)
-#     fig.add_trace(get_EMA(ohlc, 25, col=col, color='Red'), row=1, col=1)
+
+def add_special_moving_avgs(fig, ohlc, col='close'):
+    ind_fib = FibMA(14)
+    ind_fib.calc(ohlc)
+    ind_fib.plot(fig, 'Pink')
+
+    ind_ema = EMA(14)
+    ind_ema.calc(ohlc)
+    ind_ema.plot(fig, 'Teal')
+    # fig.add_trace(FibMA(ohlc, 25, col=col, color='Pink'), row=1, col=1)
+    # fig.add_trace(EMA(ohlc, 25, col=col, color='Red'), row=1, col=1)

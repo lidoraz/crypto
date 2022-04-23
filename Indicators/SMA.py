@@ -8,8 +8,8 @@ class SMA(Indicator):
         self.ra = None
         self.plot_loc = (plot_loc, 1 if plot_loc else None)
 
-    def calc(self, olhc):
-        prices = olhc['close']
+    def calc(self, ohlc):
+        prices = ohlc['close']
         self.ra = prices.rolling(self.lookahead).mean()
         self.ra.name = f'SMA_{self.lookahead}'
         return self.ra

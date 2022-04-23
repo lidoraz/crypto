@@ -27,8 +27,8 @@ class FibMA(Indicator):
         self.ra = None
         self.plot_loc = (plot_loc, 1 if plot_loc else None)
 
-    def calc(self, olhc, to_frame=False):
-        prices = olhc['close']
+    def calc(self, ohlc, to_frame=False):
+        prices = ohlc['close']
         self.ra = prices.rolling(self.lookahead).apply(_fibma)
         self.ra.name = f'FibMA_{self.lookahead}'
         if to_frame:

@@ -1,6 +1,7 @@
 from .RSI import RSI
 from .SMA import SMA
 from .EMA import EMA
+from .FibMA import FibMA
 from .BollingerBands import BollingerBands
 from .MACD import MACD
 from .CandleIdentification import CandleIdentification

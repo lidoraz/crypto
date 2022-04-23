@@ -32,8 +32,8 @@ class RSI(Indicator):
         self.ra = None
         self.plot_loc = (plot_loc, 1 if plot_loc else None)
 
-    def calc(self, olhc) -> pd.DataFrame:
-        prices = olhc['close']
+    def calc(self, ohlc) -> pd.DataFrame:
+        prices = ohlc['close']
         self.ra = _calc_rsi(prices, self.lookahead)
         self.ra.name = f"RSI_{self.lookahead}"
         return self.ra.to_frame()

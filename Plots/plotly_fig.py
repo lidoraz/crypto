@@ -1,6 +1,6 @@
 from plotly.subplots import make_subplots
 from DataProcessing.data_utils import prepare_data, extract_volume, get_coin_status
-from .add_to_fig import add_moving_avgs
+from .add_to_fig import add_moving_avgs, add_special_moving_avgs
 from .plot_utils import *
 from .traces import *
 from Indicators import *
@@ -53,7 +53,7 @@ def get_updated_fig(providers, start_datetime, resample_keyword, coin, lookahead
     ind_bb.calc(df_ohlc)
     ind_bb.plot(fig)
 
-    # add_special_moving_avgs(fig, df_ohlc)
+    add_special_moving_avgs(fig, df_ohlc)
 
     fig_update_layout_combined_view(fig)
     if xy_limit:
