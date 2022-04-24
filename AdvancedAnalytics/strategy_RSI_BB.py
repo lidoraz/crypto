@@ -35,6 +35,7 @@ def add_indicators(df, ind_ahead, n_rsi_soon=10):
     df['SELL_ALGO_BBRSI'] = df[f'RSI_OVER_70_ROWS{n_rsi_soon}'] & df['BELOW_MID_BB']
 
     # add stop-loss
+    # TODO: stop-loss prices should be set as the top / bot prices here.
     df['SELL_WIN_STOP'] = df[f'BBTOP_{ind_ahead}'] < df['close']
     df['SELL_LOSE_STOP'] = df[f'BBBOT_{ind_ahead}'] > df['close']
     return df

@@ -1,5 +1,11 @@
 import os
 
+# level 2 up
+new_path = '/'.join(os.getcwd().split('/')[:-2])
+os.chdir(new_path)
+
+
+# ------------------------------------------------------------------------
 
 def test_env(env_name, env_key):
     got_key = os.environ.get(env_name)
@@ -44,6 +50,6 @@ if __name__ == '__main__':
 
     import datetime
 
-    txt_body = "    היי! זו דני    " + str(datetime.datetime.now())
+    txt_body = "BTC is up! " + str(datetime.datetime.now().date())
 
     send_sms(creds, txt_body)

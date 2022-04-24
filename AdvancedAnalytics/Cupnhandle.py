@@ -1,10 +1,6 @@
-from DataProcessing.data_utils import get_data_providers, adjust_plot_start_datetime, prepare_data
-from DataProcessing.data_consts import COINS, START_DATA_DATE
-
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error
 import plotly.graph_objects as go
-from Indicators import CandleStick
 import pandas as pd
 import numpy as np
 
@@ -85,12 +81,6 @@ def plot_cupnhandle(df, part):
                                  high=df.high,
                                  low=df.low,
                                  close=df.close), row=1, col=1)
-    # fig = go.Figure(data=[go.Candlestick(x=df.index,
-    #                                      open=df.open,
-    #                                      high=df.high,
-    #                                      low=df.low,
-    #                                      close=df.close)])
-    # fig.add_trace(go.Scatter(x=df[col].index, y=df[col], name='org_close'))
     fig.add_trace(go.Scatter(x=part.index, y=part['cupnhandle'], name='cupnhandle', marker_color='Blue'), row=1, col=1)
     fig.add_trace(go.Scatter(x=part.index, y=part['signal'], name='related_signal', marker_color='Black'), row=1, col=1)
 
@@ -109,26 +99,25 @@ def find_cupnhandle_and_show_on_data(coin, df, cupnhandle_treshold, col='close',
     if show and len(detected_parts) > 0:
         for part in detected_parts:
             plot_cupnhandle(df, part)
-            # show them on graph
-            # plt.plot(df[col], label='org')
-            # plt.plot(part['cupnhandle'], label='cupnhandle')
-            # plt.plot(part['signal'], label='related_signal')
-            # plt.title(part.attrs['title'])
-            # plt.legend()
-            # plt.show()
     return detected_parts
 
-if __name__ == '__main__':
-    tf = '1H'
-    print('Usually cupnhandle spans from 7 weeks to a year')
-    print('tf =', tf)
-    # filter_datetime = adjust_plot_start_datetime(tf)
-    providers = get_data_providers()
-    df_prices, df_agg = prepare_data(providers, START_DATA_DATE)
-
-    # coin = 'ETH'
-    col = 'close'
-    print('finding cup n handles...')
-    for coin in COINS:
-        df = CandleStick(tf).calc(df_prices[coin])
-        find_cupnhandle_and_show_on_data(coin, df, col='close', cupnhandle_treshold=0.03)
+# fig = go.Figure(data=[go.Candlestick(x=df.index,
+#                                      open=df.open,
+#                                      high=df.high,
+#                                      low=df.low,
+#                                      close=df.close)])
+# fig.add_trace(go.Scatter(x=df[col].index, y=df[col], name='org_close'))
+# if __name__ == '__main__':
+#     tf = '1H'
+#     print('Usually cupnhandle spans from 7 weeks to a year')
+#     print('tf =', tf)
+#     # filter_datetime = adjust_plot_start_datetime(tf)
+#     providers = get_data_providers()
+#     df_prices, df_agg = prepare_data(providers, START_DATA_DATE)
+#
+#     # coin = 'ETH'
+#     col = 'close'
+#     print('finding cup n handles...')
+#     for coin in COINS:
+#         df = CandleStick(tf).calc(df_prices[coin])
+#         find_cupnhandle_and_show_on_data(coin, df, col='close', cupnhandle_treshold=0.03)

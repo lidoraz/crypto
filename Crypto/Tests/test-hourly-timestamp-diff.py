@@ -1,13 +1,17 @@
 import pandas as pd
-import os
 from Crypto.DataProcessing.DataProvider import DataProvider
 from Crypto.DataProcessing.data_consts import COINS, HOURLY_COLS
+import os
+
+# level 2 up
+new_path = '/'.join(os.getcwd().split('/')[:-2])
+os.chdir(new_path)
+# ------------------------------------------------------------------------
 
 tolerance_seconds_future = 0
 tolerance_minutes_past = 15
 verbose = 0
 
-#####################################################################
 data_path = os.path.join(os.getcwd(), 'resources.nosync')
 df = DataProvider(start_date='2022-03-26', path=os.path.join(data_path, 'data_hourly'), cols=HOURLY_COLS,
                   convert_to_isr=False).serve()

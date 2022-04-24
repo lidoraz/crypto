@@ -1,7 +1,12 @@
 import plotly.graph_objects as go
 from Crypto.DataProcessing.data_utils import *
-# from Plots.traces import get_pattern_fig
 from Indicators import CandleIdentification, CandleStick
+import os
+
+# level 2 up
+new_path = '/'.join(os.getcwd().split('/')[:-2])
+os.chdir(new_path)
+# ------------------------------------------------------------------------
 
 coin = 'ETH'
 interval = '4H'

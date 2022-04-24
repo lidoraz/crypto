@@ -1,5 +1,16 @@
 import plotly.graph_objects as go
 from Indicators import SupportResistanceLines
+from tqdm import tqdm
+import pandas as pd
+from Nasdaq.symbols import prepath
+import os
+
+# level 2 up
+new_path = '/'.join(os.getcwd().split('/')[:-2])
+os.chdir(new_path)
+
+
+# ------------------------------------------------------------------------
 
 
 def get_candle(df):
@@ -12,11 +23,6 @@ def get_candle(df):
 
 
 def run_on_nasdaq_support_lines():
-    from tqdm import tqdm
-    import pandas as pd
-    import os
-    prepath = 'Tests/yahoo_data/'
-
     print('filtering to last 2 years.')
     for idx, f in tqdm(enumerate(os.listdir(prepath))):
         # print(f)
@@ -39,5 +45,4 @@ def run_on_nasdaq_support_lines():
 
 
 if __name__ == '__main__':
-    # get_y_finance_data()
     run_on_nasdaq_support_lines()
