@@ -3,13 +3,16 @@
 # https://min-api.cryptocompare.com/stats/rate/hour/limit
 # url = f"https://min-api.cryptocompare.com/data/price?fsym={from_coin}&tsyms={to_coin}"
 import time
-import os
 import requests
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # TODO: can use Scheduler, looks much more smooth.
-api_key = '90d6d0bc6a720716f80e6bf38272c4fd39cc71b88b1b77fe8da86e5c0a210054'
+import os
+
+api_key = os.environ.get('CRYPTOCOMPARE_APYKEY')
+if not api_key:
+    raise ValueError('must have CRYPTOCOMPARE_APYKEY set')
 path_data_dir = 'data'
 coins = [
     'BTC',

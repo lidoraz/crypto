@@ -9,8 +9,15 @@ from get_data import get_data_from_remote
 pwd = os.getcwd()
 pwd = os.path.join(pwd, 'resources.nosync')
 print('saving to:', pwd)
-remote_address = "ec2-user@ec2-18-134-142-217.eu-west-2.compute.amazonaws.com"
-private_key = "shushu_entrance.pem"
+import os
+
+remote_address = os.environ.get('REMOTE_IP')
+if not remote_address:
+    raise ValueError('must have REMOTE_IP set')
+private_key = os.environ.get('PRIVATE_KEY_NAME')
+if not private_key:
+    raise ValueError('must have PRIVATE_KEY_NAME set')
+print(remote_address, private_key)
 
 print('Running forever keeping data files updated...')
 

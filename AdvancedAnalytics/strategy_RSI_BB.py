@@ -107,7 +107,7 @@ def mark_enter_exit_points(df_prices, df_agg, tf, indicators_lookahead=14, set_p
     return sum_pct, trades, trades_str, open_trades
 
 
-def find_optimal_BBRSI_strategy():
+def find_optimal_BBRSI_strategy_crypto():
     print(datetime.now().strftime(TIME_CONV))
     # filter_datetime = adjust_plot_start_datetime(tf)
     providers = get_data_providers()
@@ -177,6 +177,7 @@ def find_optimal_BBRSI_strategy():
 
 
 if __name__ == '__main__':
-    find_optimal_BBRSI_strategy()
+    find_optimal_BBRSI_strategy_crypto()
+
     # TODO: Save win strategy, or whole trades with a JSON format.
     # df.tail()
