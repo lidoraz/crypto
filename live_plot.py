@@ -25,7 +25,7 @@ server = app.server  # needed for deployment
 app.title = title
 
 title_html = html.H4(title, style={'padding-right': '5%', 'margin-left': '2%'})
-coin_html = dcc.Dropdown(COINS, COINS[0], id='coin-type', clearable=False, style=dict(width='50pt'))
+coin_html = dcc.Dropdown(COINS, COINS[0], id='coin-type', clearable=False, style=dict(width='60pt'))
 live_update_html = html.Div(id='live-update-text', style={'margin': 'auto'}, children="")  # 'width': '20%',
 resample_selector_html = dcc.RadioItems(options=resample_radio_options, value=resample_keywords[2], id='resample-type',
                                         inline=True)

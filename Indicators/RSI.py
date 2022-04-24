@@ -27,10 +27,11 @@ def _calc_rsi(prices, n):
 
 
 class RSI(Indicator):
-    def __init__(self, lookahead, plot_loc=None):
+    def __init__(self, lookahead, plot_loc=None, color='white'):
         self.lookahead = lookahead
         self.ra = None
         self.plot_loc = (plot_loc, 1 if plot_loc else None)
+        self.color = color
 
     def calc(self, ohlc) -> pd.DataFrame:
         prices = ohlc['close']
@@ -38,9 +39,9 @@ class RSI(Indicator):
         self.ra.name = f"RSI_{self.lookahead}"
         return self.ra.to_frame()
 
-    def plot(self, fig, color='white'):
+    def plot(self, fig):
         ra = self.ra
-        trace = go.Scatter(x=ra.index, y=ra, name=f'RSI({self.lookahead})', line_color=color, line_width=1.2)
+        trace = go.Scatter(x=ra.index, y=ra, name=f'RSI({self.lookahead})', line_color=self.color, line_width=1.2)
         loc = dict(row=self.plot_loc[0], col=self.plot_loc[1])
         fig.add_trace(trace, **loc)
         fig.add_hline(y=70, **loc, line_width=0.8, line_color='red')

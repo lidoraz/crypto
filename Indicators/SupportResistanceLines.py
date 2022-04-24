@@ -35,12 +35,13 @@ def get_str_name(currents_ts, ts, v, is_max):
 # Relevant only on recent stock value, so it will calc based on fixed intervals
 # TODO: Can also add multiple support and resistance to the dataframe, so it will have 1st support/ 2nd support etc, instead of only latest
 class SupportResistanceLines(Indicator):
-    def __init__(self, from_lookahead=14, upto_lookahead=365, n_lookaheads=5, geometric=False, plot_loc=None):
+    def __init__(self, from_lookahead=14, upto_lookahead=365, n_lookaheads=5, geometric_spacing=False, plot_loc=None):
         self.lookaheads_params = [from_lookahead, upto_lookahead, n_lookaheads]
-        if geometric:
+        if geometric_spacing:
             self.lookaheads = np.geomspace(from_lookahead, upto_lookahead, n_lookaheads).astype(int)
         else:
             self.lookaheads = np.linspace(from_lookahead, upto_lookahead, n_lookaheads).astype(int)
+        self.geometric_spacing = geometric_spacing
         self.currents_ts = None
         self.v_lines_max = None
         self.v_lines_min = None

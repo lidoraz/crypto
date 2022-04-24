@@ -4,6 +4,8 @@ from .add_to_fig import add_moving_avgs, add_special_moving_avgs
 from .plot_utils import *
 from .traces import *
 from Indicators import *
+
+
 # https://plotly.com/python/time-series/
 # https://stackoverflow.com/questions/67459925/plotly-set-showgrid-false-for-all-subplots
 
@@ -11,16 +13,18 @@ from Indicators import *
 def get_updated_fig(providers, start_datetime, resample_keyword, coin, lookahead=25, xy_limit=True):
     df_prices, df_hourly = prepare_data(providers, start_datetime)
     volume_hour, volume_hourto = extract_volume(df_hourly, coin, resample_keyword)
-    traces = ['candle', 'pattern', 'rsi', 'volume']
+    # traces = ['candle', 'pattern', 'rsi', 'volume']
 
-    # sub_plots = [CandleStick(resample_keyword, plot_loc=1),
-    #              CandleIdentification(plot_loc=2),
-    #              RSI(lookahead, plot_loc=3),
-    #              ]
+    sub_plots = [None,  # candle
+                 CandleIdentification(plot_loc=2),
+                 RSI(lookahead, plot_loc=3),
+                 # MACD(plot_loc=3),
+                 None
+                 ]
 
-    row_heights = [len(traces) * 2] + [1 for _ in traces]  # relative height of main frame compared to all traces
+    row_heights = [len(sub_plots) * 2] + [1 for _ in sub_plots]  # relative height of main frame compared to all traces
     # row_heights = [6, 3, 1, 1]
-    fig = make_subplots(rows=len(traces) + 1, cols=1,
+    fig = make_subplots(rows=len(sub_plots) + 1, cols=1,
                         row_heights=row_heights,
                         vertical_spacing=0.05,
                         # specs=[[{"secondary_y": True}], [{"secondary_y": False}]],
@@ -31,30 +35,27 @@ def get_updated_fig(providers, start_datetime, resample_keyword, coin, lookahead
     print(f"{coin}:: {stats} :: agg every {resample_keyword}, Price: {df_ohlc.close.iloc[-1]}")
     ind_candle.plot(fig)
 
-    ind_ptrn = CandleIdentification(plot_loc=2)
-    ind_ptrn.calc(df_ohlc)
-    ind_ptrn.plot(fig)
-
-    fig.add_trace(get_volume(volume_hourto, df_ohlc), row=4, col=1)
-    add_moving_avgs(fig, df_ohlc)
-
     # ind_bb = MACD(plot_loc=3)
     # ind_bb.calc(df_ohlc['close'])
     # ind_bb.plot(fig)
-    ind_rsi = RSI(lookahead, plot_loc=3)
-    ind_rsi.calc(df_ohlc)
-    ind_rsi.plot(fig)
-    #
-    ind_bb = BollingerBands(lookahead, 2, visible=True, plot_loc=1)
-    ind_bb.calc(df_ohlc)
-    ind_bb.plot(fig)
+    main_plot_indicators = [
+        # SMA(lookahead=7, plot_loc=1, color='orange'),
+        # SMA(lookahead=25, plot_loc=1, color='purple'),
+        # SMA(lookahead=99, plot_loc=1, color='cyan'),
+        # FibMA(14, color='Pink'),
+        # EMA(14, color='Teal'),
+        BollingerBands(lookahead, 2, visible=True, plot_loc=1),
+        SupportResistanceLines(geometric_spacing=False, plot_loc=1)]
 
-    ind_bb = SupportResistanceLines(plot_loc=1)
-    ind_bb.calc(df_ohlc)
-    ind_bb.plot(fig)
+    for ind in main_plot_indicators:
+        ind.calc(df_ohlc)
+        ind.plot(fig)
 
-    add_special_moving_avgs(fig, df_ohlc)
-
+    for sub_plot in sub_plots:
+        if sub_plot:
+            _ = sub_plot.calc(df_ohlc)
+            fig = sub_plot.plot(fig)
+    fig.add_trace(get_volume(volume_hourto, df_ohlc), row=4, col=1)
     fig_update_layout_combined_view(fig)
     if xy_limit:
         fig_update_xylimits(fig, df_ohlc, resample_keyword)

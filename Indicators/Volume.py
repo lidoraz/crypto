@@ -2,6 +2,7 @@ from plotly import graph_objects as go
 from .Indicator import Indicator
 
 
+# TODO : FIX
 class Volume(Indicator):
     def __init__(self, lookahead, plot_loc=None):
         self.lookahead = lookahead
