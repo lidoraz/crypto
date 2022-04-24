@@ -97,9 +97,9 @@ def plot_cupnhandle(df, part):
     fig.update_layout(title=part.attrs['title'], xaxis_rangeslider_visible=False)
 
     from Indicators import RSI
-    rsi = RSI(14, plot_loc=2)
+    rsi = RSI(14, plot_loc=2, color='black')
     rsi_v = rsi.calc(df)
-    rsi.plot(fig, color='black')
+    rsi.plot(fig)
     fig.show()
     # can plot volume as other form of verification of the pattern
 

@@ -42,26 +42,66 @@ def get_coin_status(df_hourly, coin):
     return stats
 
 
-# TODO: since below date data became refreshed every 15 min
-# TODO: add here is there could be a problem if data is not refreshed every 15 min (can be in rare coins)
+def get_olhc(prices, interval):
+    return prices.resample(interval, closed='right').ohlc()
+
+
+def get_crypto_olhcv(coin, interval, providers, start_datetime, is_volume_hourto=True):
+    df_prices, df_hourly = prepare_data(providers, start_datetime)
+    df_ohlc = get_olhc(df_prices[coin], interval)
+    # not needed
+    stats = get_coin_status(df_hourly, coin)
+    print(f"{coin}:: {stats} :: agg every {interval}, Price: {df_ohlc.close.iloc[-1]}")
+
+    df_ohlcv = attach_volume_to_data(df_hourly, coin, interval, df_ohlc, is_volume_hourto=is_volume_hourto)
+    df_ohlcv.attrs['interval'] = interval
+    return df_ohlcv
+
+
+def attach_volume_to_data(df_hourly, coin, interval, df_ohlc, is_volume_hourto=True):
+    volume_hour, volume_hourto = extract_volume(df_hourly, coin, interval)
+    if is_volume_hourto:
+        vol = volume_hourto
+    else:
+        vol = volume_hour
+    vol.name = 'volume'
+    df_ohlcv = df_ohlc.join(volume_hourto).dropna()
+    return df_ohlcv
+
+
+# TODO: since below date data became refreshed every 15 min add here is there could be a problem if data is not refreshed every 15 min (can be in rare coins)
 def extract_volume(df_agg, coin, interval, cols=('VOLUMEHOUR', 'VOLUMEHOURTO')):
     # https://stackoverflow.com/questions/38666924/what-is-the-inverse-of-the-numpy-cumsum-function
     def inverse_cumsum(x):
         return np.diff(x, prepend=0)
 
     # interval granularity lower than 15Min
+    is_lower_than_15min = False
+    pre_interval = interval
     if 'Min' in interval and int(interval.split('Min')[0]) < 15:
         interval = '15Min'
+        is_lower_than_15min = True
     else:
         interval = interval
     coin_cols = [f'{coin}_{col}' for col in cols]
     # before this time all volume is crap
     df_agg = df_agg[df_agg.index > pd.to_datetime('2022-04-09', utc=True).tz_convert('Israel')]
 
-    g = df_agg[coin_cols].groupby(df_agg.index.floor('h'))  # apply function column-by-column to the grouped
+    # apply function column-by-column to the grouped
+    g = df_agg[coin_cols].groupby(df_agg.index.floor('h'))
     df_cols_t = g.transform(inverse_cumsum)
-    df_cols_t.index = df_cols_t.index + pd.to_timedelta('1Min')  # move each index by 1 min to resample closest value.
+    # move each index by 1 min to resample closest value.
+    df_cols_t.index = df_cols_t.index + pd.to_timedelta('1Min')
     df_cols_r = df_cols_t.resample(interval, closed='right').sum()
+
+    # TODO: fix this later, dividing missing parts and refill with avg
+    if is_lower_than_15min:
+        def re_divide(arr):
+            return arr / 3 if len(arr) else None
+
+        df_cols_r = df_cols_r.resample(pre_interval).apply(re_divide).fillna(method='bfill')
+    # df_cols_r = df_cols_r.astype(np.int64)
+    # df_cols_r.columns = ['volume', 'volumeto']
     return df_cols_r[coin_cols[0]], df_cols_r[coin_cols[1]]
 
 

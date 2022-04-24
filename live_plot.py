@@ -1,7 +1,7 @@
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
-from DataProcessing.data_utils import get_data_providers
+from DataProcessing.data_utils import get_data_providers, get_crypto_olhcv
 from DataProcessing.data_utils import adjust_plot_start_datetime
 from DataProcessing.data_consts import *
 from Plots.plot_utils import *
@@ -62,7 +62,7 @@ app.layout = html.Div([
                                                   'modeBarButtonsToRemove': ['toImage', 'select2d', 'lasso2d', 'pan2d',
                                                                              'zoom2d', 'autoScale2d'],
                                                   'displaylogo': False},
-                  style={'width': 'auto', 'height': '92vh'}
+                  style={'width': 'auto', 'height': '93vh'}
                   # TODO important https://stackoverflow.com/questions/46287189/how-can-i-change-the-size-of-my-dash-graph
                   ),
         # https://stackoverflow.com/questions/68188107/how-to-add-create-a-custom-loader-with-dash-plotly
@@ -112,6 +112,12 @@ def show_graph_when_loaded(figure):
         return None
 
 
+def _adjust_input_lookahead(input_lookahead):
+    if input_lookahead is None:
+        input_lookahead = 14
+    return max(min(input_lookahead, 100), 3)
+
+
 @app.callback(Output('live-update-graph', 'figure'),
               Input('interval-component', 'n_intervals'),
               Input('coin-type', 'value'),
@@ -120,12 +126,9 @@ def show_graph_when_loaded(figure):
 def update_graph_live(n, coin, resample, input_lookahead):
     print(n, coin, resample, input_lookahead)
     filter_datetime = adjust_plot_start_datetime(resample)
-    keep_with_interval = True  # move this
-    if input_lookahead is None:
-        input_lookahead = 14
-    input_lookahead = max(min(input_lookahead, 100), 3)
-
-    fig = get_updated_fig(providers, filter_datetime, resample, coin, lookahead=input_lookahead, xy_limit=True)
+    input_lookahead = _adjust_input_lookahead(input_lookahead)
+    df_ohlcv = get_crypto_olhcv(coin, resample, providers, filter_datetime, is_volume_hourto=True)
+    fig = get_updated_fig(df_ohlcv, lookahead=input_lookahead, xy_limit=True)
 
     # used to keep figure with changes when this function is triggered.
     # can add option for figure to be limited with XY when interval==0, after that this function will be disabled.

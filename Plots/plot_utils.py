@@ -32,7 +32,7 @@ def fig_update_xylimits(fig, df_ohlc, resample):
     from DataProcessing.data_utils import adjust_plot_start_datetime
     start_display_dt = adjust_plot_start_datetime(resample, is_display=True)
     start_display_dt = max(df_ohlc.index[0], start_display_dt)
-    print('display date:', start_display_dt)
+    print('display_date:', start_display_dt)
     time_now = df_ohlc.index[-1] + pd.to_timedelta(resample) * 5
     # yaxis
     df_ohlc_f = df_ohlc[df_ohlc.index > start_display_dt]

@@ -50,6 +50,7 @@ def define_trend(x):
 
 # Best Performance candlestick pattern matched by www.thepatternsite.com
 # https://medium.com/analytics-vidhya/recognizing-over-50-candlestick-patterns-with-python-4f02a1822cb5
+# Read more at: - https://academy.binance.com/en/articles/beginners-candlestick-patterns
 def recognize_candles(df):
     """
     Recognizes candlestick patterns and Returns a df with these columns:
@@ -104,13 +105,13 @@ class CandleIdentification(Indicator):
         df_patterns = self.res
         df_patterns['plot_value'] = (104 - df_patterns['best_ranking']) * df_patterns['best_trend']
         if self.normalize_detected_patterns:
-            df_patterns['plot_value_norm'] = df_patterns['plot_value'] * (1 / df_patterns['n_patterns'])
+            df_patterns['plot_value'] = df_patterns['plot_value'] * (1 / df_patterns['n_patterns'])
 
         #  match candle color to pattern color
         marker_color = get_marker_color_candle(self.ohlc)
         # marker_color = ['Green' if x > 0 else 'Red' for x in df_patterns['plot_value']]
         text = df_patterns['best_pattern'] + '(' + df_patterns['n_patterns'].astype(str) + ')'
-        trace = go.Bar(y=df_patterns['plot_value_norm'], x=df_patterns.index, text=text,
+        trace = go.Bar(y=df_patterns['plot_value'], x=df_patterns.index, text=text,
                        # f'PatternCertainty'
                        name=f'PTRN(STR)',  # textposition="outside",
                        marker_color=marker_color)

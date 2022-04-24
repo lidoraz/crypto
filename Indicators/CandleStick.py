@@ -12,6 +12,7 @@ class CandleStick(Indicator):
     def calc(self, data):
         if not self.ohlc:
             self.ohlc = data.resample(self.interval, closed='right').ohlc()
+            self.ohlc.attrs['interval'] = self.interval
         else:
             raise ValueError('CandleStick already initiated with data')
         return self.ohlc

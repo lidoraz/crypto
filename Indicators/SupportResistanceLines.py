@@ -58,7 +58,7 @@ class SupportResistanceLines(Indicator):
                 v_lines_min = pd.concat([v_lines_min, minimum])
                 maximum = lk_interval['high'].sort_values(ascending=False)[:1]
                 v_lines_max = pd.concat([v_lines_max, maximum])
-                print(lookahead, minimum, maximum)
+                # print(lookahead, minimum, maximum)
         # filter if current is a support/resist, drop duplicates and rename for join
         self.v_lines_max = v_lines_max[v_lines_max.index < self.currents_ts].drop_duplicates().rename("resistance")
         self.v_lines_min = v_lines_min[v_lines_min.index < self.currents_ts].drop_duplicates().rename("support")

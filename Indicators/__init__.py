@@ -7,6 +7,7 @@ from .MACD import MACD
 from .CandleIdentification import CandleIdentification
 from .SupportResistanceLines import SupportResistanceLines
 from .CandleStick import CandleStick
+from .Volume import Volume
 
 # TODO: Add PCT change, maybe volume.
 # TODO:  The ADX Indicator
