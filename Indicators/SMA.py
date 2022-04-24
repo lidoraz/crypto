@@ -1,6 +1,6 @@
 from plotly import graph_objects as go
 from .Indicator import Indicator
-
+import pandas as pd
 
 class SMA(Indicator):
     def __init__(self, lookahead, plot_loc=None, color='Orange'):
@@ -10,7 +10,10 @@ class SMA(Indicator):
         self.color = color
 
     def calc(self, ohlc):
-        prices = ohlc['close']
+        if isinstance(ohlc, pd.DataFrame):
+            prices = ohlc['close']
+        else:
+            prices = ohlc
         self.ra = prices.rolling(self.lookahead).mean()
         self.ra.name = f'SMA_{self.lookahead}'
         return self.ra

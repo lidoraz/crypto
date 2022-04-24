@@ -27,8 +27,7 @@ class MACD(Indicator):
         self.sma = SMA(lookahead_sma)
 
     def calc(self, ohlc) -> pd.DataFrame:
-        prices = ohlc['close']
-        macd = self.ema_short.calc(prices) - self.ema_long.calc(prices)
+        macd = self.ema_short.calc(ohlc) - self.ema_long.calc(ohlc)
         sma = self.sma.calc(macd)
         hist = macd - sma
         self.name = f"MACD({self.lookahead_short},{self.lookahead_long},{self.lookahead_sma})"
@@ -36,7 +35,7 @@ class MACD(Indicator):
         self.macd = pd.DataFrame(dict(zip(cols, [macd, sma, hist])))
         return self.macd
 
-    def plot(self, fig, loc: tuple):
+    def plot(self, fig):
         kwrags = dict(legendgroup=self.name, line_width=1, name=self.name)
         t_mcad = go.Scatter(x=self.macd['MCADEMA'].index, y=self.macd['MCADEMA'], line_color='blue',
                             **kwrags)
