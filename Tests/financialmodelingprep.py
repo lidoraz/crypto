@@ -5,7 +5,7 @@ import requests
 import json
 import pandas as pd
 from Tests.symbols import nasdq_100
-
+# TODO: Crap library
 
 # DAILY OHLCV
 def get_from_financialmodelingprep(symbol, from_date, to_date):

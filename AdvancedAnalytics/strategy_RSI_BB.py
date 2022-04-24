@@ -1,9 +1,8 @@
-from DataProcessing.DataProvider import TIME_CONV
-from DataProcessing.data_utils import get_data_providers, adjust_plot_start_datetime, prepare_data
-from DataProcessing.data_consts import COINS, START_DATA_DATE
-from Plots.traces import calc_pct_change
+from Crypto.DataProcessing.DataProvider import TIME_CONV
+from Crypto.DataProcessing.data_utils import get_data_providers, adjust_plot_start_datetime, prepare_data
+from Crypto.DataProcessing.data_consts import COINS, START_DATA_DATE
+from Crypto.DataProcessing.data_utils import extract_volume
 import pandas as pd
-from DataProcessing.data_utils import extract_volume
 from datetime import datetime
 from Indicators import RSI, BollingerBands, SMA, CandleStick
 
@@ -119,7 +118,7 @@ def find_optimal_BBRSI_strategy():
 
     time_intervals = ['1H']
     lookaheads = range(10, 17, 2)
-    profit_pcts = [0.07]
+    profit_pcts = [0.03, 0.05, 0.07, 0.10, 0.15]
 
     # tf = '1H'
     # lookahead = 11

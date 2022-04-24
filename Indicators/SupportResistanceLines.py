@@ -2,26 +2,7 @@
 from plotly import graph_objects as go
 import pandas as pd
 import numpy as np
-
-from Plots.plot_utils import human_format
-from .Indicator import Indicator
-
-
-def human_format_time(time_sec):
-    month = 60 * 60 * 24 * 30
-    day = 60 * 60 * 24
-    hour = 60 * 60
-    minute = 60
-    time_sec = round(time_sec)
-    if time_sec > month:
-        return '{}M'.format(time_sec // month)
-    elif time_sec > day:
-        return '{}D'.format(time_sec // day)
-    elif time_sec > hour:
-        return '{}H'.format(time_sec // hour)
-    else:
-        return '{}T'.format(time_sec // minute)
-
+from .Indicator import Indicator, human_format, human_format_time
 
 # Support is the level at which demand is strong enough to stop the stock from falling any further.
 def get_str_name(currents_ts, ts, v, is_max):

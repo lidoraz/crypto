@@ -17,16 +17,6 @@ INTERVAL_CANDLE_LOOKBACK_TABLE = {
 }
 INTERVAL_CANDLE_LOOKBACK_LOAD_MULTIPLAYER = INTERVAL_CANDLE_LOOKBACK_DISPLAY_MULTIPLAYER * 3
 
-
-def human_format(num):
-    magnitude = 0
-    while abs(num) >= 1000:
-        magnitude += 1
-        num /= 1000.0
-    # add more suffixes if you need them
-    return '%.2f%s' % (num, ['', 'K', 'M', 'B', 'T', 'P'][magnitude])
-
-
 def fig_update_xylimits(fig, df_ohlc, resample):
     # x axis
     from DataProcessing.data_utils import adjust_plot_start_datetime

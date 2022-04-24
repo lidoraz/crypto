@@ -1,5 +1,5 @@
 import plotly.graph_objects as go
-from DataProcessing.data_utils import *
+from Crypto.DataProcessing.data_utils import *
 # from Plots.traces import get_pattern_fig
 from Indicators import CandleIdentification, CandleStick
 

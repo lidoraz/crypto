@@ -5,7 +5,8 @@ import pandas as pd
 import os
 from .DataProvider import DataProvider
 from .data_consts import *
-from Plots.plot_utils import human_format, INTERVAL_CANDLE_LOOKBACK_TABLE, INTERVAL_CANDLE_LOOKBACK_DISPLAY_MULTIPLAYER, \
+from Indicators.Indicator import human_format
+from Plots.plot_utils import INTERVAL_CANDLE_LOOKBACK_TABLE, INTERVAL_CANDLE_LOOKBACK_DISPLAY_MULTIPLAYER, \
     INTERVAL_CANDLE_LOOKBACK_LOAD_MULTIPLAYER
 from .data_consts import START_DATA_DATE
 
@@ -33,6 +34,7 @@ def prepare_data(providers, start_datetime):
     return df_prices, df_hourly
 
 
+# TODO: MOVE THIS
 def get_coin_status(df_hourly, coin):
     cols = ['VOLUMEDAY', 'CHANGEPCT24HOUR', 'VOLUME24HOURTO']
     coin_cols = [f'{coin}_{col}' for col in cols]

@@ -1,8 +1,8 @@
-from DataProcessing.data_consts import COINS, HOURLY_COLS, START_DATA_DATE
+from Crypto.DataProcessing.data_consts import COINS, HOURLY_COLS, START_DATA_DATE
 import os
 import pandas as pd
 # from Plots.plot_utils import START_DATA_DATETIME
-from DataProcessing.data_utils import get_crypto_olhcv, get_data_providers
+from Crypto.DataProcessing.data_utils import get_crypto_olhcv, get_data_providers
 from Plots.plotly_fig import get_updated_fig
 
 data_path = os.path.join(os.getcwd(), 'resources.nosync')

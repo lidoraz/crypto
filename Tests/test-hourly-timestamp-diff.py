@@ -1,7 +1,7 @@
 import pandas as pd
 import os
-from DataProcessing.DataProvider import DataProvider
-from DataProcessing.data_consts import COINS, HOURLY_COLS
+from Crypto.DataProcessing.DataProvider import DataProvider
+from Crypto.DataProcessing.data_consts import COINS, HOURLY_COLS
 
 tolerance_seconds_future = 0
 tolerance_minutes_past = 15
