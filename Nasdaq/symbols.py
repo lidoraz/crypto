@@ -1,4 +1,4 @@
-prepath = 'Nasdaq/yahoo_data/'
+NASDAQ_PREPATH = 'Nasdaq/yahoo_data/'
 nasdq_100 = ['VIX', 'AAPL', 'MSFT', 'GOOG', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'FB', 'COST', 'ASML', 'AVGO', 'PEP',
              'NTES', 'CSCO', 'CMCSA', 'AZN',
              'ADBE', 'INTC', 'TMUS', 'TXN', 'QCOM', 'AMD', 'AMGN', 'INTU', 'HON', 'PYPL', 'CHTR', 'ISRG', 'AMAT',

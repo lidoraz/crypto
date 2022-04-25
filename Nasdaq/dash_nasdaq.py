@@ -1,15 +1,16 @@
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output
-import pandas as pd
 import numpy as np
+
+from Nasdaq.data_utils import get_data_nasdaq
 from Plots.plotly_fig import get_updated_fig
 import dash_bootstrap_components as dbc
-from Nasdaq.symbols import prepath
+from Nasdaq.symbols import NASDAQ_PREPATH
 import sys
 import os
 
-data_paths = sorted(os.listdir(prepath))
+data_paths = sorted(os.listdir(NASDAQ_PREPATH))
 stock_names = [n.split('_')[0] for n in data_paths]
 intervals = np.array([('D', 1),
                       ('W', 7),
@@ -119,30 +120,6 @@ def _adjust_input_lookahead(input_lookahead):
     return max(min(input_lookahead, 100), 3)
 
 
-def _resample_ohlcv_higher_1d(ohlcv, interval):
-    interval = f'{interval}D'
-    ohlcv = pd.concat([
-        ohlcv['open'].resample(interval).first(),
-        ohlcv['high'].resample(interval).max(),
-        ohlcv['low'].resample(interval).min(),
-        ohlcv['close'].resample(interval).last(),
-        ohlcv['volume'].resample(interval).sum()], axis=1)
-    return ohlcv
-
-
-# can resample if ds is 1D type, also filter to more recent dataframe
-def _get_data(full_path, interval, filter_ts=False):
-    df_ohlcv = pd.read_csv(full_path, index_col='Date')
-    df_ohlcv.index = pd.to_datetime(df_ohlcv.index)
-    df_ohlcv.columns = [c.lower() for c in df_ohlcv.columns]
-    if pd.to_timedelta(interval, unit='D').days > 1:
-        df_ohlcv = _resample_ohlcv_higher_1d(df_ohlcv, interval)
-    if filter_ts:
-        start_ts = df_ohlcv.index[-1] - pd.to_timedelta(interval, unit='D') * 200
-        df_ohlcv = df_ohlcv[df_ohlcv.index > start_ts]
-        print(start_ts)
-    df_ohlcv.attrs['interval'] = interval
-    return df_ohlcv
 
 
 @app.callback(Output('live-update-graph', 'figure'),
@@ -151,7 +128,7 @@ def _get_data(full_path, interval, filter_ts=False):
               Input('input_lookahead', 'value'))
 def update_graph_live(coin, interval, input_lookahead):
     print(coin, interval, input_lookahead)
-    df_ohlcv = _get_data(prepath + coin + '_10y.csv', int(interval), filter_ts=True)
+    df_ohlcv = get_data_nasdaq(NASDAQ_PREPATH + coin + '_10y.csv', int(interval), filter_ts=True)
     fig = get_updated_fig(df_ohlcv, lookahead=14, xy_limit=False)
     return fig
 

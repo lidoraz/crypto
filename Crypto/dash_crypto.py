@@ -7,6 +7,7 @@ from DataProcessing.data_consts import *
 from Plots.plot_utils import *
 from Plots.plotly_fig import get_updated_fig
 import dash_bootstrap_components as dbc
+from datetime import datetime
 
 coins = COINS
 hourly_cols = HOURLY_COLS
@@ -124,18 +125,14 @@ def _adjust_input_lookahead(input_lookahead):
               Input('resample-type', 'value'),
               Input('input_lookahead', 'value'))
 def update_graph_live(n, coin, resample, input_lookahead):
+    t0 = datetime.now()
     print(n, coin, resample, input_lookahead)
     filter_datetime = adjust_plot_start_datetime(resample)
     input_lookahead = _adjust_input_lookahead(input_lookahead)
     df_ohlcv = get_crypto_olhcv(coin, resample, providers, filter_datetime, is_volume_hourto=True)
     fig = get_updated_fig(df_ohlcv, lookahead=input_lookahead, xy_limit=True)
-
-    # used to keep figure with changes when this function is triggered.
-    # can add option for figure to be limited with XY when interval==0, after that this function will be disabled.
-    # if keep_with_interval:
-    #     fig.update_layout({'uirevision': f'foo'}) # {coin}{resample}
-    # fig.update_layout(height=110)
-    # print('fig:::', fig.layout.figure.layout.xaxis.range)
+    t1 = (datetime.now() - t0).total_seconds()
+    print(f'ready at:{round(t1, 2)}sec')
     return fig
 
 
@@ -144,7 +141,6 @@ import sys
 if __name__ == '__main__':
     args = sys.argv[1:]
     print('args:', args)
-    # -port 80
     if len(args) == 2 and args[0] == '-port':
         app.run_server(port=args[1], host='0.0.0.0')
     else:

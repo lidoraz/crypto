@@ -1,4 +1,4 @@
-from Nasdaq.symbols import prepath
+from Nasdaq.symbols import NASDAQ_PREPATH
 from tqdm import tqdm
 import yfinance as yf
 
@@ -15,7 +15,7 @@ def get_y_finance_data():
         period = "10y"
         ticker = tickers.tickers[ticker_str]
         df_h = ticker.history(period=period)
-        df_h.to_csv(prepath + f'{ticker_str}_{period}.csv')
+        df_h.to_csv(NASDAQ_PREPATH + f'{ticker_str}_{period}.csv')
 
 
 if __name__ == '__main__':
