@@ -67,7 +67,7 @@ def attach_volume_to_data(df_hourly, coin, interval, df_ohlc, is_volume_hourto=T
     else:
         vol = volume_hour
     vol.name = 'volume'
-    df_ohlcv = df_ohlc.join(volume_hourto).dropna()
+    df_ohlcv = df_ohlc.join(volume_hourto)  # .dropna()
     return df_ohlcv
 
 
@@ -88,22 +88,19 @@ def extract_volume(df_agg, coin, interval, cols=('VOLUMEHOUR', 'VOLUMEHOURTO')):
     coin_cols = [f'{coin}_{col}' for col in cols]
     # before this time all volume is crap
     df_agg = df_agg[df_agg.index > pd.to_datetime('2022-04-09', utc=True).tz_convert('Israel')]
-
     # apply function column-by-column to the grouped
     g = df_agg[coin_cols].groupby(df_agg.index.floor('h'))
     df_cols_t = g.transform(inverse_cumsum)
     # move each index by 1 min to resample closest value.
     df_cols_t.index = df_cols_t.index + pd.to_timedelta('1Min')
     df_cols_r = df_cols_t.resample(interval, closed='right').sum()
-
-    # TODO: fix this later, dividing missing parts and refill with avg
     if is_lower_than_15min:
-        def re_divide(arr):
-            return arr / 3 if len(arr) else None
+        small_interval = int(interval.split('Min')[0])
 
-        df_cols_r = df_cols_r.resample(pre_interval).apply(re_divide).fillna(method='bfill')
-    # df_cols_r = df_cols_r.astype(np.int64)
-    # df_cols_r.columns = ['volume', 'volumeto']
+        def _divide(arr):
+            return arr / (15 / small_interval) if len(arr) else None
+
+        df_cols_r = df_cols_r.resample(pre_interval).apply(_divide).fillna(method='bfill')
     return df_cols_r[coin_cols[0]], df_cols_r[coin_cols[1]]
 
 

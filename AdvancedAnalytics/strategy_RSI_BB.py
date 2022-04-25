@@ -7,7 +7,7 @@ from datetime import datetime
 from Indicators import RSI, BollingerBands, SMA, CandleStick
 
 
-def add_indicators(df, ind_ahead, n_rsi_soon=10):
+def add_indicators(df, ind_ahead, n_rsi_soon=10, low_rsi=30, high_rsi=70):
     # n_rsi_soon: when RSI has alert, how forward to notify that alert
     ind_rsi = RSI(ind_ahead)
     ind_bb = BollingerBands(ind_ahead)
@@ -18,8 +18,8 @@ def add_indicators(df, ind_ahead, n_rsi_soon=10):
     df = df.dropna()
 
     rsi_col = f"RSI_{ind_ahead}"
-    df['RSI_70'] = df[rsi_col] > 70  # has passed RSI 70
-    df['RSI_30'] = df[rsi_col] < 30  # has passed RSI 30
+    df['RSI_70'] = df[rsi_col] > high_rsi  # has passed RSI 70
+    df['RSI_30'] = df[rsi_col] < low_rsi  # has passed RSI 30
     df['OVER_BB'] = df[f'BBTOP_{ind_ahead}'] < df['close']
     df['BELOW_BB'] = df[f'BBBOT_{ind_ahead}'] > df['close']
 
@@ -34,10 +34,10 @@ def add_indicators(df, ind_ahead, n_rsi_soon=10):
     df['BUY_ALGO_BBRSI'] = df[f'RSI_BELOW_30_ROWS{n_rsi_soon}'] & df['OVER_MID_BB']
     df['SELL_ALGO_BBRSI'] = df[f'RSI_OVER_70_ROWS{n_rsi_soon}'] & df['BELOW_MID_BB']
 
-    # add stop-loss
-    # TODO: stop-loss prices should be set as the top / bot prices here.
-    df['SELL_WIN_STOP'] = df[f'BBTOP_{ind_ahead}'] < df['close']
-    df['SELL_LOSE_STOP'] = df[f'BBBOT_{ind_ahead}'] > df['close']
+    # # add stop-loss
+    # # Handled during the DF iter rows
+    # df['SELL_WIN_STOP'] = df[f'BBTOP_{ind_ahead}'] < df['close']
+    # df['SELL_LOSE_STOP'] = df[f'BBBOT_{ind_ahead}'] > df['close']
     return df
 
 
@@ -55,41 +55,41 @@ def mark_enter_exit_points(df_prices, df_agg, tf, indicators_lookahead=14, set_p
     trades_str = []
     open_trades = 0
     # tODO: Arrange this trade vs trade_str - quite different
+    # TODO: generify this function so it will get a function providing the data from nasdq,
+    #  it will have inputs: tf, symbol and provide a ohlcv.
     for coin in COINS:
-        _, volume = extract_volume(df_agg=df_agg, coin=coin, interval=tf)
-
+        # _, volume = extract_volume(df_agg=df_agg, coin=coin, interval=tf)
         df = CandleStick(tf).calc(df_prices[coin])
         df = add_indicators(df, indicators_lookahead, n_rsi_soon=10)
-
-        sell_causes = ['SELL_ALGO_BBRSI', 'SELL_WIN_STOP', 'SELL_LOSE_STOP']
         buy_idx = None
         coin_trade = []
+        # sell_price_win_stop = -1
+        # sell_price_lose_stop = -1
         for idx, row in df.iterrows():
-            if not buy_idx and row['BUY_ALGO_BBRSI']:
-                buy_idx = idx
-                open_trades += 1
-                coin_trade.append({'coin': coin, 'buy': buy_idx.strftime(TIME_CONV), 'sell': None, 'profit_pct': None})
-                continue
-            is_sell_causes = [row[cause] for cause in sell_causes]
-            is_sell_op = sum(is_sell_causes) > 0
+            if not buy_idx:
+                if row['BUY_ALGO_BBRSI']:
+                    buy_idx = idx
+                    sell_price_win_stop = row[f'BBTOP_{indicators_lookahead}']
+                    sell_price_lose_stop = row[f'BBBOT_{indicators_lookahead}']
+                    open_trades += 1
+                    coin_trade.append(
+                        {'coin': coin, 'buy': buy_idx.strftime(TIME_CONV), 'sell': None, 'profit_pct': None})
 
-            if buy_idx and is_sell_op:
-                sell_cause = sell_causes[is_sell_causes.index(True)]
+            else:
                 sell_idx = idx
                 buy_price = df['close'].loc[buy_idx]
                 sell_price = df['close'].loc[sell_idx]
-                hours_holding = (sell_idx - buy_idx).seconds // 3600
-                profit_pct = (sell_price / buy_price) - 1
-                should_sell = False
-                # if hours_holding < 1:  # must hold for atleast an 2 hours
-                #     continue
-                win_causes = ['SELL_ALGO_BBRSI', 'SELL_WIN_STOP']
-                if sell_cause in win_causes and profit_pct > set_profit_pct:  # sell cause we passed M Bollinder bands and RSI passed 70 # ▲▼
-                    should_sell = True
-                elif sell_cause == 'SELL_LOSE_STOP' and abs(profit_pct) > set_profit_pct / 2:
-                    should_sell = True
+                hours_holding = (sell_idx - buy_idx).total_seconds() // 3600
+                profit_pct = ((sell_price / buy_price) - 1) - (0.001 * 2)  # plus commission
+                sell_cause = None
+                if sell_price_win_stop < sell_price:  # and profit_pct > set_profit_pct
+                    sell_cause = 'SELL_WIN_STOP'
+                elif sell_price_lose_stop > sell_price:  # and abs(profit_pct) > set_profit_pct
+                    sell_cause = 'SELL_LOSE_STOP'
+                elif row['BUY_ALGO_BBRSI'] and profit_pct > set_profit_pct:  # without 2nd if there are too many trades.
+                    sell_cause = 'SELL_ALGO_BBRSI'
 
-                if should_sell:
+                if sell_cause:
                     coin_trade[-1]['sell'] = sell_idx.strftime(TIME_CONV)
                     coin_trade[-1]['profit_pct'] = profit_pct
                     trade_arr = [coin, sell_cause, buy_idx, buy_price, sell_idx, sell_price, hours_holding,
@@ -102,8 +102,7 @@ def mark_enter_exit_points(df_prices, df_agg, tf, indicators_lookahead=14, set_p
                     open_trades -= 1
         if len(coin_trade):
             trades.append(coin_trade)
-
-    print('sum_pct', sum_pct)
+    print(f'tf={tf}, ahead={indicators_lookahead}, profit_pct={set_profit_pct}, sum_pct=', sum_pct)
     return sum_pct, trades, trades_str, open_trades
 
 
@@ -113,20 +112,9 @@ def find_optimal_BBRSI_strategy_crypto():
     providers = get_data_providers()
     df_prices, df_agg = prepare_data(providers, START_DATA_DATE)
 
-    # time_intervals = ['15Min', '1H']
-    # lookaheads = range(5, 30, 2)
-    # profit_pcts = [0.03, 0.05, 0.07, 0.10, 0.15]
-
-    time_intervals = ['1H']
+    time_intervals = ['15Min', '1H']
     lookaheads = range(10, 17, 2)
     profit_pcts = [0.03, 0.05, 0.07, 0.10, 0.15]
-
-    # tf = '1H'
-    # lookahead = 11
-    # sum_pct, trades, trades_str = mark_enter_exit_points(df_prices, df_agg, tf, indicators_lookahead=14)
-    # # print("\n".join(trades))
-    # for trade in trades:
-    #     print(trade)
 
     # TODO: it looks like lookahead of less than 5 is very volatile, need to restrict number of transactions
     ## Some coins do not change as frequent like GCOIN, so it is harder to count on the performance on these coins.
@@ -134,9 +122,8 @@ def find_optimal_BBRSI_strategy_crypto():
     res = []
     l_trades = []
     l_trades_str = []
-    for tf in time_intervals:  # ['5Min', '15Min', '1H', '4H']
-        for lookahead in lookaheads:  # range(7, 30, 4):
-            # for lookahead in [19]:  # range(7, 30, 4):
+    for tf in time_intervals:
+        for lookahead in lookaheads:
             for set_profit_pct in profit_pcts:
                 sum_pct, trades, trades_str, n_open_trades = mark_enter_exit_points(df_prices, df_agg, tf, lookahead,
                                                                                     set_profit_pct)
@@ -146,7 +133,7 @@ def find_optimal_BBRSI_strategy_crypto():
     df = pd.DataFrame(res,
                       columns=['tf', 'lookahead', 'set_profit_pct', 'sum_profit_pct', 'total_trades', 'n_open_trades'])
     df = df.sort_values('sum_profit_pct', ascending=False)
-    print(df)
+    # print(df)
     # get win strategy:
     win_idx = df.index[0]
     win_sum_profit_pct = df['sum_profit_pct'].iloc[0]
@@ -168,9 +155,9 @@ def find_optimal_BBRSI_strategy_crypto():
         for trade in win_trades:
             print(trade, file=f)
 
-    # print all strats
+    # print top strats
     with open(output_path + win_trades_name, 'a') as f:
-        for idx, trades in enumerate(l_trades_str):
+        for idx, trades in enumerate(l_trades_str[:10]):
             print(f'#{idx}#', file=f)
             for trade in trades:
                 print(trade, file=f)
