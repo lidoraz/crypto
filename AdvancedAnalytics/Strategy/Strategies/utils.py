@@ -1,8 +1,9 @@
+from AdvancedAnalytics.Strategy.data_wrappers import DataWrapper
 from Crypto.DataProcessing.DataProvider import TIME_CONV
 
 
 # TODO: Generalize this with other strategies
-def mark_enter_exit_points(data_class, indicator_func, params):
+def mark_enter_exit_points(data_class: DataWrapper, indicator_func, params):
     """
     # BUY ENTRY: First candle that closes on the middle BB, soon after RSI was < 30
     # SELL ENTRY: First candle that close below the middle BB, soon after RSI was > 70
