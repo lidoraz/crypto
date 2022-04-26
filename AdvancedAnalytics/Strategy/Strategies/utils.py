@@ -26,12 +26,13 @@ def mark_enter_exit_points(data_class: ProviderData, indicator_func, params):
         df = indicator_func(df, indicators_lookahead, n_rsi_soon=n_rsi_soon)
         buy_idx = None
         coin_trade = []
-        # sell_price_win_stop = -1
-        # sell_price_lose_stop = -1
+        sell_price_win_stop = None
+        sell_price_lose_stop = None
         for idx, row in df.iterrows():
             if not buy_idx:
                 if row['BUY_ALGO_BBRSI']:
                     buy_idx = idx
+                    # add stop-loss
                     sell_price_win_stop = row[f'BBTOP_{indicators_lookahead}']
                     sell_price_lose_stop = row[f'BBBOT_{indicators_lookahead}']
                     open_trades += 1
@@ -45,17 +46,18 @@ def mark_enter_exit_points(data_class: ProviderData, indicator_func, params):
                 hours_holding = (sell_idx - buy_idx).total_seconds() // 3600
                 profit_pct = (sell_price / buy_price) - 1
                 profit_pct_net = profit_pct - (0.001 * 2)  # plus commission
-                sell_cause = None
-                if True:
-                    # if abs(profit_pct_net) > set_profit_pct:
+
+                # continue sell if set_pct = 0 or profit > set_pct
+                if set_profit_pct == 0 or (abs(profit_pct_net) > set_profit_pct > 0):
                     if sell_price_win_stop < sell_price:  # and profit_pct > set_profit_pct
                         sell_cause = 'SELL_WIN_STOP'
                     elif sell_price_lose_stop > sell_price:  # and abs(profit_pct) > set_profit_pct
                         sell_cause = 'SELL_LOSE_STOP'
                     elif row['BUY_ALGO_BBRSI']:  # without 2nd if there are too many trades.
                         sell_cause = 'SELL_ALGO_BBRSI'
+                    else:
+                        continue
 
-                if sell_cause:
                     coin_trade[-1]['sell'] = sell_idx.strftime(TIME_CONV)
                     coin_trade[-1]['profit_pct_net'] = profit_pct_net
                     trade_arr = [coin, sell_cause, buy_idx, round(buy_price, 2), sell_idx, round(sell_price, 2),
@@ -69,6 +71,5 @@ def mark_enter_exit_points(data_class: ProviderData, indicator_func, params):
                     open_trades -= 1
         if len(coin_trade):
             trades.append(coin_trade)
-    sum_pct = round(sum_pct, 4)
     print(f'tf={tf}, ahead={indicators_lookahead}, profit_pct={set_profit_pct}, sum_pct= {sum_pct:.2%}')
     return sum_pct, trades, trades_str, open_trades

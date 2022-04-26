@@ -10,3 +10,8 @@ class ProviderData(ABC):
     @abstractmethod
     def get_symbols(self):
         pass
+
+    # @abstractmethod
+    @staticmethod
+    def get_wrapper():
+        pass

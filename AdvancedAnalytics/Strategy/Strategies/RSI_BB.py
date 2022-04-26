@@ -56,6 +56,9 @@ def find_optimal_BBRSI_strategy(data_class, params):
     lookaheads = params['lookaheads']
     profit_pcts = params['profit_percents']
 
+    # TODO: add this value to the params
+    n_rsi_soon = 5
+    print('TODO n_rsi_soon=', n_rsi_soon)
     res = []
     l_trades = []
     l_trades_str = []
@@ -65,7 +68,7 @@ def find_optimal_BBRSI_strategy(data_class, params):
                 run_params = {'tf': tf,
                               'lookahead': lookahead,
                               'set_profit_pct': set_profit_pct,
-                              'n_rsi_soon': 3}
+                              'n_rsi_soon': n_rsi_soon}
                 sum_pct, trades, trades_str, n_open_trades = mark_enter_exit_points(data_class, add_indicators,
                                                                                     run_params)
                 res.append([tf, lookahead, set_profit_pct, sum_pct, len(trades_str), n_open_trades])
@@ -97,9 +100,10 @@ def find_optimal_BBRSI_strategy(data_class, params):
         for trade in win_trades:
             print(trade, file=f)
 
-    # print top strats
-    with open(full_path_trades, 'a') as f:
-        for idx, trades in enumerate(l_trades_str[:10]):
-            print(f'#{idx}#', file=f)
-            for trade in trades:
-                print(trade, file=f)
+    #
+    # # print top trade config
+    # with open(full_path_trades, 'a') as f:
+    #     for idx, trades in enumerate(l_trades_str[:10]):
+    #         print(f'#{idx}#', file=f)
+    #         for trade in trades:
+    #             print(trade, file=f)

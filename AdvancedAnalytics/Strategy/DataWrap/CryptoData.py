@@ -21,7 +21,7 @@ class CryptoData(ProviderData):
         return self.symbols
 
     @staticmethod
-    def get_crypto_wrapper():
+    def get_wrapper():
         from Crypto.DataProcessing.data_consts import COINS, START_DATA_DATE
         from Crypto.DataProcessing.data_utils import get_data_providers, prepare_data
         providers = get_data_providers()
