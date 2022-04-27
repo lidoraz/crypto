@@ -1,7 +1,7 @@
 from Crypto.DataProcessing.data_utils import get_data_providers, adjust_plot_start_datetime, prepare_data
 from Crypto.DataProcessing.data_consts import COINS
 from datetime import datetime
-from AdvancedAnalytics.strategy_RSI_BB import add_indicators
+from AdvancedAnalytics.Strategy.Strategies.RSI_BB import add_indicators
 import pytz
 
 from Indicators import CandleStick
@@ -45,12 +45,12 @@ def get_latest_buy_sell(tf='1H', lookahead=14):
             # print(ts, 'SELL_ALGO_BBRSI', coin)
 
             sell_lst.append(coin)
-        # stoplosses
-        if df.iloc[n_candle]['SELL_WIN_STOP']:
-            # print(ts, 'SELL_WIN_STOP', coin)
-
-            sell_lst.append(coin)
-        if df.iloc[n_candle]['SELL_LOSE_STOP']:
+            # stoplosses
+            # if df.iloc[n_candle]['SELL_WIN_STOP']:
+            #     # print(ts, 'SELL_WIN_STOP', coin)
+            #
+            #     sell_lst.append(coin)
+            # if df.iloc[n_candle]['SELL_LOSE_STOP']:
             # print(ts, 'SELL_LOSE_STOP', coin)
 
             sell_lst.append(coin)

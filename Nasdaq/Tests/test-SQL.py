@@ -1,9 +1,5 @@
-import sqlite3
 import pandas as pd
-import os
-
-# TODO Implement this into file.
-from Nasdaq.Tests.Persistence import Persistence
+from Nasdaq.Persistence import Persistence
 
 
 def fill_db():
@@ -36,3 +32,11 @@ if __name__ == '__main__':
     ts = persist.get_latest_ts(symbol, tf)
     print(ts)
     persist.close()
+
+    symbol = 'AAPL'  # 'BTC-USD'
+    # tf = '15min'
+    tf = '1D'
+    db = Persistence()
+    df = db.get_df(symbol, tf)
+    if df is not None:
+        print(len(df))

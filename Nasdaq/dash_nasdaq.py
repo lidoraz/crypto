@@ -3,6 +3,7 @@ from dash import dcc, html
 from dash.dependencies import Input, Output
 import numpy as np
 
+from Crypto.DataProcessing.data_consts import COINS
 from Nasdaq.data_utils import get_data_nasdaq
 from Plots.plotly_fig import get_updated_fig
 import dash_bootstrap_components as dbc
@@ -12,12 +13,21 @@ import os
 
 data_paths = sorted(os.listdir(NASDAQ_PREPATH))
 stock_names = [n.split('_')[0] for n in data_paths]
-intervals = np.array([('D', 1),
-                      ('W', 7),
-                      ('M', 30),
-                      ('3M', 90),
-                      ('Y', 365)
-                      ])
+# stock_names = [c+'-USD' for c in COINS]
+# [('D', 1),
+# ('W', 7),
+# ('M', 30),
+# ('3M', 90),
+# ('Y', 365)]
+intervals = np.array([('1', '1min'),
+                      ('5', '5min'),
+                      ('15', '15min'),
+                      ('H', '1h'),
+                      ('D', '1D'),
+                      ('W', '7D'),
+                      ('M', '30D'),
+                      ('Y', '365D')])
+
 interval_names = intervals[:, 0]
 interval_values = intervals[:, 1]
 
@@ -120,24 +130,14 @@ def _adjust_input_lookahead(input_lookahead):
     return max(min(input_lookahead, 100), 3)
 
 
-
-
 @app.callback(Output('live-update-graph', 'figure'),
               Input('coin-type', 'value'),
               Input('interval-type', 'value'),
               Input('input_lookahead', 'value'))
-def update_graph_live(coin, interval, input_lookahead):
-    print(coin, interval, input_lookahead)
-    from yahoo_finance import get_from_yfinance
-    from data_utils import _resample_ohlcv_higher_1d
-    import pandas as pd
-    import datetime
-    interval = int(interval)
-    start_day = datetime.datetime.utcnow() - pd.to_timedelta(interval * 120, unit='D')
-    df_ohlcv = get_from_yfinance(ticker=coin, start=start_day, tf='1d', tz='Israel')
-    if pd.to_timedelta(interval, unit='D').days > 1:
-        df_ohlcv = _resample_ohlcv_higher_1d(df_ohlcv, interval)
-    df_ohlcv.attrs['interval'] = f'{interval}D'
+def update_graph_live(symbol, tf, input_lookahead):
+    print(symbol, tf, input_lookahead)
+    from yahoo_finance import get_from_yfinance_now
+    df_ohlcv = get_from_yfinance_now(symbol, tf, tz='Israel')
     # df_ohlcv = get_data_nasdaq(NASDAQ_PREPATH + coin + '_10y.csv', int(interval), filter_ts=True)
     fig = get_updated_fig(df_ohlcv, lookahead=14, xy_limit=False)
     return fig

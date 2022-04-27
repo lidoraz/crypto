@@ -29,5 +29,9 @@ def get_data_from_remote(start_date, end_date, dir_name, cwd, remote_address, pr
     for date in date_range:
         if date >= last_updated_date:
             date = str(date)
-            os.system(f"scp -q -i {private_key} {remote_address}:{dir_name}/{date}.csv '{pwd_dir_name}/{date}.csv'")
+            res = os.system(
+                f"scp -q -i {private_key} {remote_address}:{dir_name}/{date}.csv '{pwd_dir_name}/{date}.csv'")
+            if res != 0:
+                print('SCP failed, trying again..')
+                return
     _save_ts(pwd_dir_name)

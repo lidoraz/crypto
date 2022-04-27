@@ -1,7 +1,21 @@
-from Nasdaq.symbols import NASDAQ_PREPATH
-from tqdm import tqdm
+# from Persistence import Persistence
 import yfinance as yf
 import pandas as pd
+from datetime import datetime
+
+
+# db_path='small.db'
+# db = Persistence(db_path)
+
+
+def use_schdule():
+    import schedule
+    def thing_you_wanna_do():
+        pass
+
+    schedule.every().hour.do(thing_you_wanna_do)
+    while True:
+        schedule.run_pending()
 
 
 def convert_to_yf_interval(tf):
@@ -9,7 +23,7 @@ def convert_to_yf_interval(tf):
     granularity = ''.join([i for i in tf if not i.isdigit()]).lower()
     granularity = 'mo' if granularity == 'm' else granularity  # month
     granularity = 'm' if granularity == 'min' else granularity  # min
-    return digit + granularity.lower()
+    return digit + granularity
 
 
 # TODO Last value is not full on granular.
@@ -23,16 +37,41 @@ def get_from_yfinance_multi(tickers, start, tf, tz='Israel'):
     dfs = []
     for ticker in tickers:
         df_sym = data.loc[:, (slice(None), ticker)]
-        cols = [c[0] for c in df_sym.columns]
+        cols = [c[0].lower() for c in df_sym.columns]
         df_sym.columns = cols
         dfs.append(df_sym)
     return dfs
 
 
+#     limitation_days = {'1min': 7, '5min': 60, '15min': 60, '1h': 730}
+def get_from_yfinance_now(symbol, tf: str, tz='Israel'):
+    # tf='1min'
+    tf = tf.lower()
+    # TODO: _resample_ohlcv_higher_1d
+    # TODO: Rework this here. if this works good, it is posbbile to get new oppertunuis
+    limitation_days = {'1min': 1, '5min': 2, '15min': 10, '1h': 30}
+    limitation_days_daily = {'1d': 300, '7d': 1000, '30d': 2000, '365d': 10000}
+    if tf in limitation_days:
+        limit = limitation_days.get(tf) - 1
+        limit = limit // 3  # too much prior data
+    elif tf in limitation_days_daily:
+        limit = limitation_days_daily.get(tf)
+        tf = '1d'
+    else:
+        raise ValueError('tf not supported')
+    start_date = datetime.utcnow() - pd.to_timedelta(limit, unit='D')
+    print(start_date, tf)
+    df = get_from_yfinance(symbol, start_date, tf, tz)
+    df.attrs['interval'] = tf
+    return df
+
+
 def get_from_yfinance(ticker, start, tf, tz='Israel'):
     # usage: ticker='BTC-USD', start=pd.to_datetime('2022-04-20T12:00:00'), tf='15min'
     yf_tf = convert_to_yf_interval(tf)
-    data = yf.download(tickers=ticker, start=start, interval=yf_tf)
+    data = yf.download(tickers=ticker, start=start, interval=yf_tf,
+                       # prepost=True
+                       )
     data.columns = [c.lower() for c in data.columns]
 
     data.index = pd.to_datetime(data.index, utc=True).tz_convert(tz)
@@ -56,6 +95,10 @@ def get_from_yfinance(ticker, start, tf, tz='Israel'):
 
 
 if __name__ == '__main__':
-    get_from_yfinance('AAPL', pd.to_datetime('2010-01-01'), tf='1d', tz='Israel')
-    pass
+    all_limitation_days = {'1min': 7, '5min': 60, '15min': 60, '1h': 730,
+                           '1D': 90, '7D': 60, '30D': 1000, '365D': 3000}
+    for tf in all_limitation_days.keys():
+        df = get_from_yfinance_now('AAPL', tf=tf)
+        print(tf, len(df))
+
     # get_y_finance_data()

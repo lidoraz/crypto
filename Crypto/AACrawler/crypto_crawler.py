@@ -61,13 +61,16 @@ str_coins = ','.join(coins)
 def get_coin_data(coins):
     str_coins = ','.join(coins)
     url = f"https://min-api.cryptocompare.com/data/pricemulti?fsyms={str_coins}&tsyms=USDT&api_key={api_key}"
-    response = requests.get(url)
-    if (response.status_code != 200):
-        print(response.status_code, response.text)
+    try:
+        response = requests.get(url)
+        if response.status_code != 200:
+            print(response.status_code, response.text)
+            return None
+        else:
+            coin_data = json.loads(response.text)
+            return coin_data
+    except requests.RequestException:
         return None
-    else:
-        coin_data = json.loads(response.text)
-        return coin_data
 
 
 def parse_json(coin_data):
