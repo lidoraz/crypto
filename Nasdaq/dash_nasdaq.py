@@ -128,7 +128,17 @@ def _adjust_input_lookahead(input_lookahead):
               Input('input_lookahead', 'value'))
 def update_graph_live(coin, interval, input_lookahead):
     print(coin, interval, input_lookahead)
-    df_ohlcv = get_data_nasdaq(NASDAQ_PREPATH + coin + '_10y.csv', int(interval), filter_ts=True)
+    from yahoo_finance import get_from_yfinance
+    from data_utils import _resample_ohlcv_higher_1d
+    import pandas as pd
+    import datetime
+    interval = int(interval)
+    start_day = datetime.datetime.utcnow() - pd.to_timedelta(interval * 120, unit='D')
+    df_ohlcv = get_from_yfinance(ticker=coin, start=start_day, tf='1d', tz='Israel')
+    if pd.to_timedelta(interval, unit='D').days > 1:
+        df_ohlcv = _resample_ohlcv_higher_1d(df_ohlcv, interval)
+    df_ohlcv.attrs['interval'] = f'{interval}D'
+    # df_ohlcv = get_data_nasdaq(NASDAQ_PREPATH + coin + '_10y.csv', int(interval), filter_ts=True)
     fig = get_updated_fig(df_ohlcv, lookahead=14, xy_limit=False)
     return fig
 

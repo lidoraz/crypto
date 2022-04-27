@@ -1,7 +1,50 @@
-from Nasdaq.symbols import NASDAQ_PREPATH
-from tqdm import tqdm
+from Persistence import Persistence
 import yfinance as yf
 import pandas as pd
+
+
+# db_path='small.db'
+# db = Persistence(db_path)
+
+
+def use_schdule():
+    import schedule
+    def thing_you_wanna_do():
+        pass
+
+    schedule.every().hour.do(thing_you_wanna_do)
+    while True:
+        schedule.run_pending()
+
+
+# limitations:
+# granularity -> last days
+# 1m -> 7 days
+# 5m -> 60 days
+# 15m -> 60 days
+# 1h -> 730 days
+# 1D -> No limit
+
+def multi_download(tickers):
+    # If persistance not updated, get updated data from yahoo and put in db.
+    # Easier solution - pull every data from
+
+    # Best solution- at start:
+    # on given interval get data from limit table above.
+    # use DB until last avialbable record.
+    # use yf.download to get from record to time now ranges.
+    # on close push all new data to the sql.
+
+    pass
+
+
+symbol = 'AAPL'  # 'BTC-USD'
+# tf = '15min'
+tf = '1D'
+db = Persistence()
+df = db.get_df(symbol, tf)
+if df is not None:
+    print(len(df))
 
 
 def convert_to_yf_interval(tf):
@@ -33,29 +76,16 @@ def get_from_yfinance(ticker, start, tf, tz='Israel'):
     # usage: ticker='BTC-USD', start=pd.to_datetime('2022-04-20T12:00:00'), tf='15min'
     yf_tf = convert_to_yf_interval(tf)
     data = yf.download(tickers=ticker, start=start, interval=yf_tf)
-    data.columns = [c.lower() for c in data.columns]
-
-    data.index = pd.to_datetime(data.index, utc=True).tz_convert(tz)
+    data.index = data.index.tz_convert(tz)
     return data
 
 
-# # Saved to CSV
-# def get_y_finance_data():
-#     from Nasdaq.symbols import nasdq_100
-#     from Nasdaq.symbols import ta_125
-#
-#     ticker_lst = ta_125[:10]
-#
-#     tickers = yf.Tickers(','.join(ticker_lst))
-#     # tickers = yf.Tickers('AAPL,MSFT,AMD,VIX')
-#     for ticker_str in tqdm(tickers.symbols):
-#         period = "10y"
-#         ticker = tickers.tickers[ticker_str]
-#         df_h = ticker.history(period=period)
-#         df_h.to_csv(NASDAQ_PREPATH + f'{ticker_str}_{period}.csv')
+symbols = ['FB', 'AAPL']
+tf = '15min'
+start = pd.to_datetime('2022-04-20T12:00:00')
 
+# dfs = get_from_yfinance_multi(symbols, start, tf)
+df = get_from_yfinance(symbols[0], start, tf)
 
-if __name__ == '__main__':
-    get_from_yfinance('AAPL', pd.to_datetime('2010-01-01'), tf='1d', tz='Israel')
-    pass
-    # get_y_finance_data()
+# print(dfs)
+print(df)

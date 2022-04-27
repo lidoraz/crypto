@@ -1,5 +1,5 @@
-from DataProcessing.data_utils import get_data_providers, adjust_plot_start_datetime, prepare_data
-from DataProcessing.data_consts import COINS
+from Crypto.DataProcessing.data_utils import get_data_providers, adjust_plot_start_datetime, prepare_data
+from Crypto.DataProcessing.data_consts import COINS
 from datetime import datetime
 from AdvancedAnalytics.strategy_RSI_BB import add_indicators
 import pytz
