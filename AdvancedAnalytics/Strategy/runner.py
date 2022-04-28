@@ -1,17 +1,39 @@
 from DataWrap import CryptoData, NasdaqData
-from Strategies import find_optimal_BBRSI_strategy
+from optimize import find_optimal_strategy
 import numpy as np
 
+# params = {'time_intervals': ['1D'],  # Nasdaq Daily data
+#           'lookaheads': range(6, 17, 2),
+#           'profit_percents': np.arange(0, 0.15, 0.02)}
+# data_wrapper = NasdaqData.get_wrapper(start_date='2016-01-01')
+
 if __name__ == '__main__':
-    params = {'time_intervals': ['1H'],  # ['15Min', '1H']
-              'lookaheads': range(10, 17, 2),
-              'profit_percents': np.arange(0, 0.15, 0.02)}
-    print(params['profit_percents'])
+    # DS ################################################################################################################################################
+    # TODO: in optimizer filter out params that are not being used. can extract this with a list from each strategy
+    optimize_params = {'tf': ['15Min'],  # ['15Min', '1H']
+                       'set_profit_pct': np.arange(0, 0.10, 0.02)}  # 0.15 is too much
     data_wrapper = CryptoData.get_wrapper()
 
-    # params = {'time_intervals': ['1D'],  # Nasdaq Daily data
-    #           'lookaheads': range(6, 17, 2),
-    #           'profit_percents': np.arange(0, 0.15, 0.02)}
-    # data_wrapper = NasdaqData.get_wrapper(start_date='2016-01-01')
+    # optimize_params = {'tf': ['1D'],  # Nasdaq Daily data
+    #           'set_profit_pct': np.arange(0, 0.15, 0.02)}
+    # data_wrapper = NasdaqData.get_wrapper(start_date='2021-06-01')
 
-    find_optimal_BBRSI_strategy(data_wrapper, params)
+    # Strategies ########################################################################################################################################
+
+    # MACross ###################################################################################################
+    # strategy_params_macross = {'MACROSS_short': range(5, 26, 5),
+    #                            'MACROSS_long': range(50, 101, 10)}
+    # optimize_params.update(strategy_params_macross)
+    # find_optimal_strategy(data_wrapper, strategy='MACROSS', optimized_params=optimize_params)
+    # RSIBB ###################################################################################################
+    # strategy_params_rsi = {'RSIBB_n_rsi_soon': range(5, 14, 2),
+    #                        'RSIBB_ind_ahead': range(10, 17, 2)}
+    # optimize_params.update(strategy_params_rsi)
+    # find_optimal_strategy(data_wrapper, strategy='RSIBB', optimized_params=optimize_params)
+
+    # BB #############
+    from Strategies import BB
+
+    strategy_params_rsi = {}
+    optimize_params.update(strategy_params_rsi)
+    find_optimal_strategy(data_wrapper, strategy='BB', optimized_params=optimize_params)

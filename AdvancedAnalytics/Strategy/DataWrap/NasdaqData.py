@@ -1,3 +1,4 @@
+from Nasdaq.yahoo_finance import get_from_yfinance_now
 from .ProviderData import ProviderData
 import pandas as pd
 from Nasdaq.data_utils import get_data_nasdaq
@@ -15,6 +16,9 @@ class NasdaqData(ProviderData):
         tf_days = pd.to_timedelta(tf).days
         if tf_days == 0:
             raise ValueError('Only supports daily data or higher intervals')
+
+        # TODO: Test # CANT use this as like this, must use persitsance - can implement this to fetch first from yahoo if not updated.
+        # df = get_from_yfinance_now(symbol, tf)
         df_ohlcv = get_data_nasdaq(self.prepath + symbol + '_10y.csv', tf_days, filter_ts=False)
         df_ohlcv = df_ohlcv[df_ohlcv.index > pd.to_datetime(self.start_date)]
         return df_ohlcv
