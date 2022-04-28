@@ -4,8 +4,8 @@ from abc import abstractmethod, ABC
 class Strategy(ABC):
     # @abstractmethod
     def __init__(self, params, *args, **kwargs):
-        self.tf = params['tf']
-        self.set_profit_pct = params['set_profit_pct']
+        # self.tf = params['tf']
+        # self.set_profit_pct = params['set_profit_pct']
         pass
 
     @abstractmethod
@@ -13,5 +13,5 @@ class Strategy(ABC):
         pass
 
     @abstractmethod
-    def act(self, *args, **kwargs):
+    def act_buy(self, idx, row):
         pass

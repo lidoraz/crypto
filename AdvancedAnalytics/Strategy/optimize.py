@@ -1,28 +1,74 @@
 import pandas as pd
+import itertools
 from datetime import datetime
-
+from tqdm import tqdm
 from AdvancedAnalytics.Strategy.DataWrap import ProviderData
 from AdvancedAnalytics.Strategy.Strategies import *
 from Crypto.DataProcessing.DataProvider import TIME_CONV
 
 
-# ind_ahead, params,
-#                  coin, tf,
-#                  n_rsi_soon=10, low_rsi=30, high_rsi=70
+# TODO: Strategy: A better way to test stratgies is to compare each day the market, and look whenever there is a new oppertunity.
+#  Selecting the best oppertunity should be chosen if wanted (maybe lowest RSI)
+#  Next, maybe compare with a budget, and buying a trade with comparing other opportunities.
+
+# it looks like lookahead of less than 5 is very volatile, need to restrict number of transactions
+# Some coins do not change as frequent like GCOIN, so it is harder to count on the performance on these coins.
+# 15Min trade made the highest value, but number of trades was very high as well and cannot be guaranteed.
 
 
-def mark_enter_exit_points(data_class: ProviderData, strategy: str, params):
-    symbols = data_class.get_symbols()
+def run_strategy(df, stragey: Strategy, sell_pct, trade_comission=0.001):
+    sum_pct = 0
+    sell_price_win_stop = None
+    sell_price_lose_stop = None
+    trades_str = []
+    buy_idx = None
+    for idx, row in df.iterrows():
+        if not buy_idx:
+            buy_vars = stragey.act_buy(idx, row)
+            if buy_vars:
+                buy_idx = buy_vars['buy_idx']
+                sell_price_win_stop = buy_vars['sell_price_win_stop']
+                sell_price_lose_stop = buy_vars['sell_price_lose_stop']
+        else:
+            sell_idx = idx
+            buy_price = df['close'].loc[buy_idx]
+            sell_price = df['close'].loc[sell_idx]
+            hours_holding = (sell_idx - buy_idx).total_seconds() // 3600
+            profit_pct = (sell_price / buy_price) - 1
+            profit_pct_net = profit_pct - (trade_comission * 2)  # plus commission
+            if sell_pct == 0 or (abs(profit_pct_net) > sell_pct > 0):
+                if sell_price_win_stop < sell_price:  # and profit_pct > set_profit_pct
+                    sell_cause = 'WIN_STOP'
+                elif sell_price_lose_stop > sell_price:  # and abs(profit_pct) > set_profit_pct
+                    sell_cause = 'LOSE_STOP'
+                elif row['SELL_ALGO']:  # without 2nd if there are too many trades.
+                    sell_cause = 'ALGO_SELL'
+                else:
+                    continue
+                trade_arr = [sell_cause, buy_idx, round(buy_price, 2),
+                             sell_idx, round(sell_price, 2), hours_holding, f'{profit_pct:.2%}']
+                trade_arr = list(map(str, trade_arr))
+                transaction = 'Trade:' + "\t".join(trade_arr)
+                trades_str.append(transaction)
+                sum_pct += profit_pct
+                buy_idx = None
+    is_trade_open = buy_idx is not None
+    return sum_pct, trades_str, is_trade_open
+
+
+def mark_enter_exit_points(provider: ProviderData, strategy: str, params):
+    symbols = provider.get_symbols()
     sum_pct = 0
     trades_str = []
     open_trades = 0
-
+    tf = params['tf']
+    sell_pct = params['sell_pct']
     for symbol in symbols:
-        df = data_class.get_data(symbol, params['tf'])
-        # TODO: continue here; try to pass a stratgey with all params above.
+        df = provider.get_data(symbol, tf)
         strategy_class = All_STRATEGIES[strategy.upper()](params)
         df = strategy_class.add_indicators(df)
-        act_sum_pct, act_trades_str, is_open = strategy_class.act(df)
+        act_sum_pct, act_trades_str, is_open = run_strategy(df, strategy_class,
+                                                            sell_pct=sell_pct, trade_comission=0.001)
         act_trades_str = [f'{symbol}- {trade}' for trade in act_trades_str]  # add symbol
         sum_pct += act_sum_pct
         trades_str += act_trades_str
@@ -31,25 +77,30 @@ def mark_enter_exit_points(data_class: ProviderData, strategy: str, params):
     return sum_pct, trades_str, open_trades
 
 
-def find_optimal_strategy(data_class, strategy: str, optimized_params):
-    print(datetime.now().strftime(TIME_CONV))
+def find_optimal_strategy(provider: ProviderData, strategy: str, optimized_params: dict, verbose=0):
+    time_start = datetime.now()
+    print()
     res = []
     l_trades_str = []
-    import itertools
-    # https://stackoverflow.com/questions/38721847/how-to-generate-all-combination-from-values-in-dict-of-lists-in-python
+    # filter out not relevant params:
+    keys_to_remove = [k for k in optimized_params if not k.startswith(strategy) and k not in ['tf', 'sell_pct']]
+    optimized_params = {k: optimized_params[k] for k in optimized_params if k not in keys_to_remove}
+    print(f'Finding optimal strategies with these params:', optimized_params.keys())
     keys, values = zip(*optimized_params.items())
     permutations_dicts = [dict(zip(keys, v)) for v in itertools.product(*values)]
-    for params in permutations_dicts:
-        sum_pct, trades_str, n_open_trades = mark_enter_exit_points(data_class, strategy, params)
+    # iterate permutation with dicts: https://stackoverflow.com/questions/38721847/how-to-generate-all-combination-from-values-in-dict-of-lists-in-python
+    for params in tqdm(permutations_dicts):
+        sum_pct, trades_str, n_open_trades = mark_enter_exit_points(provider, strategy, params)
         n_trades = len(trades_str)
-        print(f'{params}\t\t#trades: {n_trades}\t#n_open_trades: {n_open_trades}\t sum_pct: {sum_pct:.2%}')
+        if verbose > 0:
+            print(f'{params}\t\t#trades: {n_trades}\t#n_open_trades: {n_open_trades}\t sum_pct: {sum_pct:.2%}')
         # add to list for future analysis
         params['sum_pct'] = sum_pct
         params['n_trades'] = n_trades
         params['n_open_trades'] = n_open_trades
         res.append(params)
         l_trades_str.append(trades_str)
-    # cols = ['tf', 'lookahead', 'set_profit_pct', 'sum_profit_pct', 'total_trades', 'n_open_trades']
+
     df = pd.DataFrame(res)
     df = df.sort_values('sum_pct', ascending=False)
 
@@ -64,8 +115,9 @@ def find_optimal_strategy(data_class, strategy: str, optimized_params):
     print("Total trades:", len(win_trades))
 
     # save df
-    time = datetime.now().strftime(TIME_CONV)
-    name = f'{time}_{data_class.name}_RSI_BB'
+    time = datetime.now()
+    print(f"TIME TOOK: {(time - time_start).total_seconds() / 60 :.2} min")
+    name = f'{time.strftime(TIME_CONV)}_{provider.name}_{strategy}'
 
     output_path = 'AdvancedAnalytics/Strategy/strategy_output/'
     full_path_summary = output_path + name + '_summary.csv'
