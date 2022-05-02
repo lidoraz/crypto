@@ -4,41 +4,47 @@ import pandas as pd
 
 TIME_CONV = "%Y-%m-%dT%H:%M:%S"  # strftime
 INTERVAL_UPDATE_SECONDS = 60
-INTERVAL_CANDLE_LOOKBACK_DISPLAY_MULTIPLAYER = 1  # this will alter the display, also differs for how much data is loaded
+# 1 -> not limit , 0.5 -> display half data
+INTERVAL_CANDLE_LOOKBACK_DISPLAY_DIVIDED = 0.4  # this will alter the display
+# values are start_ts from current time
 INTERVAL_CANDLE_LOOKBACK_TABLE = {
-    '2Min': timedelta(hours=6),
+    '1Min': timedelta(hours=4),
     # '3Min': timedelta(hours=10),
-    '5Min': timedelta(hours=18),
-    '15Min': timedelta(days=2),
-    '1H': timedelta(days=8),
-    '4H': timedelta(days=30),
+    '5Min': timedelta(hours=20),
+    '15Min': timedelta(hours=100),
+    '1H': timedelta(days=15),
+    '4H': timedelta(days=60),
     '12H': timedelta(days=30 * 3),
-    '1D': timedelta(days=30 * 6)
+    '1D': timedelta(days=30 * 4)
 }
-INTERVAL_CANDLE_LOOKBACK_LOAD_MULTIPLAYER = INTERVAL_CANDLE_LOOKBACK_DISPLAY_MULTIPLAYER * 3
 
 
-def fig_update_xylimits(fig, df_ohlc, resample):
+# INTERVAL_CANDLE_LOOKBACK_LOAD_MULTIPLAYER = INTERVAL_CANDLE_LOOKBACK_DISPLAY_MULTIPLAYER * 3
+
+
+def fig_update_xylimits(fig, df_ohlc, resample, ylimit=False):
     # x axis
-    from Crypto.DataProcessing.data_utils import adjust_plot_start_datetime
-    start_display_dt = adjust_plot_start_datetime(resample, is_display=True)
-    start_display_dt = max(df_ohlc.index[0], start_display_dt)
-    print('display_date:', start_display_dt)
-    time_now = df_ohlc.index[-1] + pd.to_timedelta(resample) * 5
+    start_data_dt = df_ohlc.index[0]
+    last_data_dt = df_ohlc.index[-1]
+    start_display_dt = start_data_dt + INTERVAL_CANDLE_LOOKBACK_TABLE[
+        resample] * INTERVAL_CANDLE_LOOKBACK_DISPLAY_DIVIDED
+    print(f'start_data_dt={start_data_dt}, start_display_dt={start_display_dt}, last_data_dt={last_data_dt}')
+
     # yaxis
     df_ohlc_f = df_ohlc[df_ohlc.index > start_display_dt]
-    min_std = df_ohlc_f['low'].std()
-    min_val = df_ohlc_f['low'].min() - min_std
-    max_std = df_ohlc_f['high'].std()
-    max_val = df_ohlc_f['high'].max() + max_std
+    if ylimit:
+        min_std = df_ohlc_f['low'].std()
+        min_val = df_ohlc_f['low'].min() - min_std
+        max_std = df_ohlc_f['high'].std()
+        max_val = df_ohlc_f['high'].max() + max_std
+        # may not be the best solution if using separate graphs
+        fig.update_layout(yaxis1=dict(range=[min_val, max_val]))
 
-    # start_display_dt is half of the data loaded;  time_now takes 5 resample timedelta to have more room
-    fig.update_xaxes(type="date", range=[start_display_dt, time_now])
+    last_display_dt = last_data_dt + pd.to_timedelta(resample) * 3
+    fig.update_xaxes(type="date", range=[start_display_dt, last_data_dt])
     # Done: update only candle chart and not other figs
     # https://stackoverflow.com/questions/66842973/plotly-how-to-change-the-range-of-the-y-axis-of-a-subplot
 
-    fig.update_layout(
-        yaxis1=dict(range=[min_val, max_val]))  # may not be the best solution if using separate graphs
     # fig.update_yaxes(range=[min_val, max_val])
     # lock other axes to be fixed (TODO: should be the patterns)
     fig.update_layout(

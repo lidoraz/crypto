@@ -1,6 +1,8 @@
 START_DATA_DATE = '2022-03-26'  # '2022-04-02'
 COINS = ['BTC', 'ETH', 'SOL', 'ROSE', 'RMRK', 'MOVR', 'DOT', 'LUNA', 'KDA', 'KSM', 'HTR', 'VRA', 'TEL', 'QRDO', 'FLUX',
-         'RNDR', 'MATIC', 'GLMR', 'EGLD', 'LYXE', 'SOUL', 'ACA', 'GCOIN', 'CRV', 'BNB', 'ADA', 'AXS', 'XRP', 'APE',
+         'RNDR', 'MATIC', 'GLMR', 'EGLD', 'LYXE', 'SOUL', 'ACA',
+         # 'GCOIN',
+         'CRV', 'BNB', 'ADA', 'AXS', 'XRP', 'APE',
          'SHIB', 'GALA', 'SAND', 'FTM', 'MANA', 'XLM', 'RUNE', 'OGN', 'CAKE']
 HOURLY_COLS = ['BTC_PRICE', 'BTC_LASTUPDATE', 'BTC_OPENHOUR', 'BTC_HIGHHOUR', 'BTC_LOWHOUR', 'BTC_VOLUMEHOUR',
                'BTC_VOLUMEHOURTO', 'BTC_CHANGEHOUR', 'BTC_CHANGEPCTHOUR', 'BTC_OPEN24HOUR', 'BTC_HIGH24HOUR',

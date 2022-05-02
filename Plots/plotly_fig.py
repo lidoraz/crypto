@@ -8,10 +8,10 @@ def get_updated_fig(df_ohlcv, lookahead=14, xy_limit=True):
     ind_candle = CandleStick(interval, ohlc=df_ohlcv, plot_loc=1)
 
     sub_plots = [
-        CandleIdentification(normalize_detected_patterns=False),
+        Volume(),
+        # CandleIdentification(normalize_detected_patterns=False),
         RSI(lookahead),
-        MACD(),
-        Volume()
+        # MACD(),
     ]
     for idx, s_plot in enumerate(sub_plots):
         s_plot.plot_loc = (idx + 2, 1)
@@ -27,12 +27,12 @@ def get_updated_fig(df_ohlcv, lookahead=14, xy_limit=True):
     ind_candle.plot(fig)
 
     main_plot_indicators = [
-        # SMA(lookahead=7, plot_loc=1, color='orange'),
-        # SMA(lookahead=25, plot_loc=1, color='purple'),
-        # SMA(lookahead=99, plot_loc=1, color='cyan'),
+        SMA(lookahead=7, plot_loc=1, color='orange'),
+        SMA(lookahead=25, plot_loc=1, color='purple'),
+        SMA(lookahead=99, plot_loc=1, color='cyan'),
         # FibMA(14, color='Pink'),
         # EMA(14, color='Teal'),
-        BollingerBands(lookahead, 2, visible=True, plot_loc=1),
+        # BollingerBands(lookahead, 2, visible=True, plot_loc=1),
         SupportResistanceLines(upto_lookahead=720, n_lookaheads=5, geometric_spacing=False, plot_loc=1)]
 
     for ind in main_plot_indicators:

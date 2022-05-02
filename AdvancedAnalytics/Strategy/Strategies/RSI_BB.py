@@ -12,8 +12,10 @@ class RsiBB(Strategy):
     https://www.youtube.com/watch?v=yBjk9r9igcQ
     """
 
-    def __init__(self, params, *args, **kwargs):
-        super().__init__(params, *args, **kwargs)
+    def __init__(self, params=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if params is None:
+            params = {}
         self.ind_ahead = params.get('RSIBB_ind_ahead', 14)
         self.n_rsi_soon = params.get('RSIBB_n_rsi_soon', 10)
         self.low_rsi = params.get('RSIBB_rsi_low', 30)

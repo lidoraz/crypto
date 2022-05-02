@@ -6,8 +6,10 @@ from Indicators import SMA, SupportResistanceLines
 
 
 class MACross(Strategy):
-    def __init__(self, params, short=25, long=100, *args, **kwargs):
-        super().__init__(params, *args, **kwargs)
+    def __init__(self, params=None, short=25, long=100, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if params is None:
+            params = {}
         self.short = params.get('MACROSS_short', short)
         self.long = params.get('MACROSS_long', long)
 

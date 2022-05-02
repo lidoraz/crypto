@@ -13,5 +13,5 @@ class ProviderData(ABC):
 
     # @abstractmethod
     @staticmethod
-    def get_wrapper():
+    def get_wrapper(*args, **kwargs):
         pass

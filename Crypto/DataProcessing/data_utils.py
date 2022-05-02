@@ -6,15 +6,19 @@ import os
 from .DataProvider import DataProvider
 from .data_consts import *
 from Indicators.Indicator import human_format
-from Plots.plot_utils import INTERVAL_CANDLE_LOOKBACK_TABLE, INTERVAL_CANDLE_LOOKBACK_DISPLAY_MULTIPLAYER, \
-    INTERVAL_CANDLE_LOOKBACK_LOAD_MULTIPLAYER
+from Plots.plot_utils import INTERVAL_CANDLE_LOOKBACK_TABLE
 from .data_consts import START_DATA_DATE
 
 
-def get_data_providers():
+def get_data_providers(start_date: str = None, load_agg=True):
+    if start_date is None:
+        start_date = START_DATA_DATE
     data_path = os.path.join(os.getcwd(), 'resources.nosync')
-    price_provider = DataProvider(START_DATA_DATE, os.path.join(data_path, 'data'), COINS)
-    hourly_provider = DataProvider(START_DATA_DATE, os.path.join(data_path, 'data_hourly'), HOURLY_COLS)
+    price_provider = DataProvider(start_date, os.path.join(data_path, 'data'), COINS)
+    if load_agg:
+        hourly_provider = DataProvider(start_date, os.path.join(data_path, 'data_hourly'), HOURLY_COLS)
+    else:
+        hourly_provider = False
     providers = dict(price_provider=price_provider, hourly_provider=hourly_provider)
     return providers
 
@@ -110,9 +114,9 @@ def adjust_plot_start_datetime(interval_length: str, is_display=False, tz_isr=Tr
 
     if interval_length in INTERVAL_CANDLE_LOOKBACK_TABLE:
         if is_display:
-            delta = INTERVAL_CANDLE_LOOKBACK_TABLE[interval_length] * INTERVAL_CANDLE_LOOKBACK_DISPLAY_MULTIPLAYER
+            delta = INTERVAL_CANDLE_LOOKBACK_TABLE[interval_length]  # * INTERVAL_CANDLE_LOOKBACK_DISPLAY_MULTIPLAYER
         else:
-            delta = INTERVAL_CANDLE_LOOKBACK_TABLE[interval_length] * INTERVAL_CANDLE_LOOKBACK_LOAD_MULTIPLAYER
+            delta = INTERVAL_CANDLE_LOOKBACK_TABLE[interval_length]  #* INTERVAL_CANDLE_LOOKBACK_LOAD_MULTIPLAYER
         filter_datetime = (start_datetime - delta)
         if filter_datetime > start_datetime:
             filter_datetime = start_datetime

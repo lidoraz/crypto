@@ -12,22 +12,23 @@ class BB(Strategy):
     https://www.youtube.com/watch?v=yBjk9r9igcQ
     """
 
-    def __init__(self, params, *args, **kwargs):
-        super().__init__(params, *args, **kwargs)
-        self.ind_ahead = params.get('BB_ind_ahead', 14)
+    def __init__(self, params=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if params is None:
+            params = {}
+        self.ind_lookahead = params.get('BB_ind_ahead', 14)
         self.bb_std = params.get('BB_std', 2)
-        self.ind_ahead = BollingerBands(self.ind_ahead, self.bb_std)
+        self.ind_bb = BollingerBands(self.ind_lookahead, self.bb_std)
         self.ind_sr = SupportResistanceLines()
         # ind_sma = SMA(100)
 
     def add_indicators(self, df):
-        # n_rsi_soon: when RSI has alert, how forward to notify that alert
-        df = df.join(self.ind_ahead.calc(df))
-        df = df.join(self.ind_ahead.calc(df))
-
-        df = df.dropna()
-        df['OVER_BB'] = df[f'BBTOP_{self.ind_ahead}'] < df['close']
-        df['BELOW_BB'] = df[f'BBBOT_{self.ind_ahead}'] > df['close']
+        df = df.join(self.ind_bb.calc(df))
+        df = df.join(self.ind_sr.calc(df))
+        # TODO: Support Resistance may be null if not found
+        # df = df.dropna()
+        df['OVER_BB'] = df[f'BBTOP_{self.ind_lookahead}'] < df['close']
+        df['BELOW_BB'] = df[f'BBBOT_{self.ind_lookahead}'] > df['close']
 
         df['BUY_ALGO'] = df['BELOW_BB']
         df['SELL_ALGO'] = df['OVER_BB']

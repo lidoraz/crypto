@@ -55,3 +55,9 @@ class TelegramBot:
         except requests.ConnectionError as e:
             print('Something is wrong with telegram api')
             print(e)
+
+
+if __name__ == '__main__':
+    bot = TelegramBot()
+    t = "Ape on the rise!"
+    bot.send(t)
