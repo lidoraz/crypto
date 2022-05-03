@@ -44,6 +44,13 @@ def _treat_name(symbol, tf):
     return f'{symbol}_{tf}'
 
 
+def split_db_name_to_table_tf(x):
+    last_underscore_idx = len(x) - x[::-1].index('_') - 1
+    table_name_only = x[:last_underscore_idx]
+    tf = x[last_underscore_idx + 1:]
+    return table_name_only, tf
+
+
 # TODO add get tables for sanity check.
 
 class Persistence:
@@ -52,6 +59,15 @@ class Persistence:
         self.db_path = db_path
         self.con = sqlite3.connect(db_path, check_same_thread=False)
         self.INDEX = 'ts'
+        self.tables_current_idx = {}
+        self._preload_current_ts()
+
+    def _preload_current_ts(self):
+        tables = self._get_all_tables()
+        for x in tables:
+            table_name_only, tf = split_db_name_to_table_tf(x)
+            latest_ts = self.get_latest_ts(table_name_only, tf)
+            self.tables_current_idx[x] = latest_ts
 
     def create(self, symbol, tf):
         tbl_name = _treat_name(symbol, tf)
@@ -60,6 +76,12 @@ class Persistence:
         print(tbl_name)
         cur.execute(f"CREATE TABLE if not exists {tbl_name} ({cols_str(cols)},PRIMARY KEY ({cols[0][0]}))")
         self.con.commit()
+        self.tables_current_idx[tbl_name] = 0
+
+    def _get_all_tables(self):
+        q = 'SELECT name from sqlite_master where type= "table"'
+        tables = pd.read_sql_query(q, con=self.con)['name'].tolist()
+        return tables
 
     def _add_verified(self, df, symbol, tf):
         tbl_name = _treat_name(symbol, tf)
@@ -70,6 +92,7 @@ class Persistence:
             values_to_insert = f"{idx}, {row_values_to_str(row)}"
             cur.execute(f"INSERT OR IGNORE INTO {tbl_name} VALUES ({values_to_insert})")
         self.con.commit()
+        self.tables_current_idx[tbl_name] = df.index[-1]
         return len(df)
 
     def add(self, df, symbol, tf):
@@ -108,12 +131,15 @@ class Persistence:
             return None
         return df
 
-    def get_latest_ts(self, symbol, tf):
+    def get_latest_ts(self, symbol=None, tf=None):
         tbl_name = _treat_name(symbol, tf)
+        if tbl_name not in self.tables_current_idx:
+            return -1
         query = f"SELECT * from {tbl_name} order by ts desc limit 1"
         df = pd.read_sql_query(query, self.con, index_col=self.INDEX)
-        # df.index = pd.to_datetime(df.index)
-        return df.index[0]
+        if len(df):
+            return df.index[0]
+        return 0
 
     @staticmethod
     def get_utcnow_ts():

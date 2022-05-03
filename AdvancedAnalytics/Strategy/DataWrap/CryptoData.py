@@ -1,7 +1,8 @@
 from Crypto.DataProcessing.DataProvider import DataProvider
-from Crypto.ccxt_utils import get_candles_from_db, exchance_symbol_pairs, get_coins
+from Crypto.ccxt_utils import get_candles_from_db, get_coins
+from Crypto.symbols import exchance_symbol_pairs
 from Nasdaq.Persistence import Persistence
-from .ProviderData import ProviderData
+from .ProviderData import ProviderData, PreLoaded
 from Indicators import CandleStick
 from Crypto.DataProcessing.data_consts import COINS, START_DATA_DATE
 from Crypto.DataProcessing.data_utils import get_data_providers, prepare_data
@@ -64,6 +65,14 @@ class CryptoDataLive(ProviderData):
     def get_latest_ts(self):
         # self.lastest_ts = self.price_provider.serve().index[-1]
         return self.lastest_ts
+
+    def get_preloaded(self, tfs):
+        if isinstance(tfs, str):
+            tfs = [tfs]
+        for symbol in self.symbols:
+            for tf in tfs:
+                _ = self.get_data(symbol, tf)
+        return PreLoaded(self._data, self.symbols)
 
     @staticmethod
     def get_wrapper(start_ts=None, start_date=None):

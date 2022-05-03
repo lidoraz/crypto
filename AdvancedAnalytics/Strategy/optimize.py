@@ -2,6 +2,8 @@ import pandas as pd
 import itertools
 from datetime import datetime
 from tqdm import tqdm
+from joblib import Parallel, delayed
+
 from AdvancedAnalytics.Strategy.DataWrap import ProviderData
 from AdvancedAnalytics.Strategy.Strategies import *
 from Crypto.DataProcessing.DataProvider import TIME_CONV
@@ -60,7 +62,7 @@ def mark_enter_exit_points(provider: ProviderData, strategy: str, params):
     symbols = provider.get_symbols()
     sum_pct = 0
     trades_str = []
-    open_trades = 0
+    n_open_trades = 0
     tf = params['tf']
     sell_pct = params['sell_pct']
     for symbol in symbols:
@@ -72,12 +74,14 @@ def mark_enter_exit_points(provider: ProviderData, strategy: str, params):
         act_trades_str = [f'{symbol}- {trade}' for trade in act_trades_str]  # add symbol
         sum_pct += act_sum_pct
         trades_str += act_trades_str
-        open_trades += is_open
+        n_open_trades += is_open
 
-    return sum_pct, trades_str, open_trades
+    n_trades = len(trades_str)
+    print(f'{params}\t\t#trades: {n_trades}\t#n_open_trades: {n_open_trades}\t sum_pct: {sum_pct:.2%}')
+    return sum_pct, trades_str, n_open_trades
 
 
-def find_optimal_strategy(provider: ProviderData, strategy: str, optimized_params: dict, verbose=0):
+def find_optimal_strategy(provider: ProviderData, strategy: str, optimized_params: dict, n_jobs=8):
     time_start = datetime.now()
     print()
     res = []
@@ -89,17 +93,31 @@ def find_optimal_strategy(provider: ProviderData, strategy: str, optimized_param
     keys, values = zip(*optimized_params.items())
     permutations_dicts = [dict(zip(keys, v)) for v in itertools.product(*values)]
     # iterate permutation with dicts: https://stackoverflow.com/questions/38721847/how-to-generate-all-combination-from-values-in-dict-of-lists-in-python
-    for params in tqdm(permutations_dicts):
-        sum_pct, trades_str, n_open_trades = mark_enter_exit_points(provider, strategy, params)
-        n_trades = len(trades_str)
-        if verbose > 0:
-            print(f'{params}\t\t#trades: {n_trades}\t#n_open_trades: {n_open_trades}\t sum_pct: {sum_pct:.2%}')
-        # add to list for future analysis
+    # for params in tqdm(permutations_dicts):
+    #     sum_pct, trades_str, n_open_trades = mark_enter_exit_points(provider, strategy, params)
+    #     n_trades = len(trades_str)
+    #     if verbose > 0:
+    #         print(f'{params}\t\t#trades: {n_trades}\t#n_open_trades: {n_open_trades}\t sum_pct: {sum_pct:.2%}')
+    #     # add to list for future analysis
+    #     params['sum_pct'] = sum_pct
+    #     params['n_trades'] = n_trades
+    #     params['n_open_trades'] = n_open_trades
+    #     res.append(params)
+    #     l_trades_str.append(trades_str)
+
+    provider_loaded = provider.get_preloaded(optimized_params['tf'])
+    job_results = Parallel(n_jobs=n_jobs)(
+        delayed(mark_enter_exit_points)(provider_loaded, strategy, params) for params in tqdm(permutations_dicts))
+
+    l_trades_str = []
+    res = []
+    for params, job_result in zip(permutations_dicts, job_results):
+        sum_pct, trades_str, n_open_trades = job_result
         params['sum_pct'] = sum_pct
-        params['n_trades'] = n_trades
+        params['n_trades'] = len(trades_str)
         params['n_open_trades'] = n_open_trades
-        res.append(params)
         l_trades_str.append(trades_str)
+        res.append(params)
 
     df = pd.DataFrame(res)
     df = df.sort_values('sum_pct', ascending=False)
@@ -116,7 +134,7 @@ def find_optimal_strategy(provider: ProviderData, strategy: str, optimized_param
 
     # save df
     time = datetime.now()
-    print(f"TIME TOOK: {(time - time_start).total_seconds() / 60 :.2} min")
+    print(f"TIME TOOK: {int((time - time_start).total_seconds() / 60):.2} min")
     name = f'{time.strftime(TIME_CONV)}_{provider.name}_{strategy}'
 
     output_path = 'AdvancedAnalytics/Strategy/strategy_output/'
