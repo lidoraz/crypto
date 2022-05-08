@@ -1,5 +1,5 @@
 import pandas as pd
-from Nasdaq.Persistence import Persistence
+from Persistence import Persistence
 
 
 def fill_db():

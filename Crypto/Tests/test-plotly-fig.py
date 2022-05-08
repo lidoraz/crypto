@@ -1,8 +1,13 @@
-from Crypto.DataProcessing.data_consts import COINS, HOURLY_COLS, START_DATA_DATE
-from Nasdaq.Persistence import Persistence
+# from Crypto.DataProcessing.data_consts import COINS, HOURLY_COLS, START_DATA_DATE
+from Utils import Persistence
 from Crypto.ccxt_utils import _resample_from_ohlcv
 from Plots.plotly_fig import get_updated_fig
 import os
+from Crypto.symbols import exchance_symbol_pairs
+from Plots.plot_utils import *
+from Plots.plotly_fig import get_updated_fig
+
+coins = [c[1].split('/')[0] for c in exchance_symbol_pairs]
 
 # level 2 up
 new_path = '/'.join(os.getcwd().split('/')[:-2])
@@ -11,17 +16,15 @@ os.chdir(new_path)
 
 data_path = os.path.join(os.getcwd(), 'resources.nosync')
 
-coins = COINS
 # hourly_cols = HOURLY_COLS
 resample_keywords = ['2Min', '5Min', '15Min', '1H', '4H', '1D']
-coin = COINS[1]
-resample = resample_keywords[-1]
+coin = coins[1]
+resample = resample_keywords[-3]
 # start_date = START_DATA_DATE  # '2022-03-26'
 # print(start_date, coin, resample)
 
 print(coin, resample)
-db = Persistence(
-    '/Users/lidorazulay/Library/Mobile Documents/com~apple~CloudDocs/DS/Crypto/Crypto/Tests/ccxt-mytests/example.db')
+db = Persistence('/Users/lidorazulay/Library/Mobile Documents/com~apple~CloudDocs/DS/Crypto/ccxt_1m.db')
 exchange_str = 'binance'
 symbol_str = f'{coin}/USDT'
 db_symbol = f'{exchange_str}_{symbol_str}'.upper()

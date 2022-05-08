@@ -6,7 +6,8 @@ from joblib import Parallel, delayed
 
 from AdvancedAnalytics.Strategy.DataWrap import ProviderData
 from AdvancedAnalytics.Strategy.Strategies import *
-from Crypto.DataProcessing.DataProvider import TIME_CONV
+
+TIME_CONV = "%Y-%m-%dT%H:%M:%S"
 
 
 # TODO: Strategy: A better way to test stratgies is to compare each day the market, and look whenever there is a new oppertunity.
@@ -77,7 +78,7 @@ def mark_enter_exit_points(provider: ProviderData, strategy: str, params):
         n_open_trades += is_open
 
     n_trades = len(trades_str)
-    print(f'{params}\t\t#trades: {n_trades}\t#n_open_trades: {n_open_trades}\t sum_pct: {sum_pct:.2%}')
+    # print(f'{params}\t\t#trades: {n_trades}\t#n_open_trades: {n_open_trades}\t sum_pct: {sum_pct:.2%}')
     return sum_pct, trades_str, n_open_trades
 
 
@@ -90,21 +91,9 @@ def find_optimal_strategy(provider: ProviderData, strategy: str, optimized_param
     keys_to_remove = [k for k in optimized_params if not k.startswith(strategy) and k not in ['tf', 'sell_pct']]
     optimized_params = {k: optimized_params[k] for k in optimized_params if k not in keys_to_remove}
     print(f'Finding optimal strategies with these params:', optimized_params.keys())
+    # iterate permutation with dicts: https://stackoverflow.com/questions/38721847/how-to-generate-all-combination-from-values-in-dict-of-lists-in-python
     keys, values = zip(*optimized_params.items())
     permutations_dicts = [dict(zip(keys, v)) for v in itertools.product(*values)]
-    # iterate permutation with dicts: https://stackoverflow.com/questions/38721847/how-to-generate-all-combination-from-values-in-dict-of-lists-in-python
-    # for params in tqdm(permutations_dicts):
-    #     sum_pct, trades_str, n_open_trades = mark_enter_exit_points(provider, strategy, params)
-    #     n_trades = len(trades_str)
-    #     if verbose > 0:
-    #         print(f'{params}\t\t#trades: {n_trades}\t#n_open_trades: {n_open_trades}\t sum_pct: {sum_pct:.2%}')
-    #     # add to list for future analysis
-    #     params['sum_pct'] = sum_pct
-    #     params['n_trades'] = n_trades
-    #     params['n_open_trades'] = n_open_trades
-    #     res.append(params)
-    #     l_trades_str.append(trades_str)
-
     provider_loaded = provider.get_preloaded(optimized_params['tf'])
     job_results = Parallel(n_jobs=n_jobs)(
         delayed(mark_enter_exit_points)(provider_loaded, strategy, params) for params in tqdm(permutations_dicts))
@@ -134,7 +123,7 @@ def find_optimal_strategy(provider: ProviderData, strategy: str, optimized_param
 
     # save df
     time = datetime.now()
-    print(f"TIME TOOK: {int((time - time_start).total_seconds() / 60):.2} min")
+    print(f"TIME TOOK: {int((time - time_start).total_seconds() / 60)} min")
     name = f'{time.strftime(TIME_CONV)}_{provider.name}_{strategy}'
 
     output_path = 'AdvancedAnalytics/Strategy/strategy_output/'

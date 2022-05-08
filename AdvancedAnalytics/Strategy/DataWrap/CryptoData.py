@@ -1,70 +1,62 @@
-from Crypto.DataProcessing.DataProvider import DataProvider
 from Crypto.ccxt_utils import get_candles_from_db, get_coins
-from Crypto.symbols import exchance_symbol_pairs
-from Nasdaq.Persistence import Persistence
+from Utils import Persistence
 from .ProviderData import ProviderData, PreLoaded
-from Indicators import CandleStick
-from Crypto.DataProcessing.data_consts import COINS, START_DATA_DATE
-from Crypto.DataProcessing.data_utils import get_data_providers, prepare_data
-
-
-# from Crypto.DataProcessing.data_utils import attach_volume_to_data
-
-
-class CryptoData(ProviderData):
-    def __init__(self, df_prices, df_agg, symbols):
-        self.df_prices = df_prices
-        self.df_agg = df_agg
-        self.symbols = symbols
-        self.name = 'Crypto'
-
-    def get_data(self, coin, tf):
-        df_ohlc = CandleStick(tf).calc(self.df_prices[coin])
-        # df_ohlc = attach_volume_to_data(self.df_agg, coin, tf, df_ohlc)
-        return df_ohlc
-
-    def get_symbols(self):
-        return self.symbols
-
-    def get_latest_ts(self):
-        return self.df_prices.index[-1]
-
-    @staticmethod
-    def get_wrapper():
-        providers = get_data_providers()
-        df_prices, df_agg = prepare_data(providers, START_DATA_DATE)
-        data_wrapper = CryptoData(df_prices, df_agg, COINS)
-        return data_wrapper
+import pandas as pd
+import time
 
 
 class CryptoDataLive(ProviderData):
-    def __init__(self, symbols, start_ts=None, start_date=None):
+    def __init__(self, symbols, update_sec_every, is_safe, start_ts=None, start_date=None):
         # self.symbols = symbols
         self.symbols = symbols
         self.name = 'Crypto'
-        self.lastest_ts = -1
+        self.update_sec_every = update_sec_every
+        self.is_safe = is_safe
         self.start_ts = start_ts
         self.start_date = start_date
+        # TODO: remove fixed path
         db_path = '/Users/lidorazulay/Library/Mobile Documents/com~apple~CloudDocs/DS/Crypto/ccxt_1m.db'
         self.db = Persistence(db_path)
         self._data = {}
+        self._lastest_data_ts = {}
+        # self.diff_local_db_sec = 240  # TODO(#3323): check why difference is high, it should be atleast 1min, but not more than 2 min.
 
     def get_data(self, coin, tf):
         cache_name = f'{coin}{tf}'
+        curr_ts_local = int(time.time())
         if cache_name in self._data:
-            return self._data[cache_name]
-        else:
-            print(cache_name, 'Fetching from db..')
-            data = get_candles_from_db(self.db, coin, tf, self.start_ts, self.start_date)
-            self._data[cache_name] = data
-            return data
+            if self.update_sec_every:
+                ts_diff = curr_ts_local - self._lastest_data_ts[cache_name]
+                if ts_diff < self.update_sec_every:  # not needed cache_name in self._lastest_data_ts and
+                    # print('using cache.. ', coin, ts_diff)
+                    return self._data[cache_name]
+            else:
+                return self._data[cache_name]
+        # print(cache_name, 'Fetching from db..')
+        data = get_candles_from_db(self.db, coin, tf, self.start_ts, self.start_date)
+        self._data[cache_name] = data
+        curr_ts_db = data.attrs['curr_ts_db']
+        diff_local_db = curr_ts_local - curr_ts_db
+        self._lastest_data_ts[cache_name] = curr_ts_db
+
+        is_updated = diff_local_db < pd.to_timedelta(
+            tf).total_seconds() / 2  # TODO(#3323) will not be suitable for less than 5min tf.
+        if not is_updated:
+            print(f'Warning {coin, tf} DB timestamp is not updated to machine time,  diff= {diff_local_db}sec')
+            if self.is_safe:
+                print(f'Warning {coin, tf} ignored!')
+                return None
+
+        return data
 
     def get_symbols(self):
         return self.symbols
 
-    def get_latest_ts(self):
-        # self.lastest_ts = self.price_provider.serve().index[-1]
-        return self.lastest_ts
+    # TODO: add option to update if update is interval is none.
+
+    # def get_latest_ts(self):
+    #     # self.lastest_ts = self.price_provider.serve().index[-1]
+    #     return self.lastest_ts
 
     def get_preloaded(self, tfs):
         if isinstance(tfs, str):
@@ -75,9 +67,19 @@ class CryptoDataLive(ProviderData):
         return PreLoaded(self._data, self.symbols)
 
     @staticmethod
-    def get_wrapper(start_ts=None, start_date=None):
+    def get_wrapper(update_sec_every, is_safe, start_ts=None, start_date=None):
+        # usually set every 60 sec
+        print(f'CryptoDataLive: {update_sec_every, is_safe, start_ts, start_date}')
         if start_date and start_ts:
             raise ValueError('Only one start can be set.')
         coins = get_coins()
-        data_wrapper = CryptoDataLive(coins, start_ts, start_date)
+        data_wrapper = CryptoDataLive(coins, update_sec_every, is_safe, start_ts, start_date)
         return data_wrapper
+
+    # # TODO: add this into code
+    # @staticmethod
+    # def get_offline_wrapper(time_intervals, start_ts=None, start_date=None):
+    #     coins = get_coins()
+    #     data_wrapper = CryptoDataLive(coins, None, False, start_ts, start_date)
+    #     provider_loaded = data_wrapper.get_preloaded(time_intervals)
+    #     return provider_loaded

@@ -1,20 +1,22 @@
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
-from Crypto.ccxt_utils import _resample_from_ohlcv, get_candles_from_db
-from DataProcessing.data_consts import COINS
+from Crypto.ccxt_utils import _resample_from_ohlcv, get_candles_from_db, get_candles_from_ccxt
+from Utils import Persistence
+from Crypto.symbols import exchance_symbol_pairs
 from Plots.plot_utils import *
 from Plots.plotly_fig import get_updated_fig
 import dash_bootstrap_components as dbc
+
 from datetime import datetime
 
-coins = COINS
+coins = [c[1].split('/')[0] for c in exchance_symbol_pairs]
 # hourly_cols = HOURLY_COLS
 resample_keywords = list(INTERVAL_CANDLE_LOOKBACK_TABLE.keys())
 resample_keywords_text = [f" {k} | " for k in resample_keywords[:-1]] + [f" {resample_keywords[-1]}"]
 resample_radio_options = dict(
     zip(resample_keywords, resample_keywords_text))  # {k: f' {k} |' for k in resample_keywords}
-from Nasdaq.Persistence import Persistence
+
 
 db_path = '/Users/lidorazulay/Library/Mobile Documents/com~apple~CloudDocs/DS/Crypto/ccxt_1m.db'
 db = Persistence(db_path, check_same_thread=True)
@@ -28,7 +30,7 @@ server = app.server  # needed for deployment
 app.title = title
 
 title_html = html.H4(title, style={'padding-right': '5%', 'margin-left': '2%'})
-coin_html = dcc.Dropdown(COINS, COINS[0], id='coin-type', clearable=False, style=dict(width='60pt'))
+coin_html = dcc.Dropdown(coins, 'BTC', id='coin-type', clearable=False, style=dict(width='60pt'))
 live_update_html = html.Div(id='live-update-text', style={'margin': 'auto'}, children="")  # 'width': '20%',
 resample_selector_html = dcc.RadioItems(options=resample_radio_options, value=resample_keywords[2], id='resample-type',
                                         inline=True)
@@ -136,19 +138,9 @@ def update_graph_live(n, coin, resample, input_lookahead):
     # symbol_str = f'{coin}/USDT'
     # db_symbol = f'{exchange_str}_{symbol_str}'.upper()
     start_ts = int((datetime.utcnow() - INTERVAL_CANDLE_LOOKBACK_TABLE[resample]).timestamp())
-    df_ohlcv = get_candles_from_db(db, coin, resample, start_ts)
-    # exchange_str = 'binance'
-    #
-    #
-    # symbol_str = f'{coin}/USDT'
-    # db_symbol = f'{exchange_str}_{symbol_str}'.upper()
+    df_ohlcv = get_candles_from_db(db, coin, resample, start_ts=start_ts)
 
-    # df_ohlcv = db.get_df(db_symbol, '1m', start_ts=start_ts)
-    # df_ohlcv = _resample_from_ohlcv(df_ohlcv, resample)
-    # start_ts = df_ohlcv.index[-1] - INTERVAL_CANDLE_LOOKBACK_TABLE[resample]
-    # df_ohlcv = df_ohlcv[df_ohlcv.index > start_ts]
-
-    # df_ohlcv = get_crypto_olhcv(coin, resample, providers, filter_datetime, is_volume_hourto=True)
+    # df_ohlcv = get_candles_from_ccxt(coin, '1D')
 
     fig = get_updated_fig(df_ohlcv, lookahead=input_lookahead, xy_limit=True)
     t1 = (datetime.now() - t0).total_seconds()

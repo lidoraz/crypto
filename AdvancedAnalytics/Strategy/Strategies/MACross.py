@@ -30,8 +30,10 @@ class MACross(Strategy):
         if row['BUY_ALGO']:
             buy_idx = idx
             # add stop-loss
+            buy_price = row['close']
             sell_price_win_stop = row['resistance']
             sell_price_lose_stop = row['support']
             return {'buy_idx': buy_idx,
+                    'buy_price': buy_price,
                     'sell_price_win_stop': sell_price_win_stop,
                     'sell_price_lose_stop': sell_price_lose_stop}

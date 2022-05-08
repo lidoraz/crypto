@@ -55,7 +55,7 @@ def split_db_name_to_table_tf(x):
 
 class Persistence:
 
-    def __init__(self, db_path='example.db', check_same_thread=True):
+    def __init__(self, db_path, check_same_thread=True):
         self.db_path = db_path
         self.con = sqlite3.connect(db_path, check_same_thread=False)
         self.INDEX = 'ts'
@@ -125,10 +125,11 @@ class Persistence:
         else:
             query = f"SELECT * from {tbl_name} order by ts"
         df = pd.read_sql_query(query, self.con, index_col='ts')
-        if to_datetime:
-            df.index = pd.to_datetime(df.index, unit='s', utc=True).tz_convert(localize)
         if len(df) == 0:
             return None
+        df.attrs['curr_ts_db'] = df.index[-1]
+        if to_datetime:
+            df.index = pd.to_datetime(df.index, unit='s', utc=True).tz_convert(localize)
         return df
 
     def get_latest_ts(self, symbol=None, tf=None):

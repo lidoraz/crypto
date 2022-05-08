@@ -41,7 +41,7 @@ def fig_update_xylimits(fig, df_ohlc, resample, ylimit=False):
         fig.update_layout(yaxis1=dict(range=[min_val, max_val]))
 
     last_display_dt = last_data_dt + pd.to_timedelta(resample) * 3
-    fig.update_xaxes(type="date", range=[start_display_dt, last_data_dt])
+    fig.update_xaxes(type="date", range=[start_display_dt, last_display_dt])
     # Done: update only candle chart and not other figs
     # https://stackoverflow.com/questions/66842973/plotly-how-to-change-the-range-of-the-y-axis-of-a-subplot
 

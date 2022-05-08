@@ -1,19 +1,27 @@
-# -*- coding: utf-8 -*-
-import os
 import sys
-from asyncio import get_event_loop, gather
-from Nasdaq.Persistence import Persistence
-import ccxt.async_support as ccxt  # noqa: E402
+import os
 
-print('CCXT Version:', ccxt.__version__)
+# append root folder path to import needed libs (Persistence)
+this_folder = os.path.dirname(os.path.abspath(__file__))
+root_folder = os.path.dirname(os.path.dirname(this_folder))
+sys.path.append(root_folder)
 
-# -----------------------------------------------------------------------------
 import pandas as pd
 import asyncio
 from datetime import datetime, timezone
+from asyncio import get_event_loop, gather
+from Utils import Persistence
+import ccxt.async_support as ccxt
+
+print('CCXT Version:', ccxt.__version__)
+
+# exit(0)
 
 df_cols = ['ts', 'open', 'high', 'low', 'close', 'volume']
-ccxt_errors = (ccxt.errors.RateLimitExceeded, ccxt.errors.BadRequest, ccxt.errors.RequestTimeout)
+ccxt_errors = (ccxt.errors.RateLimitExceeded,
+               ccxt.errors.BadRequest,
+               ccxt.errors.RequestTimeout,
+               ccxt.errors.ExchangeNotAvailable)
 
 FETCH_LIMIT = 1000
 START_TS = 1651000000  # 1646000000  # Sunday, February 27, 2022
@@ -139,7 +147,7 @@ async def fetch_ohlcv_forever_retry(db, exchange, symbol, timeframe):  # always 
                 await fetch_ohlcv_sync_with_db(db, exchange, symbol, timeframe, ts)
                 break
             except ccxt_errors as e:
-                print(utc_now, exchange, symbol, f'Failed after {n_tries}/{FETCH_LIMIT}', type(e).__name__, str(e))
+                print(utc_now, exchange, symbol, f'Failed after {n_tries}/{N_TRIES_LIMIT}', type(e).__name__, str(e))
                 n_tries += 1
                 await asyncio.sleep(1)
 

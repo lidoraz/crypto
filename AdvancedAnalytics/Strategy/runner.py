@@ -11,9 +11,10 @@ import numpy as np
 if __name__ == '__main__':
     # DS ################################################################################################################################################
     # TODO: in optimizer filter out params that are not being used. can extract this with a list from each strategy
-    optimize_params = {'tf': ['15min'],  # ['1H'],  # ['15Min', '1H']
+    optimize_params = {'tf': ['1H'],  # ['15Min', '1H']
                        'sell_pct': np.arange(0, 0.10, 0.02)}  # 0.15 is too much
-    data_wrapper = CryptoDataLive.get_wrapper()  # start_date='2022-04-25'
+    data_wrapper = CryptoDataLive.get_wrapper(update_sec_every=120, is_safe=False,
+                                              start_date='2022-04-26')  # start_date='2022-04-25'
 
     # optimize_params = {'tf': ['1D'],  # Nasdaq Daily data
     #           'set_profit_pct': np.arange(0, 0.15, 0.02)}
@@ -22,10 +23,10 @@ if __name__ == '__main__':
     # Strategies ########################################################################################################################################
 
     # MACross ###################################################################################################
-    # strategy_params_macross = {'MACROSS_short': range(5, 26, 5),
-    #                            'MACROSS_long': range(50, 101, 10)}
-    # optimize_params.update(strategy_params_macross)
-    # find_optimal_strategy(data_wrapper, strategy='MACROSS', optimized_params=optimize_params)
+    strategy_params_macross = {'MACROSS_short': range(5, 26, 5),
+                               'MACROSS_long': range(50, 101, 10)}
+    optimize_params.update(strategy_params_macross)
+    find_optimal_strategy(data_wrapper, strategy='MACROSS', optimized_params=optimize_params)
     # RSIBB ###################################################################################################
     strategy_params_rsi = {'RSIBB_n_rsi_soon': range(5, 14, 2),
                            'RSIBB_ind_ahead': range(10, 17, 2),
@@ -35,8 +36,8 @@ if __name__ == '__main__':
     find_optimal_strategy(data_wrapper, strategy='RSIBB', optimized_params=optimize_params)
 
     # BB #############
-    # strategy_params_rsi = {'BB_ind_ahead': range(5, 18, 4),
-    #                        'BB_std': [1.5, 2, 2.5]
-    #                        }
-    # optimize_params.update(strategy_params_rsi)
-    # find_optimal_strategy(data_wrapper, strategy='BB', optimized_params=optimize_params)
+    strategy_params_rsi = {'BB_ind_ahead': range(5, 18, 4),
+                           'BB_std': [1.5, 2, 2.5]
+                           }
+    optimize_params.update(strategy_params_rsi)
+    find_optimal_strategy(data_wrapper, strategy='BB', optimized_params=optimize_params)

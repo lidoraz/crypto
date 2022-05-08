@@ -38,9 +38,11 @@ class BB(Strategy):
     def act_buy(self, idx, row):
         if row['BUY_ALGO']:
             buy_idx = idx
+            buy_price = row['close']
             # add stop-loss
             sell_price_win_stop = row['resistance']
             sell_price_lose_stop = row['support']
             return {'buy_idx': buy_idx,
+                    'buy_price': buy_price,
                     'sell_price_win_stop': sell_price_win_stop,
                     'sell_price_lose_stop': sell_price_lose_stop}
