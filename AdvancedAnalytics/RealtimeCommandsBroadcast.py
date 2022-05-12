@@ -14,6 +14,13 @@ def get_latest_buy_sell(data_wrapper, symbols, stratgy, tf='1H'):
     for coin in symbols:
         # TODO: add to get_data option to filter out for most recent data, not only on init class.
         df = data_wrapper.get_data(coin, tf)
+        # TODO rework this.
+        import pandas as pd
+        from dateutil import tz
+        now_minus_tf = datetime.now(tz.gettz('Israel')) - pd.to_timedelta(tf)
+        df = df[:now_minus_tf]
+        # now_minus_tf_aligned = pd.to_datetime(now_minus_tf.replace(minute=0, second=0, microsecond=0))
+
         # TODO: get the data, and check its ts if it matches current machine ts to make sure we are sending correct ts.
         if df is None:
             print('Skipping:', coin, tf)
