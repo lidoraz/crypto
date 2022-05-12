@@ -1,3 +1,10 @@
+import os
+import sys
+
+this_folder = os.path.dirname(os.path.abspath(__file__))
+root_folder = os.path.dirname(os.path.dirname(this_folder))
+sys.path.append(root_folder)
+
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
@@ -8,12 +15,7 @@ from Plots.plot_utils import *
 from Plots.plotly_fig import get_updated_fig
 import dash_bootstrap_components as dbc
 from datetime import datetime
-import os
-import sys
 
-this_folder = os.path.dirname(os.path.abspath(__file__))
-root_folder = os.path.dirname(os.path.dirname(this_folder))
-sys.path.append(root_folder)
 
 coins = [c[1].split('/')[0] for c in exchance_symbol_pairs]
 resample_keywords = list(INTERVAL_CANDLE_LOOKBACK_TABLE.keys())
