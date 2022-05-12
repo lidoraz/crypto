@@ -29,8 +29,8 @@ def get_latest_buy_sell(data_wrapper, symbols, stratgy, tf='1H'):
 
         last_row = df.iloc[n_candle]
         ts = df.index[-1]
-        print(ts, coin, tf)
         buy_vars = stratgy.act_buy(0, last_row)  # last row
+        # print(ts, coin, tf)
         #            return {'buy_idx': buy_idx,
         #                     'buy_price': buy_price,
         #                     'sell_price_win_stop': sell_price_win_stop,
