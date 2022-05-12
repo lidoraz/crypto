@@ -125,10 +125,11 @@ async def fetch_ohlcv_sync_with_db(db, exchange, symbol, timeframe, ts):
         df_sync = df[(df.index > db_latest_ts) & (df.index <= ts)]
         if len(df_sync):
             to_dt = datetime.fromtimestamp
-            print(f'{save_symbol} Saving {len(df_sync)} into'
-                  f'\tdb:{to_dt(db_latest_ts)},'
-                  f'\tdfmin:{to_dt(df_sync.index.min())},'
-                  f'\tdfmax:{to_dt(df_sync.index.max())}')
+            if len(df_sync) > 1:
+                print(f'{save_symbol}\tSaving {len(df_sync)} records'
+                      f'\t({to_dt(df_sync.index.min())},'
+                      f'{to_dt(df_sync.index.max())})',
+                      f'\tinto db, db_ts:{to_dt(db_latest_ts)}')
             db.add(df_sync, save_symbol, timeframe)
 
 
@@ -156,6 +157,7 @@ async def fetch_ohlcv_forever_retry(db, exchange, symbol, timeframe):  # always 
     return -1
 
 
+# Saving closed candles only unfinished candles are dropped.
 async def main():
     db_path = DB_PATH
     db = Persistence(db_path)

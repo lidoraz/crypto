@@ -41,7 +41,8 @@ class CryptoData(ProviderData):
         diff_local_db = curr_ts_local - curr_ts_db
         self._lastest_data_ts[cache_name] = curr_ts_db
         # TODO(#3323) will not be suitable for less than 5min tf.
-        is_updated = diff_local_db < pd.to_timedelta(tf).total_seconds() / 2
+        # is_updated = diff_local_db < pd.to_timedelta(tf).total_seconds() / 2
+        is_updated = diff_local_db < pd.to_timedelta('5min')
         if not is_updated:
             print(f'Warning {coin, tf} DB timestamp is not updated to machine time,  diff= {diff_local_db}sec')
             if self.live:
@@ -69,10 +70,9 @@ class CryptoData(ProviderData):
 
     @staticmethod
     def get_wrapper(live, start_ts=None, start_date=None):
-        # usually set every 60 sec
-        print(f'CryptoData: {live, start_ts, start_date}')
         if start_date and start_ts:
             raise ValueError('Only one start can be set.')
+        print(f'CryptoData: {live, start_ts, start_date}')
         coins = get_coins()
         data_wrapper = CryptoData(coins, live, start_ts, start_date)
         return data_wrapper

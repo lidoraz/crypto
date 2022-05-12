@@ -92,7 +92,7 @@ def handle_args():
 
 if __name__ == '__main__':
     timeframe, trigger_minutes = handle_args()
-    print(timeframe, trigger_minutes)
+    print(f'Broadcasting every {timeframe}, at {trigger_minutes} min every hour')
 
     data_wrapper = CryptoData.get_wrapper(live=True, start_date='2022-05-01')
     symbols = data_wrapper.get_symbols()

@@ -17,7 +17,7 @@ resample_radio_options = dict(
     zip(resample_keywords, resample_keywords_text))  # {k: f' {k} |' for k in resample_keywords}
 
 db_path = DB_PATH
-db = Persistence(db_path, check_same_thread=True)
+db = Persistence(db_path, check_same_thread=False)
 # providers = get_data_providers()
 #
 title = 'Crypto Live Feed'
