@@ -1,10 +1,3 @@
-import os
-import sys
-
-this_folder = os.path.dirname(os.path.abspath(__file__))
-root_folder = os.path.dirname(os.path.dirname(this_folder))
-sys.path.append(root_folder)
-
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output, State

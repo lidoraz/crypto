@@ -2,7 +2,14 @@ from plotly import graph_objects as go
 from .Indicator import get_marker_color_candle, Indicator
 import pandas as pd
 import numpy as np
-import talib
+
+try:
+    import talib
+
+    has_talib_installed = True
+except ModuleNotFoundError:  # Error handling
+    print('CandleIdentification.py: talib is not installed! ignoring module')
+    has_talib_installed = False
 
 from .utils.candle_rankings import candle_rankings
 
@@ -58,6 +65,8 @@ def recognize_candles(df):
     'best_trend - best strength pattern multiplied by bull / bear (1, -1)
     'n_patterns - number of matching patterns found'
     """
+    if not has_talib_installed:
+        return None
     df = df.copy()
     op = df['open'].astype(float)
     hi = df['high'].astype(float)
@@ -102,6 +111,9 @@ class CandleIdentification(Indicator):
         return self.res
 
     def plot(self, fig):
+        # workaround as talib is hard to installed
+        if self.res is None:
+            return fig
         df_patterns = self.res
         df_patterns['plot_value'] = (104 - df_patterns['best_ranking']) * df_patterns['best_trend']
         if self.normalize_detected_patterns:
