@@ -22,7 +22,7 @@ class CryptoData(ProviderData):
         self._lastest_data_ts = {}
         # self.diff_local_db_sec = 240  # TODO(#3323): check why difference is high, it should be atleast 1min, but not more than 2 min.
 
-    def get_data(self, coin, tf):
+    def get_data(self, coin, tf, start_date=None):
         cache_name = f'{coin}{tf}'
         curr_ts_local = int(time.time())
         if cache_name in self._data:
@@ -34,14 +34,14 @@ class CryptoData(ProviderData):
             else:
                 return self._data[cache_name]
         # print(cache_name, 'Fetching from db..')
-        data = get_candles_from_db(self.db, coin, tf, self.start_ts, self.start_date)
+        start_date = start_date if start_date else self.start_date
+        data = get_candles_from_db(self.db, coin, tf, self.start_ts, start_date)
         self._data[cache_name] = data
         curr_ts_db = data.attrs['curr_ts_db']
         diff_local_db = curr_ts_local - curr_ts_db
         self._lastest_data_ts[cache_name] = curr_ts_db
-
-        is_updated = diff_local_db < pd.to_timedelta(
-            tf).total_seconds() / 2  # TODO(#3323) will not be suitable for less than 5min tf.
+        # TODO(#3323) will not be suitable for less than 5min tf.
+        is_updated = diff_local_db < pd.to_timedelta(tf).total_seconds() / 2
         if not is_updated:
             print(f'Warning {coin, tf} DB timestamp is not updated to machine time,  diff= {diff_local_db}sec')
             if self.live:

@@ -57,7 +57,7 @@ class Persistence:
 
     def __init__(self, db_path, check_same_thread=True):
         self.db_path = db_path
-        self.con = sqlite3.connect(db_path, check_same_thread=False)
+        self.con = sqlite3.connect(db_path, check_same_thread=check_same_thread)
         self.INDEX = 'ts'
         self.tables_current_idx = {}
         self._preload_current_ts()

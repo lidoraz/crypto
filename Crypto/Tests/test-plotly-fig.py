@@ -1,18 +1,10 @@
 # from Crypto.DataProcessing.data_consts import COINS, HOURLY_COLS, START_DATA_DATE
 from Utils import Persistence
-from Crypto.ccxt_utils import _resample_from_ohlcv
 from Crypto.symbols import exchance_symbol_pairs, DB_PATH
-import os
+from Crypto.ccxt_utils import _resample_from_ohlcv
 from Plots.plotly_fig import get_updated_fig
 
 coins = [c[1].split('/')[0] for c in exchance_symbol_pairs]
-
-# level 2 up
-new_path = '/'.join(os.getcwd().split('/')[:-2])
-os.chdir(new_path)
-# ------------------------------------------------------------------------
-
-data_path = os.path.join(os.getcwd(), 'resources.nosync')
 
 # hourly_cols = HOURLY_COLS
 resample_keywords = ['2Min', '5Min', '15Min', '1H', '4H', '1D']
