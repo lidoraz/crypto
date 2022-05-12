@@ -1,6 +1,6 @@
 import pandas as pd
 import ccxt
-from Crypto.symbols import exchance_symbol_pairs
+from symbols import exchance_symbol_pairs
 
 
 def get_coins():
