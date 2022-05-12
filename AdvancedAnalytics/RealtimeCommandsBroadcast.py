@@ -2,9 +2,12 @@ from Strategy.DataWrap import CryptoData
 from Strategy.Strategies import BB
 from Utils.utils import WaitToMinEveryHour
 from datetime import datetime
+from Utils.notify import TelegramBot
+import pandas as pd
+from dateutil import tz
 
 
-def get_latest_buy_sell(data_wrapper, symbols, stratgy, tf='1H'):
+def get_latest_buy_sell(data_wrapper, time_now_minus_tf, symbols, stratgy, tf='1H'):
     # on crypto it updated every 1 min so no problem
     # has saftey mechanism from datawrapper crypto live if db is not updated!
     # Implmenet with act buy, so it will be generalized and support stoplosses
@@ -14,11 +17,7 @@ def get_latest_buy_sell(data_wrapper, symbols, stratgy, tf='1H'):
     for coin in symbols:
         # TODO: add to get_data option to filter out for most recent data, not only on init class.
         df = data_wrapper.get_data(coin, tf)
-        # TODO rework this.
-        import pandas as pd
-        from dateutil import tz
-        now_minus_tf = datetime.now(tz.gettz('Israel')) - pd.to_timedelta(tf)
-        df = df[:now_minus_tf]
+        df = df[:time_now_minus_tf]  # filter out
         # now_minus_tf_aligned = pd.to_datetime(now_minus_tf.replace(minute=0, second=0, microsecond=0))
 
         # TODO: get the data, and check its ts if it matches current machine ts to make sure we are sending correct ts.
@@ -80,8 +79,12 @@ if __name__ == '__main__':
     data_wrapper = CryptoData.get_wrapper(live=True, start_date='2022-05-01')
     symbols = data_wrapper.get_symbols()
     strategy = BB()
+
     timeframe = '1H'  # '15Min'  # '1H'
-    from Utils.notify import TelegramBot
+    trigger_minutes = [0]
+
+    # timeframe = '15Min'
+    # trigger_minutes = [0, 15, 30, 45]
 
     tb_notify = TelegramBot()
     buy_change = set()
@@ -90,36 +93,30 @@ if __name__ == '__main__':
     sell_notify = []
     print(strategy)
     owned_coins = set()
-    # trigger_minutes = [0, 15, 30, 45]
-    trigger_minutes = [1]
-    # trigger_minutes = range(60)
-    sell_only_if_owned = True
     wait = WaitToMinEveryHour(trigger_minutes)
     print('Starting...')
     while True:
-        wait.wait()
         # Test validty of this algorithm, and how to use it. looks on the brightside that the async code works well and did not crash during weekend.
-
-        buy_details_lst, sell_details_lst = get_latest_buy_sell(data_wrapper, symbols, strategy, tf=timeframe)
+        wait.wait()
+        time_now_minus_tf = datetime.now(tz.gettz('Israel')) - pd.to_timedelta(timeframe)
+        buy_details_lst, sell_details_lst = get_latest_buy_sell(data_wrapper, time_now_minus_tf, symbols, strategy,
+                                                                tf=timeframe)
         print(datetime.now())
         print('buy_lst', buy_details_lst)
         print('sell_lst', sell_details_lst)
 
         buy_curr = set([detail['coin'] for detail in buy_details_lst])
         notify_coins = buy_curr - buy_change
-        buy_notify = [detail for detail in buy_details_lst if detail['coin'] in notify_coins]
         buy_change = buy_curr
+        buy_notify = [detail for detail in buy_details_lst if detail['coin'] in notify_coins]
 
         sell_curr = set([detail['coin'] for detail in sell_details_lst])
         notify_coins = sell_curr - sell_change
-        sell_notify = [detail for detail in sell_details_lst if detail['coin'] in notify_coins]
         sell_change = sell_curr
+        sell_notify = [detail for detail in sell_details_lst if detail['coin'] in notify_coins]
 
         print('buy_change:', buy_change)
         print('sell_change:', sell_change)
-
-        if sell_only_if_owned:
-            sell_notify = [c for c in sell_notify if c['coin'] in owned_coins]
         print('buy_notify:', buy_notify)
         print('sell_notify:', sell_notify)
 
