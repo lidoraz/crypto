@@ -75,14 +75,31 @@ def handle_buy_sell(strategy, buy_lst, sell_lst, tb_notify):
         tb_notify.send(txt)
 
 
+def handle_args():
+    import sys
+    args = sys.argv[1:]
+    usage = 'usage: 15min or 1h'
+    if len(args) == 1:
+        if args[0].lower() == '15min':
+            trigger_minutes = [0, 15, 30, 45]
+            return '15min', trigger_minutes
+        if args[0].lower() == '1h':
+            trigger_minutes = [0]
+            return '1h', trigger_minutes
+    print(usage)
+    exit(-1)
+
+
 if __name__ == '__main__':
+    timeframe, trigger_minutes = handle_args()
+    print(timeframe, trigger_minutes)
+
     data_wrapper = CryptoData.get_wrapper(live=True, start_date='2022-05-01')
     symbols = data_wrapper.get_symbols()
     strategy = BB()
 
-    timeframe = '1H'  # '15Min'  # '1H'
-    trigger_minutes = [0]
-
+    # timeframe = '1H'  # '15Min'  # '1H'
+    # trigger_minutes = [0]
     # timeframe = '15Min'
     # trigger_minutes = [0, 15, 30, 45]
 
@@ -101,7 +118,7 @@ if __name__ == '__main__':
         time_now_minus_tf = datetime.now(tz.gettz('Israel')) - pd.to_timedelta(timeframe)
         buy_details_lst, sell_details_lst = get_latest_buy_sell(data_wrapper, time_now_minus_tf, symbols, strategy,
                                                                 tf=timeframe)
-        print(datetime.now())
+        print('-> Getting time_now_minus_tf =', time_now_minus_tf)
         print('buy_lst', buy_details_lst)
         print('sell_lst', sell_details_lst)
 
