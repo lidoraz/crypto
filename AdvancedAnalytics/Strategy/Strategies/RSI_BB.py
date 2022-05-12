@@ -30,7 +30,7 @@ class RsiBB(Strategy):
         df = df.join(self.ind_rsi.calc(df))
         df = df.join(self.ind_bb.calc(df))
         # df = df.join(self.ind_sma.calc(df))
-        df = df.dropna()
+        # df = df.dropna()
 
         rsi_col = f"RSI_{self.ind_ahead}"
         df['RSI_70'] = df[rsi_col] > self.high_rsi  # has passed RSI 70

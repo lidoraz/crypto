@@ -94,9 +94,17 @@ def find_optimal_strategy(provider: ProviderData, strategy: str, optimized_param
     # iterate permutation with dicts: https://stackoverflow.com/questions/38721847/how-to-generate-all-combination-from-values-in-dict-of-lists-in-python
     keys, values = zip(*optimized_params.items())
     permutations_dicts = [dict(zip(keys, v)) for v in itertools.product(*values)]
+    # TODO: Preloaded is needed for the multiprocessing to avoid multiple access for DB, try how to solve this
     provider_loaded = provider.get_preloaded(optimized_params['tf'])
-    job_results = Parallel(n_jobs=n_jobs)(
-        delayed(mark_enter_exit_points)(provider_loaded, strategy, params) for params in tqdm(permutations_dicts))
+    print('Running with n_jobs:', n_jobs)
+    if n_jobs == 1:
+        print('Debug Mode..')
+        job_results = []
+        for params in tqdm(permutations_dicts):
+            job_results.append(mark_enter_exit_points(provider_loaded, strategy, params))
+    else:
+        job_results = Parallel(n_jobs=n_jobs)(
+            delayed(mark_enter_exit_points)(provider_loaded, strategy, params) for params in tqdm(permutations_dicts))
 
     l_trades_str = []
     res = []
@@ -116,6 +124,7 @@ def find_optimal_strategy(provider: ProviderData, strategy: str, optimized_param
     win_sum_profit_pct = df['sum_pct'].iloc[0]
     win_trades = l_trades_str[win_idx]
     print('Index:', win_idx)
+    print('Params:', df.iloc[0].to_dict())
     print(f'Pct profit: {win_sum_profit_pct:.2%}')
     for trade in win_trades:
         print(trade)

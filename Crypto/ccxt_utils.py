@@ -3,7 +3,6 @@ import ccxt
 from Crypto.symbols import exchance_symbol_pairs
 
 
-
 def get_coins():
     coins = [p[1].split('/')[0] for p in exchance_symbol_pairs]
     return coins

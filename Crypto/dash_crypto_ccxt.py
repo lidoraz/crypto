@@ -1,9 +1,9 @@
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
-from Crypto.ccxt_utils import _resample_from_ohlcv, get_candles_from_db, get_candles_from_ccxt
+from ccxt_utils import get_candles_from_db
 from Utils import Persistence
-from Crypto.symbols import exchance_symbol_pairs
+from symbols import exchance_symbol_pairs, DB_PATH
 from Plots.plot_utils import *
 from Plots.plotly_fig import get_updated_fig
 import dash_bootstrap_components as dbc
@@ -11,14 +11,12 @@ import dash_bootstrap_components as dbc
 from datetime import datetime
 
 coins = [c[1].split('/')[0] for c in exchance_symbol_pairs]
-# hourly_cols = HOURLY_COLS
 resample_keywords = list(INTERVAL_CANDLE_LOOKBACK_TABLE.keys())
 resample_keywords_text = [f" {k} | " for k in resample_keywords[:-1]] + [f" {resample_keywords[-1]}"]
 resample_radio_options = dict(
     zip(resample_keywords, resample_keywords_text))  # {k: f' {k} |' for k in resample_keywords}
 
-
-db_path = '/Users/lidorazulay/Library/Mobile Documents/com~apple~CloudDocs/DS/Crypto/ccxt_1m.db'
+db_path = DB_PATH
 db = Persistence(db_path, check_same_thread=True)
 # providers = get_data_providers()
 #

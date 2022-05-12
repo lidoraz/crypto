@@ -1,21 +1,22 @@
 from Crypto.ccxt_utils import get_candles_from_db, get_coins
+from Crypto.symbols import DB_PATH
 from Utils import Persistence
 from .ProviderData import ProviderData, PreLoaded
 import pandas as pd
 import time
 
 
-class CryptoDataLive(ProviderData):
-    def __init__(self, symbols, update_sec_every, is_safe, start_ts=None, start_date=None):
+class CryptoData(ProviderData):
+    def __init__(self, symbols, live, start_ts=None, start_date=None):
         # self.symbols = symbols
         self.symbols = symbols
         self.name = 'Crypto'
-        self.update_sec_every = update_sec_every
-        self.is_safe = is_safe
+        self.live = live
+        self.update_sec_every = 30
         self.start_ts = start_ts
         self.start_date = start_date
         # TODO: remove fixed path
-        db_path = '/Users/lidorazulay/Library/Mobile Documents/com~apple~CloudDocs/DS/Crypto/ccxt_1m.db'
+        db_path = DB_PATH
         self.db = Persistence(db_path)
         self._data = {}
         self._lastest_data_ts = {}
@@ -25,7 +26,7 @@ class CryptoDataLive(ProviderData):
         cache_name = f'{coin}{tf}'
         curr_ts_local = int(time.time())
         if cache_name in self._data:
-            if self.update_sec_every:
+            if self.live:
                 ts_diff = curr_ts_local - self._lastest_data_ts[cache_name]
                 if ts_diff < self.update_sec_every:  # not needed cache_name in self._lastest_data_ts and
                     # print('using cache.. ', coin, ts_diff)
@@ -43,7 +44,7 @@ class CryptoDataLive(ProviderData):
             tf).total_seconds() / 2  # TODO(#3323) will not be suitable for less than 5min tf.
         if not is_updated:
             print(f'Warning {coin, tf} DB timestamp is not updated to machine time,  diff= {diff_local_db}sec')
-            if self.is_safe:
+            if self.live:
                 print(f'Warning {coin, tf} ignored!')
                 return None
 
@@ -67,13 +68,13 @@ class CryptoDataLive(ProviderData):
         return PreLoaded(self._data, self.symbols)
 
     @staticmethod
-    def get_wrapper(update_sec_every, is_safe, start_ts=None, start_date=None):
+    def get_wrapper(live, start_ts=None, start_date=None):
         # usually set every 60 sec
-        print(f'CryptoDataLive: {update_sec_every, is_safe, start_ts, start_date}')
+        print(f'CryptoData: {live, start_ts, start_date}')
         if start_date and start_ts:
             raise ValueError('Only one start can be set.')
         coins = get_coins()
-        data_wrapper = CryptoDataLive(coins, update_sec_every, is_safe, start_ts, start_date)
+        data_wrapper = CryptoData(coins, live, start_ts, start_date)
         return data_wrapper
 
     # # TODO: add this into code

@@ -103,7 +103,7 @@ def handle_buy_sell(buy_lst, sell_lst, tb_notify):
 
 
 if __name__ == '__main__':
-    data_wrapper = CryptoDataLive.get_wrapper(update_sec_every=1, is_safe=True, start_date='2022-04-25')
+    data_wrapper = CryptoDataLive.get_wrapper(live=True, start_date='2022-04-25')
     symbols = data_wrapper.get_symbols()
     stratgy = BB()
     timeframe = '1H'  # '15Min'  # '1H'

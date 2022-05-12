@@ -1,6 +1,5 @@
 import sys
 import os
-
 # append root folder path to import needed libs (Persistence)
 this_folder = os.path.dirname(os.path.abspath(__file__))
 root_folder = os.path.dirname(os.path.dirname(this_folder))
@@ -12,11 +11,11 @@ from datetime import datetime, timezone
 from asyncio import get_event_loop, gather
 from Utils import Persistence
 import ccxt.async_support as ccxt
+from Crypto.symbols import exchance_symbol_pairs, DB_PATH
 
 print('CCXT Version:', ccxt.__version__)
 
-# exit(0)
-
+# TODO: Move ExchangeNotAvailable to a seperate catch such that it will handle times where there is no internet.
 df_cols = ['ts', 'open', 'high', 'low', 'close', 'volume']
 ccxt_errors = (ccxt.errors.RateLimitExceeded,
                ccxt.errors.BadRequest,
@@ -25,7 +24,7 @@ ccxt_errors = (ccxt.errors.RateLimitExceeded,
 
 FETCH_LIMIT = 1000
 START_TS = 1651000000  # 1646000000  # Sunday, February 27, 2022
-N_TRIES_LIMIT = 10
+N_TRIES_LIMIT = 50
 
 
 # binary search
@@ -87,13 +86,14 @@ async def fetch_ohlcv_history_to_db(db, exchange, symbol, timeframe, curr_ts, db
                 start_ts_loop_ms = await find_first_symbol_ohlcv(exchange, symbol, timeframe, start_ts_ms, curr_ts_ms)
                 await asyncio.sleep(1)
         except ccxt_errors as e:
-            print(start_ts_loop_ms, exchange, symbol, f'Failed after {n_tries}/{N_TRIES_LIMIT}', type(e).__name__,
+            print(start_ts_loop_ms, exchange, symbol, f'History failed after {n_tries}/{N_TRIES_LIMIT}',
+                  type(e).__name__,
                   str(e))
             await asyncio.sleep(1)
             n_tries += 1
 
     if n_tries > N_TRIES_LIMIT:
-        print(start_ts_loop_ms, exchange, symbol, f'Failed after {n_tries}/{N_TRIES_LIMIT}!!')
+        print(start_ts_loop_ms, exchange, symbol, f'History failed after {n_tries}/{N_TRIES_LIMIT}!!')
         # raise Exception(f'Could not fetch history... {symbol}')
     print('Inserted Batch data', save_symbol, end_ts_loop_ms, curr_ts_ms)
 
@@ -142,7 +142,7 @@ async def fetch_ohlcv_forever_retry(db, exchange, symbol, timeframe):  # always 
         time_to_sleep = 60 - utc_now.second + wait_sec  # + random.randint(0, random_sec_to_wait)  # randomize acc time to reduce chance for ddos protection
         ts = round(utc_now.replace(tzinfo=timezone.utc).timestamp())
         await asyncio.sleep(time_to_sleep)  # time_to_sleep
-        while n_tries < FETCH_LIMIT:
+        while n_tries <= N_TRIES_LIMIT:
             try:
                 await fetch_ohlcv_sync_with_db(db, exchange, symbol, timeframe, ts)
                 break
@@ -150,23 +150,20 @@ async def fetch_ohlcv_forever_retry(db, exchange, symbol, timeframe):  # always 
                 print(utc_now, exchange, symbol, f'Failed after {n_tries}/{N_TRIES_LIMIT}', type(e).__name__, str(e))
                 n_tries += 1
                 await asyncio.sleep(1)
-
-        if n_tries > FETCH_LIMIT:
+        if n_tries > N_TRIES_LIMIT:
             break
-    print(f'{utc_now} {exchange} {symbol} Failed over {FETCH_LIMIT} times, exiting....')
+    print(f'{utc_now} {exchange} {symbol} Failed over {N_TRIES_LIMIT} times, exiting....')
+    return -1
 
 
 async def main():
-    # exchange = ccxt.binance({'enableRateLimit': True})
-    db_path = '/Users/lidorazulay/Library/Mobile Documents/com~apple~CloudDocs/DS/Crypto/ccxt_1m.db'
+    db_path = DB_PATH
     db = Persistence(db_path)
     timeframe = '1m'
     exchanges = [ccxt.binance({'enableRateLimit': True}),
                  ccxt.kucoin({'enableRateLimit': True}),
                  ccxt.mexc({'enableRateLimit': True}),
                  ccxt.coinex({'enableRateLimit': True}), ]  # ccxt.bybit(),  no btc
-
-    from Crypto.symbols import exchance_symbol_pairs
 
     def treat_ex_name(x):
         x = x.lower().replace(' ', '_')

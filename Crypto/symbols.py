@@ -39,3 +39,5 @@ exchance_symbol_pairs = [
     ('kucoin', 'VRA/USDT'),
     ('mexc_global', 'GCOIN/USDT')
 ]
+
+DB_PATH = 'ccxt_1m.db'

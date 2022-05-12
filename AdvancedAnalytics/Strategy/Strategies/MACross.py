@@ -20,7 +20,7 @@ class MACross(Strategy):
         df = df.join(ind_short.calc(df))
         df = df.join(ind_long.calc(df))
         df = df.join(ind_sr.calc(df))
-        df = df.dropna()
+        # df = df.dropna()
 
         df['BUY_ALGO'] = df[f'SMA_{self.short}'] > df[f'SMA_{self.long}']
         df['SELL_ALGO'] = df[f'SMA_{self.short}'] < df[f'SMA_{self.long}']
@@ -31,6 +31,8 @@ class MACross(Strategy):
             buy_idx = idx
             # add stop-loss
             buy_price = row['close']
+            # TODO: It is possible to calculate current resistance support and resistance from here.
+            #  It will be very slow when trying to backttesting...
             sell_price_win_stop = row['resistance']
             sell_price_lose_stop = row['support']
             return {'buy_idx': buy_idx,
