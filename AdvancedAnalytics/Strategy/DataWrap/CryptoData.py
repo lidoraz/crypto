@@ -23,6 +23,10 @@ class CryptoData(ProviderData):
         self._lastest_data_ts = {}
         # self.diff_local_db_sec = 240  # TODO(#3323): check why difference is high, it should be atleast 1min, but not more than 2 min.
 
+    def get_data_cache(self):  # implerment this, get_data will always be live. will be used for optimizing.
+        # maybe not needed as optimizer get preloaded data class.
+        pass
+
     def get_data(self, coin, tf, start_date=None):
         cache_name = f'{coin}{tf}'
         curr_ts_local = int(time.time())
@@ -58,7 +62,6 @@ class CryptoData(ProviderData):
         else:
             return self.symbols
 
-    # TODO: add option to update if update is interval is none.
 
     # def get_latest_ts(self):
     #     # self.lastest_ts = self.price_provider.serve().index[-1]

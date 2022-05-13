@@ -13,26 +13,19 @@ def wait_until(end_datetime):
             return
 
 
+# will trigger on every minute provided, with and offset option
 class WaitToMinEveryHour:
-    def __init__(self, trigger_minutes):
+    def __init__(self, trigger_minutes, offset_sec=15):
         self.trigger_minutes = trigger_minutes
-        self._last_triggered = None
+        self.offset_sec = offset_sec
+        print(f'WaitToMinEveryHour: trigger_minutes={trigger_minutes}, offset_sec={offset_sec}')
 
     def wait(self):
         while True:
             dt_now = datetime.now()
-            # TODO: waiting 45 sec to update db with new hour data. maybe better is just to close it to the right
-            if dt_now.minute in self.trigger_minutes:  # and dt_now.second > 45
-                if not self._last_triggered or (dt_now - self._last_triggered).total_seconds() > 60:
-                    self._last_triggered = dt_now
-                    return
-            time.sleep(5)
-
-# def wait_to_min_every_hour(trigger_minutes, last_triggered=None):
-#     # trigger_minutes=[0, 15, 30, 45]
-#     while True:
-#         dt_now = datetime.now()
-#         if dt_now.minute in trigger_minutes:
-#             if
-#             dt_now
-#         time.sleep(5)
+            time_to_sleep = 60 - dt_now.second + self.offset_sec
+            print(f'wait: {dt_now}, {time_to_sleep}')
+            time.sleep(time_to_sleep)
+            # shift 1 min earlier because it sleeps and then triggers exactly at trigger_minute.
+            if int((dt_now.minute - 1) % 60) in self.trigger_minutes:
+                return
