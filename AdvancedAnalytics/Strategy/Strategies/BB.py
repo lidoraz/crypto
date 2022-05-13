@@ -48,4 +48,4 @@ class BB(Strategy):
                     'sell_price_lose_stop': sell_price_lose_stop}
 
     def __repr__(self):
-        return 'Bollinger Bands Strategy'
+        return 'Bollinger Bands'
