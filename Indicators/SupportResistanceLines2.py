@@ -117,6 +117,7 @@ class SupportResistanceLines2(Indicator):
         # idx = len(ohlc) - 1
         idx = np.random.randint(0, len(ohlc))
         supports, resistances = lines_by_index(ohlc.index, res, idx=idx)
+        # TODO: Can combine multiple supports if they are realtive close to each other, by 5% ...
         self.current_ts = ohlc.index[idx]
         self.v_lines_min = supports
         self.v_lines_max = resistances
