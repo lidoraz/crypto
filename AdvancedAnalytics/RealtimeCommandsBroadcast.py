@@ -6,7 +6,7 @@ from Utils.notify import TelegramBot
 import pandas as pd
 from dateutil import tz
 
-prod = False
+prod = True
 if prod:
     print('@-------> prod True!!!!')
 
@@ -110,11 +110,9 @@ if __name__ == '__main__':
     sell_change = set()
     buy_notify = []
     sell_notify = []
-    print(strategy)
     owned_coins = set()
     wait = WaitToMinEveryHour(trigger_minutes)
     title_strategy = f'{strategy}({timeframe})'
-    print('Starting...')
     str_symbols = ", ".join(symbols)
     start_msg = f'{title_strategy}\nFollowing: {str_symbols}'
     print(start_msg)
