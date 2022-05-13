@@ -52,8 +52,11 @@ class CryptoData(ProviderData):
 
         return data
 
-    def get_symbols(self):
-        return self.symbols
+    def get_symbols(self, sort=True):
+        if sort:
+            return sorted(self.symbols)
+        else:
+            return self.symbols
 
     # TODO: add option to update if update is interval is none.
 

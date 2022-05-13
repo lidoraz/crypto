@@ -6,9 +6,9 @@ from Utils.notify import TelegramBot
 import pandas as pd
 from dateutil import tz
 
-prod = True
+prod = False
 if prod:
-    print('prod True!')
+    print('@-------> prod True!!!!')
 
 
 def get_latest_buy_sell(data_wrapper, time_now_minus_tf, symbols, stratgy, tf='1H'):
@@ -21,9 +21,6 @@ def get_latest_buy_sell(data_wrapper, time_now_minus_tf, symbols, stratgy, tf='1
     for coin in symbols:
         # TODO: add to get_data option to filter out for most recent data, not only on init class.
         df = data_wrapper.get_data(coin, tf)
-
-        # now_minus_tf_aligned = pd.to_datetime(now_minus_tf.replace(minute=0, second=0, microsecond=0))
-
         # TODO: get the data, and check its ts if it matches current machine ts to make sure we are sending correct ts.
         if df is None:
             print('Skipping:', coin, tf)
@@ -33,7 +30,7 @@ def get_latest_buy_sell(data_wrapper, time_now_minus_tf, symbols, stratgy, tf='1
 
         last_row = df.iloc[n_candle]
         ts = df.index[-1]
-        buy_vars = stratgy.act_buy(0, last_row)  # last row
+        buy_vars = stratgy.act_buy(0, last_row)
         # print(ts, coin, tf)
         #            return {'buy_idx': buy_idx,
         #                     'buy_price': buy_price,
@@ -118,6 +115,11 @@ if __name__ == '__main__':
     wait = WaitToMinEveryHour(trigger_minutes)
     title_strategy = f'{strategy}({timeframe})'
     print('Starting...')
+    str_symbols = ", ".join(symbols)
+    start_msg = f'{title_strategy}\nFollowing: {str_symbols}'
+    print(start_msg)
+    if prod:
+        tb_notify.send(start_msg)
     while True:
         # Test validty of this algorithm, and how to use it. looks on the brightside that the async code works well and did not crash during weekend.
         if prod:
