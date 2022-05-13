@@ -24,8 +24,7 @@ class WaitToMinEveryHour:
         while True:
             dt_now = datetime.now()
             time_to_sleep = 60 - dt_now.second + self.offset_sec
-            print(f'wait: {dt_now}, {time_to_sleep}')
             time.sleep(time_to_sleep)
-            # shift 1 min later as sleeps and then triggers exactly at trigger_minute.
-            if int((dt_now.minute + 1) % 60) in self.trigger_minutes:
+            dt_now = datetime.now()  # take time again
+            if dt_now.minute in self.trigger_minutes:
                 return
