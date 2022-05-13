@@ -50,7 +50,7 @@ def handle_buy_sell(strategy, buy_lst, sell_lst, tb_notify):
     TIME_CONV = "%Y-%m-%dT%H:%M:%S"  # .strftime
 
     def extract_to_txt_sell(lst):
-        return [f"{x['coin']}, {x['price']}, ({x['ts'].strftime('%H:%M')})" for x in lst]
+        return [f"{x['coin']}, {x['buy_price']}, ({x['ts'].strftime('%H:%M')})" for x in lst]
 
     def extract_to_txt_buy(lst):
         return [f"{x['coin']}, P:{x['buy_price']} (T:{x['sell_price_win_stop']}, B:{x['sell_price_lose_stop']})" for x
