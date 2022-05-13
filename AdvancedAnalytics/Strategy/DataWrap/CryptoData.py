@@ -13,6 +13,7 @@ class CryptoData(ProviderData):
         self.name = 'Crypto'
         self.live = live
         self.update_sec_every = 30
+        self.max_fetch_time_diff_sec = 300
         self.start_ts = start_ts
         self.start_date = start_date
         # TODO: remove fixed path
@@ -42,7 +43,7 @@ class CryptoData(ProviderData):
         self._lastest_data_ts[cache_name] = curr_ts_db
         # TODO(#3323) will not be suitable for less than 5min tf.
         # is_updated = diff_local_db < pd.to_timedelta(tf).total_seconds() / 2
-        is_updated = diff_local_db < pd.to_timedelta('5min')
+        is_updated = diff_local_db < self.max_fetch_time_diff_sec
         if not is_updated:
             print(f'Warning {coin, tf} DB timestamp is not updated to machine time,  diff= {diff_local_db}sec')
             if self.live:
