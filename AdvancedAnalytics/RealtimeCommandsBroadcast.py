@@ -5,10 +5,6 @@ from datetime import datetime
 from Utils.notify import TelegramBot
 import pandas as pd
 from dateutil import tz
-#
-prod = True
-if prod:
-    print('@-------> prod True!!!!')
 
 
 def get_latest_buy_sell(data_wrapper, time_now_minus_tf, symbols, stratgy, tf='1H'):
@@ -49,7 +45,7 @@ def get_latest_buy_sell(data_wrapper, time_now_minus_tf, symbols, stratgy, tf='1
     return buy_lst, sell_lst
 
 
-def handle_buy_sell(title_strategy, buy_lst, sell_lst, tb_notify):
+def handle_buy_sell(title_strategy, buy_lst, sell_lst, tb_notify, prod=False):
     TIME_CONV = "%Y-%m-%dT%H:%M:%S"  # .strftime
 
     def extract_to_txt_buy(lst):
@@ -82,23 +78,39 @@ def handle_buy_sell(title_strategy, buy_lst, sell_lst, tb_notify):
 def handle_args():
     import sys
     args = sys.argv[1:]
-    usage = 'usage: 15min or 1h'
-    if len(args) == 1:
-        if args[0].lower() == '15min':
-            trigger_minutes = [0, 15, 30, 45]
-            return '15min', trigger_minutes
-        if args[0].lower() == '1h':
-            trigger_minutes = [0]
-            return '1h', trigger_minutes
+    usage = 'usage: {15min, 1h} (prod) (start_msg)'
     print(usage)
-    exit(-1)
+    if len(args) >= 1:
+        prod = False
+        show_start_msg = False
+        if args[0].lower() == '15min':
+            timeframe = '15min'
+            trigger_minutes = [0, 15, 30, 45]
+        elif args[0].lower() == '1h':
+            timeframe = '1h'
+            trigger_minutes = [0]
+        else:
+            raise ValueError(usage)
+        args = args[1:]
+        if 'prod' in args:
+            prod = True
+        if 'start_msg' in args:
+            show_start_msg = True
+        params = dict(timeframe=timeframe, trigger_minutes=trigger_minutes, prod=prod, show_start_msg=show_start_msg)
+        return params
+    raise ValueError(usage)
 
 
 # Test validity of this algorithm, and how to use it.
 # looks on the bright side that the async code works well and did not crash during weekend.
 if __name__ == '__main__':
-    timeframe, trigger_minutes = handle_args()
-    print(f'Broadcasting every {timeframe}, at {trigger_minutes} min every hour')
+    parsed_args = handle_args()
+    timeframe = parsed_args['timeframe']
+    trigger_minutes = parsed_args['trigger_minutes']
+    prod = parsed_args['prod']
+    show_start_msg = parsed_args['show_start_msg']
+    print(
+        f'Broadcasting every {timeframe}\nAt {trigger_minutes} min every hour\nPROD={prod}\nshow_msg={show_start_msg}')
 
     data_wrapper = CryptoData.get_wrapper(live=True, start_date='2022-05-01')
     symbols = data_wrapper.get_symbols()
@@ -113,9 +125,10 @@ if __name__ == '__main__':
     title_strategy = f'{strategy}({timeframe})'
     str_symbols = ", ".join(symbols)
     start_msg = f'{title_strategy}\nFollowing: {str_symbols}'
-    print(start_msg)
-    if prod:
-        tb_notify.send(start_msg)
+    if show_start_msg:
+        print(start_msg)
+        if prod:
+            tb_notify.send(start_msg)
 
     while True:
         if prod:
@@ -141,4 +154,4 @@ if __name__ == '__main__':
         print('sell_lst', sell_details_lst)
         # print('sell_change:', sell_change)
         print('sell_notify:', sell_notify)
-        handle_buy_sell(title_strategy, buy_notify, sell_notify, tb_notify)
+        handle_buy_sell(title_strategy, buy_notify, sell_notify, tb_notify, prod)
