@@ -97,12 +97,12 @@ def handle_args():
         if 'start_msg' in args:
             show_start_msg = True
         params = dict(timeframe=timeframe, trigger_minutes=trigger_minutes, prod=prod, show_start_msg=show_start_msg)
-        print('******* Broadcast Params ********'
+        print('******* Broadcast Params ********\n'
               f'Broadcasting every {timeframe}\n'
               f'At {trigger_minutes} min every hour\n'
               f'PROD={prod}\n'
               f'show_msg={show_start_msg}',
-              '******* ******* ******* ********')
+              '******* ******* ******* ********\n')
         return params
     raise ValueError(usage)
 
