@@ -34,7 +34,7 @@ def get_updated_fig(df_ohlcv, lookahead=14, xy_limit=True):
         # EMA(14, color='Teal'),
         # BollingerBands(lookahead, 2, visible=True, plot_loc=1),
         # TODO:: TEST!!
-        SupportResistanceLines2(lookaheads_index=lookahead, plot_loc=1)
+        # SupportResistanceLines2(lookaheads_index=lookahead, plot_loc=1)
     ]
     # SupportResistanceLines(upto_lookahead=720, n_lookaheads=5, geometric_spacing=False, plot_loc=1)]
 
