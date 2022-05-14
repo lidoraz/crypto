@@ -101,7 +101,7 @@ def handle_args():
               f'Broadcasting every {timeframe}\n'
               f'At {trigger_minutes} min every hour\n'
               f'PROD={prod}\n'
-              f'show_msg={show_start_msg}',
+              f'show_msg={show_start_msg}\n',
               '******* ******* ******* ********\n')
         return params
     raise ValueError(usage)
