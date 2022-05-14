@@ -7,6 +7,7 @@ from .MACD import MACD
 from .CandleIdentification import CandleIdentification
 from .SupportResistanceLines import SupportResistanceLines
 from .SupportResistanceLines2 import SupportResistanceLines2
+from .WinLossStoploss import WinLossStoploss
 from .CandleStick import CandleStick
 from .Volume import Volume
 

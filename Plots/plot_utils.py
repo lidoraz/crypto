@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 TIME_CONV = "%Y-%m-%dT%H:%M:%S"  # strftime
-INTERVAL_UPDATE_SECONDS = 60
+INTERVAL_UPDATE_SECONDS = 30
 # 1 -> not limit , 0.5 -> display half data
 INTERVAL_CANDLE_LOOKBACK_DISPLAY_DIVIDED = 0.4  # this will alter the display
 # values are start_ts from current time

@@ -1,4 +1,4 @@
-from Indicators import BollingerBands, SupportResistanceLines
+from Indicators import BollingerBands, WinLossStoploss
 from .Strategy import Strategy
 
 
@@ -19,7 +19,8 @@ class BB(Strategy):
         self.ind_lookahead = params.get('BB_ind_ahead', 14)
         self.bb_std = params.get('BB_std', 2)
         self.ind_bb = BollingerBands(self.ind_lookahead, self.bb_std)
-        self.ind_sr = SupportResistanceLines()
+        self.ind_sr = WinLossStoploss(params.get('BB_win_pct', 0.2),
+                                      params.get('BB_lose_pct', 0.2))
         # ind_sma = SMA(100)
 
     def add_indicators(self, df):
@@ -40,6 +41,10 @@ class BB(Strategy):
             buy_idx = idx
             buy_price = row['close']
             # add stop-loss
+            try:
+                row['resistance']
+            except Exception as e:
+                print()
             sell_price_win_stop = row['resistance']
             sell_price_lose_stop = row['support']
             return {'buy_idx': buy_idx,

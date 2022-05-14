@@ -14,60 +14,28 @@ def get_str_name(currents_ts, ts, v, is_max):
     return time_delta_str
 
 
-# class Sup_Res_Finder:
-#     def isSupport(self, df, i):
-#         support = df['low'][i] < df['low'][i - 1] and \
-#                   df['low'][i] < df['low'][i + 1] and \
-#                   df['low'][i + 1] < df['low'][i + 2] and \
-#                   df['low'][i - 1] < df['low'][i - 2]
-#
-#         return support
-#
-#     def isResistance(self, df, i):
-#         resistance = df['high'][i] > df['high'][i - 1] and \
-#                      df['high'][i] > df['high'][i + 1] > df['high'][i + 2] and \
-#                      df['high'][i - 1] > df['high'][i - 2]
-#
-#         return resistance
-#
-#     def find_levels(self, df):
-#         levels = []
-#         lows = []
-#         highs = []
-#         s = np.mean(df['high'] - df['low'])
-#
-#         for i in range(2, df.shape[0] - 2):
-#             if self.isSupport(df, i):
-#                 l = df['low'][i]
-#
-#                 if np.sum([abs(l - x) < s for x in levels]) == 0:
-#                     levels.append((i, l))
-#                     lows.append((df.index[i], l))
-#             elif self.isResistance(df, i):
-#                 l = df['high'][i]
-#
-#                 if np.sum([abs(l - x) < s for x in levels]) == 0:
-#                     levels.append((i, l))
-#                     highs.append((df.index[i], l))
-#
-#         idx, values = zip(*lows)
-#         lows = pd.Series(values, idx)
-#         idx, values = zip(*highs)
-#         highs = pd.Series(values, idx)
-#         return lows, highs
-
+# using non null function to ignore them
 def calc_roll(ohlc, lk, is_idx, is_max):
     col = 'high' if is_max else 'low'
-    lk = lk // 2
     if is_idx:
-        func = np.argmax if is_max else np.argmin
-        # TODO: try to use like shift, need for each lookahead take lookback such that lookahead is:   end<-----start<---now
-        indxes = ohlc[col].shift(lk).rolling(lk, min_periods=1).apply(func).rename(
-            f'{col}_idx_{lk * 2}') - lk + 1 + np.arange(len(ohlc.index))
-        return indxes - lk
+        func = np.nanargmax if is_max else np.nanargmin
+        indxes = ohlc[col].rolling(lk).apply(func).rename(
+            f'{col}_idx_{lk}') - lk + 1 + np.arange(len(ohlc.index))
+        return indxes
     else:
-        func = np.max if is_max else np.min
-        return ohlc[col].shift(lk).rolling(lk, min_periods=1).apply(func).rename(f'{col}_{lk * 2}')
+        func = np.nanmax if is_max else np.nanmin
+        return ohlc[col].rolling(lk).apply(func).rename(
+            f'{col}_{lk}')
+    # if is_idx:
+    #     func = np.nanargmax if is_max else np.nanargmin
+    #     # TODO: try to use like shift, need for each lookahead take lookback such that lookahead is:   end<-----start<---now
+    #     indxes = ohlc[col].shift(lk_half).rolling(lk_half, min_periods=1).apply(func).rename(
+    #         f'{col}_idx_{lk}') - lk + 1 + np.arange(len(ohlc.index))
+    #     return indxes - lk_half
+    # else:
+    #     func = np.nanmax if is_max else np.nanmin
+    #     return ohlc[col].shift(lk).rolling(lk, min_periods=1).apply(func).rename(
+    #         f'{col}_{lk}')
 
 
 def lines_by_index(ohlc_index, res, idx=None):
@@ -83,16 +51,18 @@ def lines_by_index(ohlc_index, res, idx=None):
     supports = pd.Series(val_low, index=idx_low).sort_index(ascending=False)
     resistances = pd.Series(val_high, index=idx_high).sort_index(ascending=False)
     # print('idx', idx, 'ts', ts_at_idx)
-    print('supports')
-    print(supports)
-    print('resistances')
-    print(resistances)
+    # print('supports')
+    # print(supports)
+    # print('resistances')
+    # print(resistances)
     return supports, resistances
 
 
 class SupportResistanceLines2(Indicator):
-    def __init__(self, plot_loc=None):
-        pass
+    def __init__(self, lookaheads_index: int, plot_loc=None):
+        if not (0 <= lookaheads_index < 10):
+            raise ValueError('SupportResistanceLines2: lookaheads_index not valid')
+        self.lookaheads_index = lookaheads_index
         self.current_ts = None
         self.plot_loc = (plot_loc, 1 if plot_loc else None)
 
@@ -100,12 +70,16 @@ class SupportResistanceLines2(Indicator):
     def calc(self, ohlc: pd.DataFrame):
         import time
         calc_ts = time.time()
-        n_points = 7
+        print('calc called', calc_ts)
+
+        n_points = 10
         first_lookup = 10
         max_lookup = len(ohlc)  # // 2
         lookaheads = np.linspace(first_lookup, max_lookup, n_points).astype(int)
-        # take only middle
-        # lookaheads = [lookaheads[len(lookaheads) // 2]]
+        # TODO: take only middle
+        lookaheads_index = self.lookaheads_index  # 1 # o to max
+        lk = lookaheads[lookaheads_index]
+        lookaheads = [lookaheads[lookaheads_index]]
 
         resistances = [calc_roll(ohlc, lk, is_idx=False, is_max=True) for lk in lookaheads]
         supports = [calc_roll(ohlc, lk, is_idx=False, is_max=False) for lk in lookaheads]
@@ -114,15 +88,18 @@ class SupportResistanceLines2(Indicator):
         # for each point, we will have n_points of support and resistance.
         # get range for support: supports_last[3].name.split('_')[1]
         res = pd.concat(resistances + resistances_idx + supports + supports_idx, axis=1)
-        # idx = len(ohlc) - 1
-        idx = np.random.randint(0, len(ohlc))
+        idx = len(ohlc) - 1
+        # idx = np.random.randint(0, len(ohlc))
         supports, resistances = lines_by_index(ohlc.index, res, idx=idx)
         # TODO: Can combine multiple supports if they are realtive close to each other, by 5% ...
         self.current_ts = ohlc.index[idx]
         self.v_lines_min = supports
         self.v_lines_max = resistances
-        print('calc_time', time.time() - calc_ts)
-        return res
+        # print('calc_time', time.time() - calc_ts)
+        lk = str(lk)
+        res_selected = res[[c for c in res.columns if lk in c and 'idx' not in c]]
+        res_selected = res_selected.rename(columns={f'high_{lk}': 'resistance', f'low_{lk}': 'support'})
+        return res_selected
 
     def _plot(self, fig, ts, v, is_max):
         c = 'red' if is_max else 'green'
@@ -141,8 +118,3 @@ class SupportResistanceLines2(Indicator):
             fig = self._plot(fig, max_ts, max_v, True)
 
         return fig
-
-# https://plotly.com/python/shapes/
-# fig.add_shape(dict(type="line", x0=min_v_ts, x1=self.current_ts, y0=min_v_val, y1=min_v_val,
-#                    name='ss', line_dash="dash", line_color="green"))
-# fig.add_hline(y=min_v, row=loc[0], col=[1], line_width=1, line_color='green', line_dash="dash")

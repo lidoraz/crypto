@@ -1,14 +1,13 @@
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
-from ccxt_utils import get_candles_from_db
+from ccxt_utils import get_candles_from_db, get_latest_ts_db
 from Utils import Persistence
 from symbols import exchance_symbol_pairs, DB_PATH
 from Plots.plot_utils import *
 from Plots.plotly_fig import get_updated_fig
 import dash_bootstrap_components as dbc
 from datetime import datetime
-
 
 coins = [c[1].split('/')[0] for c in exchance_symbol_pairs]
 resample_keywords = list(INTERVAL_CANDLE_LOOKBACK_TABLE.keys())
@@ -18,8 +17,9 @@ resample_radio_options = dict(
 
 db_path = DB_PATH
 db = Persistence(db_path, check_same_thread=False)
-# providers = get_data_providers()
-#
+
+live_update = True
+print(f'live_update = {live_update}')
 title = 'Crypto Live Feed'
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.CYBORG],
@@ -33,10 +33,7 @@ live_update_html = html.Div(id='live-update-text', style={'margin': 'auto'}, chi
 resample_selector_html = dcc.RadioItems(options=resample_radio_options, value=resample_keywords[2], id='resample-type',
                                         inline=True)
 # https://dash-bootstrap-components.opensource.faculty.ai/docs/components/input/ # RadioItems and Checklist
-# disabled toggle: "disabled": True in options dict
-# on toggle: set value=[1] in order to make it on when page loads
-live_update_switch_html = dbc.Checklist(options=[dict(label="Live Update", value=1, disabled=True)], value=[0],
-                                        id="live-update-button", switch=True)
+live_update_switch_html = dbc.Switch(id="live-update-button", label="Live Update", value=live_update)
 
 right_portion_html = html.Div(id='right-portion',
                               children=[html.Div(resample_selector_html),
@@ -45,7 +42,6 @@ right_portion_html = html.Div(id='right-portion',
                                                  style={'padding-left': '3%'})],
                               # style={'display': 'flex', 'width': '40%'}
                               )
-
 app.layout = html.Div([
     html.Div(children=[
         title_html,
@@ -65,7 +61,7 @@ app.layout = html.Div([
                                                   'modeBarButtonsToRemove': ['toImage', 'select2d', 'lasso2d', 'pan2d',
                                                                              'zoom2d', 'autoScale2d'],
                                                   'displaylogo': False},
-                  style={'width': 'auto', 'height': '93vh'}
+                  style={'width': 'auto', 'height': '92vh'}
                   # TODO important https://stackoverflow.com/questions/46287189/how-can-i-change-the-size-of-my-dash-graph
                   ),
         # https://stackoverflow.com/questions/68188107/how-to-add-create-a-custom-loader-with-dash-plotly
@@ -75,7 +71,9 @@ app.layout = html.Div([
             type="circle",
             loading_state={}
         ),
-        dcc.Interval(id='interval-component', interval=INTERVAL_UPDATE_SECONDS * 1000, n_intervals=0)
+        # dcc.Interval(id='clock-component', interval=1 * 1000, n_intervals=0),
+        dcc.Interval(id='interval-component', interval=INTERVAL_UPDATE_SECONDS * 1000, n_intervals=0,
+                     disabled=not live_update)
     ], style=dict(display="None")
              )  # style=dict(height='100vh')
 ])
@@ -83,25 +81,17 @@ app.layout = html.Div([
 
 @app.callback(
     Output('interval-component', 'disabled'),
-    [Input('live-update-button', 'value')],
-    [State('interval-component', 'disabled')])
-def callback_func_start_stop_interval(button, _):
-    return len(button) == 0
-
-
-@app.callback(Output('live-update-text', 'children'),
-              Input('interval-component', 'n_intervals'))
-def update_metrics(n):
-    style = {'padding': '5px', 'fontSize': '16px'}
-    return [
-        html.Span('Interval: {0:.2f}'.format(n), style=style),
-    ]
-
-
-@app.callback(Output('interval-component', 'n_intervals'),
-              Input('coin-type', 'value'))
-def interval_update(_):
-    return 0
+    Output('interval-component', 'n_intervals'),
+    Input('live-update-button', 'value'),
+    Input('coin-type', 'value'),
+    Input('resample-type', 'value'),
+    Input('input_lookahead', 'value')
+)
+def start_stop_interval(value, _1, _2, _3):
+    is_on = value
+    # print('callback_func_start_stop_interval', is_on)
+    disabled = not is_on
+    return disabled, 0
 
 
 # show graph only when ready to display, to avoid blank white figure
@@ -122,6 +112,7 @@ def _adjust_input_lookahead(input_lookahead):
 
 
 @app.callback(Output('live-update-graph', 'figure'),
+              Output('live-update-text', 'children'),
               Input('interval-component', 'n_intervals'),
               Input('coin-type', 'value'),
               Input('resample-type', 'value'),
@@ -129,21 +120,32 @@ def _adjust_input_lookahead(input_lookahead):
 def update_graph_live(n, coin, resample, input_lookahead):
     t0 = datetime.now()
     print(n, coin, resample, input_lookahead)
-    # filter_datetime = adjust_plot_start_datetime(resample)
-    # input_lookahead = _adjust_input_lookahead(input_lookahead)
-
-    # df_ohlcv, exchange_name = get_data(coin, resample)
-    # symbol_str = f'{coin}/USDT'
-    # db_symbol = f'{exchange_str}_{symbol_str}'.upper()
     start_ts = int((datetime.utcnow() - INTERVAL_CANDLE_LOOKBACK_TABLE[resample]).timestamp())
     df_ohlcv = get_candles_from_db(db, coin, resample, start_ts=start_ts)
+    latest_ts = pd.to_datetime(df_ohlcv.attrs['curr_ts_db'], unit='s', utc=True).tz_convert('Israel')
 
     # df_ohlcv = get_candles_from_ccxt(coin, '1D')
 
     fig = get_updated_fig(df_ohlcv, lookahead=input_lookahead, xy_limit=True)
     t1 = (datetime.now() - t0).total_seconds()
     print(f'ready at:{round(t1, 2)}sec')
-    return fig
+
+    text = [html.Span('{}, Latest ts: {}'.format(n, latest_ts))]  # {0:.2f}
+    return fig, text
+
+
+# @app.callback(Output('interval-component', 'n_intervals'),
+#               Input('live-update-button', 'value'),
+#               Input('clock-component', 'n_intervals'),
+#               Input('interval-component', 'n_intervals'))
+# def clock_update(live_button, clock, interval):
+#     if not live_button:
+#         return interval
+#     time_sec = datetime.now().second
+#     print('clock_update', clock, time_sec, interval)
+#     if time_sec in [10, 20, 30, 40, 50]:  # 10:  #
+#         return interval + 1
+#     return interval
 
 
 import sys

@@ -2,7 +2,7 @@ from Indicators import RSI, BollingerBands
 from .Strategy import Strategy
 
 
-class RsiBB(Strategy):
+class RSIBB(Strategy):
     """
     # BUY ENTRY: First candle that closes on the middle BB, soon after RSI was < 30
     # SELL ENTRY: First candle that close below the middle BB, soon after RSI was > 70
@@ -22,7 +22,7 @@ class RsiBB(Strategy):
         self.high_rsi = params.get('RSIBB_rsi_high', 70)
         self.bb_std = params.get('RSIBB_BB_std', 2)
         self.ind_rsi = RSI(self.ind_ahead)
-        self.ind_bb = BollingerBands(self.ind_ahead)
+        self.ind_bb = BollingerBands(self.ind_ahead, self.bb_std)
         # ind_sma = SMA(100)
 
     def add_indicators(self, df):
@@ -64,3 +64,6 @@ class RsiBB(Strategy):
                     'buy_price': buy_price,
                     'sell_price_win_stop': sell_price_win_stop,
                     'sell_price_lose_stop': sell_price_lose_stop}
+
+    def __repr__(self):
+        return 'RSI-BB'

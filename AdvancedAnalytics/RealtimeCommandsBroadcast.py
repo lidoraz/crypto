@@ -1,12 +1,12 @@
 from Strategy.DataWrap import CryptoData
-from Strategy.Strategies import BB
+from Strategy.Strategies import BB, RSIBB
 from Utils.utils import WaitToMinEveryHour
 from datetime import datetime
 from Utils.notify import TelegramBot
 import pandas as pd
 from dateutil import tz
 #
-prod = True
+prod = False
 if prod:
     print('@-------> prod True!!!!')
 
@@ -51,7 +51,7 @@ def handle_buy_sell(title_strategy, buy_lst, sell_lst, tb_notify):
     TIME_CONV = "%Y-%m-%dT%H:%M:%S"  # .strftime
 
     def extract_to_txt_buy(lst):
-        return [f"{x['coin']}: {x['buy_price']} ({x['sell_price_win_stop']}, {x['sell_price_lose_stop']})" for x
+        return [f"{x['coin']}: {x['buy_price']} ({x['sell_price_win_stop']:.2f}, {x['sell_price_lose_stop']:.2f})" for x
                 in lst]
 
     def extract_to_txt_sell(lst):
@@ -101,6 +101,7 @@ if __name__ == '__main__':
     data_wrapper = CryptoData.get_wrapper(live=True, start_date='2022-05-01')
     symbols = data_wrapper.get_symbols()
     strategy = BB()
+    # strategy = RSIBB(dict(RSIBB_n_rsi_soon=5, RSIBB_ind_ahead=14, RSIBB_BB_std=2.5))
 
     tb_notify = TelegramBot()
     buy_change = set()

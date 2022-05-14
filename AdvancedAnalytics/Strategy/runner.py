@@ -10,32 +10,52 @@ import numpy as np
 if __name__ == '__main__':
     # DS ################################################################################################################################################
     # TODO: in optimizer filter out params that are not being used. can extract this with a list from each strategy
-    optimize_params = {'tf': ['1H'],  # ['15Min', '1H']
+    optimize_params = {'tf': ['1H', '4H'],  # ['15Min', '1H']
                        'sell_pct': np.arange(0, 0.10, 0.02)}  # 0.15 is too much
-    data_wrapper = CryptoData.get_wrapper(live=False, start_date='2022-04-26')  # start_date='2022-04-25'
+    data_wrapper = CryptoData.get_wrapper(live=False, start_date='2022-04-01')  # start_date='2022-04-25'
+
+
+    # n_jobs = 1
 
     # optimize_params = {'tf': ['1D'],  # Nasdaq Daily data
     #           'set_profit_pct': np.arange(0, 0.15, 0.02)}
     # data_wrapper = NasdaqData.get_wrapper(start_date='2021-06-01')
 
     # Strategies ########################################################################################################################################
+    def run_MACross():
+        strategy_params_macross = {'MACROSS_short': range(5, 26, 5),
+                                   'MACROSS_long': range(50, 101, 10)}
+        optimize_params.update(strategy_params_macross)
+        find_optimal_strategy(data_wrapper, strategy='MACROSS', optimized_params=optimize_params)
 
-    # MACross ###################################################################################################
-    # strategy_params_macross = {'MACROSS_short': range(5, 26, 5),
-    #                            'MACROSS_long': range(50, 101, 10)}
-    # optimize_params.update(strategy_params_macross)
-    # find_optimal_strategy(data_wrapper, strategy='MACROSS', optimized_params=optimize_params)
-    # # RSIBB ###################################################################################################
-    # strategy_params_rsi = {'RSIBB_n_rsi_soon': range(5, 14, 2),
-    #                        'RSIBB_ind_ahead': range(10, 17, 2),
-    #                        'RSIBB_BB_std': [1.8, 2, 2.5, 3]}
+
     # # from testing it seems that under 1H granularity it can't generate profit.
-    # optimize_params.update(strategy_params_rsi)
-    # find_optimal_strategy(data_wrapper, strategy='RSIBB', optimized_params=optimize_params)
+    # sell_pct is not good for RSIBB, really need to keep it on 0.
 
-    # BB #############
-    strategy_params_rsi = {'BB_ind_ahead': range(5, 18, 4),
-                           'BB_std': [1.5, 2, 2.5]
-                           }
-    optimize_params.update(strategy_params_rsi)
-    find_optimal_strategy(data_wrapper, strategy='BB', optimized_params=optimize_params, n_jobs=1)
+    def run_RSIBB():
+        strategy_params_rsi = {
+            'tf': ['1H', '4H'],
+            'sell_pct': [0],
+            'RSIBB_n_rsi_soon': range(5, 14, 2),
+            'RSIBB_ind_ahead': range(10, 17, 2),
+            'RSIBB_BB_std': [1.8, 2, 2.5, 3]}
+        find_optimal_strategy(data_wrapper, strategy='RSIBB', optimized_params=strategy_params_rsi)
+
+
+    def run_BB():
+        # BB #############
+        # strategy_params_rsi = {'BB_ind_ahead': range(10, 22, 4),
+        #                        'BB_std': [2, 2.5],
+        #                        'BB_STOP_lookaheads_index': range(10),
+        #                        }
+        strategy_params_rsi = {'BB_ind_ahead': range(10, 22, 4),
+                               'BB_std': [1.8, 2, 2.5],
+                               'BB_win_pct': np.linspace(0.1, 0.5, 5),  # np.linspace(0, 0.5, 5),  # range(10)
+                               'BB_lose_pct': np.linspace(0.1, 0.5, 5)  #
+                               }
+        optimize_params.update(strategy_params_rsi)
+        n_jobs = 1
+        find_optimal_strategy(data_wrapper, strategy='BB', optimized_params=optimize_params, n_jobs=n_jobs)
+
+
+    run_BB()

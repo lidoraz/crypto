@@ -20,9 +20,8 @@ TIME_CONV = "%Y-%m-%dT%H:%M:%S"
 
 
 def run_strategy(df, stragey: Strategy, sell_pct, trade_comission=0.001):
-    sum_pct = 0
-    sell_price_win_stop = None
-    sell_price_lose_stop = None
+    sum_pct_net = 0
+    buy_idx_vars = None
     trades_str = []
     buy_idx = None
     for idx, row in df.iterrows():
@@ -30,33 +29,34 @@ def run_strategy(df, stragey: Strategy, sell_pct, trade_comission=0.001):
             buy_vars = stragey.act_buy(idx, row)
             if buy_vars:
                 buy_idx = buy_vars['buy_idx']
-                sell_price_win_stop = buy_vars['sell_price_win_stop']
-                sell_price_lose_stop = buy_vars['sell_price_lose_stop']
+                buy_idx_vars = buy_vars
         else:
             sell_idx = idx
-            buy_price = df['close'].loc[buy_idx]
+            buy_price = buy_idx_vars['buy_price']
+            sell_price_win_stop = buy_idx_vars['sell_price_win_stop']
+            sell_price_lose_stop = buy_idx_vars['sell_price_lose_stop']
             sell_price = df['close'].loc[sell_idx]
             hours_holding = (sell_idx - buy_idx).total_seconds() // 3600
             profit_pct = (sell_price / buy_price) - 1
             profit_pct_net = profit_pct - (trade_comission * 2)  # plus commission
             if sell_pct == 0 or (abs(profit_pct_net) > sell_pct > 0):
-                if sell_price_win_stop < sell_price:  # and profit_pct > set_profit_pct
+                if sell_price > sell_price_win_stop:
                     sell_cause = 'WIN_STOP'
-                elif sell_price_lose_stop > sell_price:  # and abs(profit_pct) > set_profit_pct
+                elif sell_price < sell_price_lose_stop:
                     sell_cause = 'LOSE_STOP'
-                elif row['SELL_ALGO']:  # without 2nd if there are too many trades.
+                elif row['SELL_ALGO']:
                     sell_cause = 'ALGO_SELL'
                 else:
                     continue
                 trade_arr = [sell_cause, buy_idx, round(buy_price, 2),
-                             sell_idx, round(sell_price, 2), hours_holding, f'{profit_pct:.2%}']
+                             sell_idx, round(sell_price, 2), hours_holding, f'{profit_pct_net:.2%}']
                 trade_arr = list(map(str, trade_arr))
                 transaction = 'Trade:' + "\t".join(trade_arr)
                 trades_str.append(transaction)
-                sum_pct += profit_pct
+                sum_pct_net += profit_pct_net
                 buy_idx = None
     is_trade_open = buy_idx is not None
-    return sum_pct, trades_str, is_trade_open
+    return sum_pct_net, trades_str, is_trade_open
 
 
 def mark_enter_exit_points(provider: ProviderData, strategy: str, params):
@@ -68,8 +68,12 @@ def mark_enter_exit_points(provider: ProviderData, strategy: str, params):
     sell_pct = params['sell_pct']
     for symbol in symbols:
         df = provider.get_data(symbol, tf)
+        # print(symbol)
+        # if symbol == 'GCOIN':
+        #     print()
         strategy_class = All_STRATEGIES[strategy.upper()](params)
         df = strategy_class.add_indicators(df)
+        # df = df.dropna() # TODO: Test this
         act_sum_pct, act_trades_str, is_open = run_strategy(df, strategy_class,
                                                             sell_pct=sell_pct, trade_comission=0.001)
         act_trades_str = [f'{symbol}- {trade}' for trade in act_trades_str]  # add symbol
@@ -78,7 +82,7 @@ def mark_enter_exit_points(provider: ProviderData, strategy: str, params):
         n_open_trades += is_open
 
     n_trades = len(trades_str)
-    # print(f'{params}\t\t#trades: {n_trades}\t#n_open_trades: {n_open_trades}\t sum_pct: {sum_pct:.2%}')
+    print(f'{params}\t\t#trades: {n_trades}\t#n_open_trades: {n_open_trades}\t sum_pct: {sum_pct:.2%}')
     return sum_pct, trades_str, n_open_trades
 
 
