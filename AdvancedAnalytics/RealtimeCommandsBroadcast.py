@@ -6,7 +6,7 @@ from Utils.notify import TelegramBot
 import pandas as pd
 from dateutil import tz
 #
-prod = False
+prod = True
 if prod:
     print('@-------> prod True!!!!')
 
