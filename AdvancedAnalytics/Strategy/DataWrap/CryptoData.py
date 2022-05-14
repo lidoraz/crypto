@@ -27,7 +27,7 @@ class CryptoData(ProviderData):
         # maybe not needed as optimizer get preloaded data class.
         pass
 
-    def get_data(self, coin, tf, start_date=None):
+    def get_data(self, coin, tf, start_date: str = None):
         cache_name = f'{coin}{tf}'
         curr_ts_local = int(time.time())
         if cache_name in self._data:

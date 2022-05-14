@@ -128,7 +128,7 @@ def update_graph_live(n, coin, resample, input_lookahead):
     t1 = (datetime.now() - t0).total_seconds()
     print(f'ready at:{round(t1, 2)}sec')
 
-    text = [html.Span('{}, Latest ts: {}'.format(n, latest_ts))]  # {0:.2f}
+    text = [html.Span('{}, Latest ts: {}, Price={}'.format(n, latest_ts, df_ohlcv.iloc[-1]['close']))]  # {0:.2f}
     return fig, text
 
 

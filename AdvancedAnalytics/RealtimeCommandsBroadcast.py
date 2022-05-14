@@ -15,12 +15,14 @@ def get_latest_buy_sell(data_wrapper, time_now_minus_tf, symbols, stratgy, tf='1
     # on crypto it updated every 1 min so no problem
     # has saftey mechanism from datawrapper crypto live if db is not updated!
     # Implmenet with act buy, so it will be generalized and support stoplosses
-    n_candle = -1  # last updated candle, -1 updates on hour basis, so on open hour it will not be correct
+    # n_candle = -1  # last updated candle, -1 updates on hour basis, so on open hour it will not be correct
     buy_lst = []
     sell_lst = []
+    n_candles_to_get = 100
+    start_date = str(time_now_minus_tf.date() - pd.to_timedelta(tf) * n_candles_to_get)
     for coin in symbols:
         # TODO: add to get_data option to filter out for most recent data, not only on init class.
-        df = data_wrapper.get_data(coin, tf)
+        df = data_wrapper.get_data(coin, tf, start_date)
         # TODO: get the data, and check its ts if it matches current machine ts to make sure we are sending correct ts.
         if df is None:
             print('Skipping:', coin, tf)
@@ -28,7 +30,7 @@ def get_latest_buy_sell(data_wrapper, time_now_minus_tf, symbols, stratgy, tf='1
         df = stratgy.add_indicators(df)
         df = df[:time_now_minus_tf]  # filter out
 
-        last_row = df.iloc[n_candle]
+        last_row = df.iloc[-1]
         ts = df.index[-1]
         buy_vars = stratgy.act_buy(0, last_row)
         # print(ts, coin, tf)

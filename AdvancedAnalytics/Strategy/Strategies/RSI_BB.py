@@ -20,7 +20,7 @@ class RSIBB(Strategy):
         self.n_rsi_soon = params.get('RSIBB_n_rsi_soon', 10)
         self.low_rsi = params.get('RSIBB_rsi_low', 30)
         self.high_rsi = params.get('RSIBB_rsi_high', 70)
-        self.bb_std = params.get('RSIBB_BB_std', 2)
+        self.bb_std = params.get('RSIBB_bb_std', 2)
         self.ind_rsi = RSI(self.ind_ahead)
         self.ind_bb = BollingerBands(self.ind_ahead, self.bb_std)
         # ind_sma = SMA(100)

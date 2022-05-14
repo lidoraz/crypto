@@ -11,7 +11,7 @@ if __name__ == '__main__':
     # DS ################################################################################################################################################
     # TODO: in optimizer filter out params that are not being used. can extract this with a list from each strategy
     optimize_params = {'tf': ['1H', '4H'],  # ['15Min', '1H']
-                       'sell_pct': np.arange(0, 0.10, 0.02)}  # 0.15 is too much
+                       'sell_pct': np.arange(0, 0.10, 0.02)}  # 0.15 is too much # not a good  paramter.
     data_wrapper = CryptoData.get_wrapper(live=False, start_date='2022-04-01')  # start_date='2022-04-25'
 
 
@@ -34,11 +34,25 @@ if __name__ == '__main__':
 
     def run_RSIBB():
         strategy_params_rsi = {
-            'tf': ['1H', '4H'],
+            'tf': ['1H'],
             'sell_pct': [0],
+            # ,tf,sell_pct,RSIBB_n_rsi_soon,RSIBB_ind_ahead,RSIBB_BB_std,sum_pct,n_trades,n_open_trades
+            # 44,1H,0,9,16,1.8,1.874626899653519,287,1
+            # 26,1H,0,7,14,2.5,1.8310956834391399,274,6
+            # 10,1H,0,5,14,2.5,1.537554847294989,170,6
+            # 40,1H,0,9,14,1.8,1.3041012719664051,404,1
+            # 45,1H,0,9,16,2.0,1.2704436800608825,279,1
             'RSIBB_n_rsi_soon': range(5, 14, 2),
-            'RSIBB_ind_ahead': range(10, 17, 2),
-            'RSIBB_BB_std': [1.8, 2, 2.5, 3]}
+            'RSIBB_ind_ahead': [16],
+            # 'RSIBB_rsi_low': range(68, 76, 2),
+            # 'RSIBB_rsi_high': range(68, 76, 2),
+            'RSIBB_bb_std': [1.8],  # [1.8, 2, 2.5, 3]
+            # 'RSIBB_n_rsi_soon': range(5, 14, 2),
+            # 'RSIBB_ind_ahead': range(10, 17, 2),
+            'RSIBB_rsi_low': range(26, 36, 2),
+            'RSIBB_rsi_high': range(66, 76, 2),
+            # 'RSIBB_bb_std': [1.8, 2, 2.5, 3]
+        }
         find_optimal_strategy(data_wrapper, strategy='RSIBB', optimized_params=strategy_params_rsi)
 
 
@@ -48,14 +62,19 @@ if __name__ == '__main__':
         #                        'BB_std': [2, 2.5],
         #                        'BB_STOP_lookaheads_index': range(10),
         #                        }
-        strategy_params_rsi = {'BB_ind_ahead': range(10, 22, 4),
-                               'BB_std': [1.8, 2, 2.5],
-                               'BB_win_pct': np.linspace(0.1, 0.5, 5),  # np.linspace(0, 0.5, 5),  # range(10)
-                               'BB_lose_pct': np.linspace(0.1, 0.5, 5)  #
-                               }
+        strategy_params_rsi = {
+            'tf': ['1H'],
+            'sell_pct': [0],
+            'BB_ind_ahead': range(10, 22, 4),
+            'BB_std': [1.8, 2, 2.5],
+            'BB_stop_lookahead': range(30, 401, 50)
+            # 'BB_win_pct': np.linspace(0.1, 0.5, 5),  # np.linspace(0, 0.5, 5),  # range(10)
+            # 'BB_lose_pct': np.linspace(0.1, 0.5, 5)  #
+        }
         optimize_params.update(strategy_params_rsi)
-        n_jobs = 1
+        n_jobs = 8
         find_optimal_strategy(data_wrapper, strategy='BB', optimized_params=optimize_params, n_jobs=n_jobs)
 
 
-    run_BB()
+    run_RSIBB()
+    # run_BB()

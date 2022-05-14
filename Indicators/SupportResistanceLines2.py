@@ -68,9 +68,9 @@ class SupportResistanceLines2(Indicator):
 
     # TODO: support resistance should be calculated in predfined intervals, OR by getting k maximums as resistances and supports.
     def calc(self, ohlc: pd.DataFrame):
-        import time
-        calc_ts = time.time()
-        print('calc called', calc_ts)
+        # import time
+        # calc_ts = time.time()
+        # print('calc called', calc_ts)
         first_lookup = 30
         max_lookup = len(ohlc)  # // 2
         lookaheads = np.linspace(first_lookup, max_lookup, self.n_lookahead_points).astype(int)
