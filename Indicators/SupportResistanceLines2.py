@@ -19,12 +19,12 @@ def calc_roll(ohlc, lk, is_idx, is_max):
     col = 'high' if is_max else 'low'
     if is_idx:
         func = np.nanargmax if is_max else np.nanargmin
-        indxes = ohlc[col].rolling(lk).apply(func).rename(
+        indxes = ohlc[col].rolling(lk, min_periods=1).apply(func).rename(
             f'{col}_idx_{lk}') - lk + 1 + np.arange(len(ohlc.index))
         return indxes
     else:
         func = np.nanmax if is_max else np.nanmin
-        return ohlc[col].rolling(lk).apply(func).rename(
+        return ohlc[col].rolling(lk, min_periods=1).apply(func).rename(
             f'{col}_{lk}')
     # if is_idx:
     #     func = np.nanargmax if is_max else np.nanargmin
@@ -59,10 +59,10 @@ def lines_by_index(ohlc_index, res, idx=None):
 
 
 class SupportResistanceLines2(Indicator):
-    def __init__(self, lookaheads_index: int, plot_loc=None):
-        if not (0 <= lookaheads_index < 10):
-            raise ValueError('SupportResistanceLines2: lookaheads_index not valid')
-        self.lookaheads_index = lookaheads_index
+    def __init__(self, lookahead=None, plot_index=-1, plot_loc=None):
+        self.lookahead = lookahead
+        self.plot_index = plot_index
+        self.n_lookahead_points = 7
         self.current_ts = None
         self.plot_loc = (plot_loc, 1 if plot_loc else None)
 
@@ -71,24 +71,21 @@ class SupportResistanceLines2(Indicator):
         import time
         calc_ts = time.time()
         print('calc called', calc_ts)
-
-        n_points = 10
-        first_lookup = 10
+        first_lookup = 30
         max_lookup = len(ohlc)  # // 2
-        lookaheads = np.linspace(first_lookup, max_lookup, n_points).astype(int)
+        lookaheads = np.linspace(first_lookup, max_lookup, self.n_lookahead_points).astype(int)
         # TODO: take only middle
-        lookaheads_index = self.lookaheads_index  # 1 # o to max
-        lk = lookaheads[lookaheads_index]
-        lookaheads = [lookaheads[lookaheads_index]]
+        lk = self.lookahead
+        if self.lookahead:
+            lookaheads = [self.lookahead]
 
+        # for each point, we will have n_points of support and resistance.
         resistances = [calc_roll(ohlc, lk, is_idx=False, is_max=True) for lk in lookaheads]
         supports = [calc_roll(ohlc, lk, is_idx=False, is_max=False) for lk in lookaheads]
         resistances_idx = [calc_roll(ohlc, lk, is_idx=True, is_max=True) for lk in lookaheads]
         supports_idx = [calc_roll(ohlc, lk, is_idx=True, is_max=False) for lk in lookaheads]
-        # for each point, we will have n_points of support and resistance.
-        # get range for support: supports_last[3].name.split('_')[1]
         res = pd.concat(resistances + resistances_idx + supports + supports_idx, axis=1)
-        idx = len(ohlc) - 1
+        idx = len(ohlc) + self.plot_index
         # idx = np.random.randint(0, len(ohlc))
         supports, resistances = lines_by_index(ohlc.index, res, idx=idx)
         # TODO: Can combine multiple supports if they are realtive close to each other, by 5% ...

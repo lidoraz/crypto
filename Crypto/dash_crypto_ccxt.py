@@ -47,7 +47,7 @@ app.layout = html.Div([
         title_html,
         coin_html,
         dcc.Input(
-            id="input_lookahead",
+            id="input-lookahead",
             type="number",
             value=14,
             placeholder="lookahead",
@@ -85,7 +85,7 @@ app.layout = html.Div([
     Input('live-update-button', 'value'),
     Input('coin-type', 'value'),
     Input('resample-type', 'value'),
-    Input('input_lookahead', 'value')
+    Input('input-lookahead', 'value')
 )
 def start_stop_interval(value, _1, _2, _3):
     is_on = value
@@ -116,16 +116,14 @@ def _adjust_input_lookahead(input_lookahead):
               Input('interval-component', 'n_intervals'),
               Input('coin-type', 'value'),
               Input('resample-type', 'value'),
-              Input('input_lookahead', 'value'))
+              Input('input-lookahead', 'value'))
 def update_graph_live(n, coin, resample, input_lookahead):
     t0 = datetime.now()
     print(n, coin, resample, input_lookahead)
     start_ts = int((datetime.utcnow() - INTERVAL_CANDLE_LOOKBACK_TABLE[resample]).timestamp())
     df_ohlcv = get_candles_from_db(db, coin, resample, start_ts=start_ts)
     latest_ts = pd.to_datetime(df_ohlcv.attrs['curr_ts_db'], unit='s', utc=True).tz_convert('Israel')
-
     # df_ohlcv = get_candles_from_ccxt(coin, '1D')
-
     fig = get_updated_fig(df_ohlcv, lookahead=input_lookahead, xy_limit=True)
     t1 = (datetime.now() - t0).total_seconds()
     print(f'ready at:{round(t1, 2)}sec')

@@ -3,7 +3,7 @@ from .plot_utils import *
 from Indicators import *
 
 
-def get_updated_fig(df_ohlcv, lookahead=14, xy_limit=True):
+def get_updated_fig(df_ohlcv, lookahead=14, support_lookahead=None, support_index=-1, xy_limit=True):
     interval = df_ohlcv.attrs['interval']
     ind_candle = CandleStick(interval, ohlc=df_ohlcv, plot_loc=1)
 
@@ -32,9 +32,8 @@ def get_updated_fig(df_ohlcv, lookahead=14, xy_limit=True):
         SMA(lookahead=99, plot_loc=1, color='cyan'),
         # FibMA(14, color='Pink'),
         # EMA(14, color='Teal'),
-        # BollingerBands(lookahead, 2, visible=True, plot_loc=1),
-        # TODO:: TEST!!
-        # SupportResistanceLines2(lookaheads_index=lookahead, plot_loc=1)
+        BollingerBands(lookahead, 2, visible=True, plot_loc=1),
+        SupportResistanceLines2(lookahead=support_lookahead, plot_index=support_index, plot_loc=1)
     ]
     # SupportResistanceLines(upto_lookahead=720, n_lookaheads=5, geometric_spacing=False, plot_loc=1)]
 
