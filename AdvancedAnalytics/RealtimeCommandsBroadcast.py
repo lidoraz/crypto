@@ -97,6 +97,12 @@ def handle_args():
         if 'start_msg' in args:
             show_start_msg = True
         params = dict(timeframe=timeframe, trigger_minutes=trigger_minutes, prod=prod, show_start_msg=show_start_msg)
+        print('******* Broadcast Params ********'
+              f'Broadcasting every {timeframe}\n'
+              f'At {trigger_minutes} min every hour\n'
+              f'PROD={prod}\n'
+              f'show_msg={show_start_msg}',
+              '******* ******* ******* ********')
         return params
     raise ValueError(usage)
 
@@ -109,9 +115,6 @@ if __name__ == '__main__':
     trigger_minutes = parsed_args['trigger_minutes']
     prod = parsed_args['prod']
     show_start_msg = parsed_args['show_start_msg']
-    print(
-        f'Broadcasting every {timeframe}\nAt {trigger_minutes} min every hour\nPROD={prod}\nshow_msg={show_start_msg}')
-
     data_wrapper = CryptoData.get_wrapper(live=True, start_date='2022-05-01')
     symbols = data_wrapper.get_symbols()
     strategy = BB()
