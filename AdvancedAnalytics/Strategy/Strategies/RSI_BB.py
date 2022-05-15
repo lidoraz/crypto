@@ -33,19 +33,19 @@ class RSIBB(Strategy):
         # df = df.join(self.ind_sma.calc(df))
         # df = df.dropna()
 
-        rsi_col = f"RSI_{self.ind_ahead}"
+        rsi_col = f"RSI_{self.rsi_ahead}"
         df['RSI_70'] = df[rsi_col] > self.high_rsi  # has passed RSI 70
         df['RSI_30'] = df[rsi_col] < self.low_rsi  # has passed RSI 30
-        df['OVER_BB'] = df[f'BBTOP_{self.ind_ahead}'] < df['close']
-        df['BELOW_BB'] = df[f'BBBOT_{self.ind_ahead}'] > df['close']
+        df['OVER_BB'] = df[f'BBTOP_{self.bb_ahead}'] < df['close']
+        df['BELOW_BB'] = df[f'BBBOT_{self.bb_ahead}'] > df['close']
 
         # buy condition
         df[f'RSI_BELOW_30_ROWS{self.n_rsi_soon}'] = df['RSI_30'].rolling(self.n_rsi_soon).sum() > 0
-        df['OVER_MID_BB'] = df['close'] > df[f'SMA_{self.ind_ahead}']
+        df['OVER_MID_BB'] = df['close'] > df[f'SMA_{self.bb_ahead}']
 
         # sell condition
         df[f'RSI_OVER_70_ROWS{self.n_rsi_soon}'] = df['RSI_70'].rolling(self.n_rsi_soon).sum() > 0
-        df[f'BELOW_MID_BB'] = df['close'] < df[f'SMA_{self.ind_ahead}']
+        df[f'BELOW_MID_BB'] = df['close'] < df[f'SMA_{self.bb_ahead}']
 
         df['BUY_ALGO'] = df[f'RSI_BELOW_30_ROWS{self.n_rsi_soon}'] & df['OVER_MID_BB']
         df['SELL_ALGO'] = df[f'RSI_OVER_70_ROWS{self.n_rsi_soon}'] & df['BELOW_MID_BB']
@@ -59,8 +59,8 @@ class RSIBB(Strategy):
             buy_idx = idx
             buy_price = row['close']
             # add stop-loss
-            sell_price_win_stop = row[f'BBTOP_{self.ind_ahead}']
-            sell_price_lose_stop = row[f'BBBOT_{self.ind_ahead}']
+            sell_price_win_stop = row[f'BBTOP_{self.bb_ahead}']
+            sell_price_lose_stop = row[f'BBBOT_{self.bb_ahead}']
             return {'buy_idx': buy_idx,
                     'buy_price': buy_price,
                     'sell_price_win_stop': sell_price_win_stop,
