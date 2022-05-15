@@ -98,7 +98,7 @@ if __name__ == '__main__':
     # WORKS -> Limit/Buy Amount - 0/0.0001, Price 10,000
     # order = exchange.create_order(symbol, 'limit', 'buy', amount, price=buy_price,)
     # print(order)
-
+  
     # TODO: Sell command at limit price.
     # WORKS -> Limit/Sell Amount - 0/0.0001, Price 100,000
     # order = exchange.create_order(symbol, 'limit', 'sell', amount, price=100000)
