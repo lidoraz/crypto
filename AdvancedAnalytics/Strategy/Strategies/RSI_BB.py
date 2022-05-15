@@ -16,13 +16,14 @@ class RSIBB(Strategy):
         super().__init__(*args, **kwargs)
         if params is None:
             params = {}
-        self.ind_ahead = params.get('RSIBB_ind_ahead', 14)
+        self.rsi_ahead = params.get('RSIBB_rsi_ahead', 14)
+        self.bb_ahead = params.get('RSIBB_bb_ahead', 20)
+        self.bb_std = params.get('RSIBB_bb_std', 2)
         self.n_rsi_soon = params.get('RSIBB_n_rsi_soon', 10)
         self.low_rsi = params.get('RSIBB_rsi_low', 30)
         self.high_rsi = params.get('RSIBB_rsi_high', 70)
-        self.bb_std = params.get('RSIBB_bb_std', 2)
-        self.ind_rsi = RSI(self.ind_ahead)
-        self.ind_bb = BollingerBands(self.ind_ahead, self.bb_std)
+        self.ind_rsi = RSI(self.rsi_ahead)
+        self.ind_bb = BollingerBands(self.bb_ahead, self.bb_std)
         # ind_sma = SMA(100)
 
     def add_indicators(self, df):

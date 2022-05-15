@@ -61,28 +61,25 @@ def fig_update_layout_combined_view(fig):
                       # TODO: use dash in order to customise hover - https://community.plotly.com/t/how-to-customize-the-tooltip/9053/4
                       template="plotly_dark",
                       yaxis={"side": "right"},
-                      #                       title=f'{coin} agg every {resample_keyword}, close price change %. ',
                       legend=dict(x=-0.07, y=1, font=dict(family="sans-serif", size=10, color="white"),
                                   traceorder="normal", ),
-                      dragmode='pan'
-                      )
-
+                      dragmode='pan')
     fig.update_layout(xaxis_showticklabels=True, xaxis2_showticklabels=False, )
     # fig.for_each_xaxis(lambda x: x.update(xaxis_showticklabels=True))
     fig.for_each_yaxis(lambda x: x.update(side="right"))
-    fig.update_xaxes(showgrid=True, zeroline=False,  # rangeslider_visible=False, showticklabels=False,
-                     showspikes=True, spikemode='across', spikesnap='cursor', showline=True,
-                     spikecolor="grey", spikethickness=1, spikedash='dash')
-    fig.update_yaxes(showspikes=True, spikedash='dash', spikemode='across',  # fixedrange=True,
-                     spikecolor="grey", spikesnap="cursor", spikethickness=1)
-    fig.update_layout(spikedistance=1000, hoverdistance=1000)  # enables crosshair on all
+    spike_params = dict(showspikes=True, spikedash='dash', spikemode='across', spikecolor="grey", spikesnap="cursor",
+                        spikethickness=0.5)
+    fig.update_xaxes(**spike_params)  # rangeslider_visible=False, showticklabels=False, showgrid=True, zeroline=False,
+    fig.update_yaxes(**spike_params)  # fixedrange=True,
+
+    # Don't change location when interval triggers: # zoom in is a bit fucked up with this on ( not really something else is bugged)
+    fig.update_layout(uirevision='foo')  # does not work well when interval fires when zoomed in
 
     # fig.update_xaxes(autorange=False)
     # fig.update_yaxes(autorange=False)
     # fig.update_xaxes(fixedrange=True)  # does not fix the problem. it limits x from both sides, need to limit only 1 side.
     # fig.update_layout(height=900, )
     # fig.update_layout(height=750, dragmode='pan')
-    # fig.update_layout(uirevision='True') # does not work well when interval fires when zoomed in
 
     # Customizing Tick Label Formatting by Zoom Level
     # does not work quite well

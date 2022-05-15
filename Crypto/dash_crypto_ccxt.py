@@ -123,13 +123,14 @@ def update_graph_live(n, coin, resample, input_lookahead):
     print(n, coin, resample, input_lookahead)
     start_ts = int((datetime.utcnow() - INTERVAL_CANDLE_LOOKBACK_TABLE[resample]).timestamp())
     df_ohlcv = get_candles_from_db(db, coin, resample, start_ts=start_ts)
-    latest_ts = pd.to_datetime(df_ohlcv.attrs['curr_ts_db'], unit='s', utc=True).tz_convert('Israel')
     # df_ohlcv = get_candles_from_ccxt(coin, '1D')
     fig = get_updated_fig(df_ohlcv, lookahead=input_lookahead, xy_limit=True)
     t1 = (datetime.now() - t0).total_seconds()
     print(f'ready at:{round(t1, 2)}sec')
 
-    text = [html.Span('{}, Latest ts: {}, Price={}'.format(n, latest_ts, df_ohlcv.iloc[-1]['close']))]  # {0:.2f}
+    latest_ts = pd.to_datetime(df_ohlcv.attrs['curr_ts_db'], unit='s', utc=True).tz_convert('Israel') + pd.to_timedelta(
+        '1min')
+    text = [html.Span('{}, Price={}, Updated to: {}'.format(coin, latest_ts, df_ohlcv.iloc[-1]['close']))]  # {0:.2f}
     return fig, text
 
 

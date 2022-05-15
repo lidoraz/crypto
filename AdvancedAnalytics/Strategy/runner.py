@@ -28,30 +28,18 @@ if __name__ == '__main__':
         optimize_params.update(strategy_params_macross)
         find_optimal_strategy(data_wrapper, strategy='MACROSS', optimized_params=optimize_params)
 
-
     # # from testing it seems that under 1H granularity it can't generate profit.
     # sell_pct is not good for RSIBB, really need to keep it on 0.
-
     def run_RSIBB():
         strategy_params_rsi = {
             'tf': ['1H'],
             'sell_pct': [0],
-            # ,tf,sell_pct,RSIBB_n_rsi_soon,RSIBB_ind_ahead,RSIBB_BB_std,sum_pct,n_trades,n_open_trades
-            # 44,1H,0,9,16,1.8,1.874626899653519,287,1
-            # 26,1H,0,7,14,2.5,1.8310956834391399,274,6
-            # 10,1H,0,5,14,2.5,1.537554847294989,170,6
-            # 40,1H,0,9,14,1.8,1.3041012719664051,404,1
-            # 45,1H,0,9,16,2.0,1.2704436800608825,279,1
             'RSIBB_n_rsi_soon': range(5, 14, 2),
-            'RSIBB_ind_ahead': [16],
-            # 'RSIBB_rsi_low': range(68, 76, 2),
-            # 'RSIBB_rsi_high': range(68, 76, 2),
-            'RSIBB_bb_std': [1.8],  # [1.8, 2, 2.5, 3]
-            # 'RSIBB_n_rsi_soon': range(5, 14, 2),
-            # 'RSIBB_ind_ahead': range(10, 17, 2),
+            'RSIBB_rsi_ahead': range(10, 17, 2),
+            'RSIBB_bb_ahead': range(10, 30, 2),
             'RSIBB_rsi_low': range(26, 36, 2),
             'RSIBB_rsi_high': range(66, 76, 2),
-            # 'RSIBB_bb_std': [1.8, 2, 2.5, 3]
+            'RSIBB_bb_std': [1.8, 2, 2.5, 3]
         }
         find_optimal_strategy(data_wrapper, strategy='RSIBB', optimized_params=strategy_params_rsi)
 
