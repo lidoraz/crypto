@@ -3,6 +3,7 @@ import itertools
 from datetime import datetime
 from tqdm import tqdm
 from joblib import Parallel, delayed
+import os
 
 from AdvancedAnalytics.Strategy.DataWrap import ProviderData
 from AdvancedAnalytics.Strategy.Strategies import *
@@ -140,6 +141,7 @@ def find_optimal_strategy(provider: ProviderData, strategy: str, optimized_param
     name = f'{time.strftime(TIME_CONV)}_{provider.name}_{strategy}'
 
     output_path = 'AdvancedAnalytics/Strategy/strategy_output/'
+    os.makedirs(output_path, exist_ok=True)
     full_path_summary = output_path + name + '_summary.csv'
     full_path_trades = output_path + name + '_trades.tsv'
     df.to_csv(full_path_summary)
