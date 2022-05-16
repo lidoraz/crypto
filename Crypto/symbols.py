@@ -1,6 +1,8 @@
 # TODO: Build a class over this data, so it will provide exchange, coin..
 exchance_symbol_pairs = [
     ('binance', 'ACA/USDT'),
+    ('binance', 'GAL/USDT'),
+    ('binance', 'GMT/USDT'),
     ('binance', 'ETH/USDT'),
     ('binance', 'SAND/USDT'),
     ('binance', 'DOT/USDT'),

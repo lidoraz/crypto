@@ -21,9 +21,12 @@ ccxt_errors = (ccxt.errors.RateLimitExceeded,
                ccxt.errors.BadRequest,
                ccxt.errors.RequestTimeout,
                ccxt.errors.ExchangeNotAvailable)
+import time
 
 FETCH_LIMIT = 1000
-START_TS = 1651000000  # 1646000000  # Sunday, February 27, 2022
+# START_TS = 1651000000  # 1646000000  # Sunday, February 27, 2022
+time_delta_sec_month = 60 * 60 * 24 * 30
+START_TS = int(time.time()) - time_delta_sec_month * 3  # Take two month before from script start
 N_TRIES_LIMIT = 50
 
 
@@ -95,7 +98,9 @@ async def fetch_ohlcv_history_to_db(db, exchange, symbol, timeframe, curr_ts, db
     if n_tries > N_TRIES_LIMIT:
         print(start_ts_loop_ms, exchange, symbol, f'History failed after {n_tries}/{N_TRIES_LIMIT}!!')
         # raise Exception(f'Could not fetch history... {symbol}')
-    print('Inserted Batch data', save_symbol, end_ts_loop_ms, curr_ts_ms)
+    start_dt = pd.to_datetime(end_ts_loop_ms, unit='ms', utc=True)
+    end_dt = pd.to_datetime(curr_ts_ms, unit='ms', utc=True)
+    print('Inserted Batch data', save_symbol, start_dt, end_dt)
 
 
 # TODO: fix here if limit sync is too large, to batch fetch over time...
@@ -171,11 +176,13 @@ async def main():
         x = x.lower().replace(' ', '_')
         return x
 
+    db.create_multiple_tables(exchance_symbol_pairs, timeframe)
+
     # map exchange name to their correspond exchanges
     exchanges_symbols = [
         (exchanges[list(map(lambda ex: treat_ex_name(ex.name), exchanges)).index(exchange_name)], symbol) for
         exchange_name, symbol in exchance_symbol_pairs]
-    exchanges_symbols = exchanges_symbols  # [5:6]
+    # exchanges_symbols = exchanges_symbols  # [5:6]
     # print(exchanges_symbols)
     loops = [fetch_ohlcv_forever_retry(db, exchange, symbol, timeframe) for exchange, symbol in exchanges_symbols]
     await gather(*loops)

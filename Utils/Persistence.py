@@ -65,7 +65,7 @@ class Persistence:
         self._preload_current_ts()
 
     def _preload_current_ts(self):
-        tables = self._get_all_tables()
+        tables = self.get_all_tables()
         for x in tables:
             table_name_only, tf = split_db_name_to_table_tf(x)
             latest_ts = self.get_latest_ts(table_name_only, tf)
@@ -75,12 +75,22 @@ class Persistence:
         tbl_name = _treat_name(symbol, tf)
         cur = self.con.cursor()
         # Create table
-        print(tbl_name)
+        print('Creating table if not exists:', tbl_name)
         cur.execute(f"CREATE TABLE if not exists {tbl_name} ({cols_str(cols)},PRIMARY KEY ({cols[0][0]}))")
         self.con.commit()
         self.tables_current_idx[tbl_name] = 0
 
-    def _get_all_tables(self):
+    def create_multiple_tables(self, exchanges_symbols, tf):
+        n_tables_before = self.get_all_tables()
+        # save_symbol = f'{exchange_name}_{symbol}'
+        [self.create(f'{exchance}_{symbol}', tf) for exchance, symbol in exchanges_symbols]
+        n_tables_after = self.get_all_tables()
+        added = [x for x in n_tables_after if x not in n_tables_before]
+        if len(added):
+            print(f'Created {len(added)} tables:')
+            [print(x) for x in added]
+
+    def get_all_tables(self):
         q = 'SELECT name from sqlite_master where type= "table"'
         tables = pd.read_sql_query(q, con=self.con)['name'].tolist()
         return tables
