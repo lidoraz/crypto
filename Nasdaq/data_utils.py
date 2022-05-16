@@ -1,9 +1,7 @@
 import pandas as pd
 
 
-# can resample if ds is 1D type, also filter to more recent dataframe
-def _resample_ohlcv_higher_1d(ohlcv, interval):
-    interval = f'{interval}D'
+def resample_ohlcv_higher_1d(ohlcv, interval):
     ohlcv = pd.concat([
         ohlcv['open'].resample(interval).first(),
         ohlcv['high'].resample(interval).max(),

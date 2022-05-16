@@ -3,10 +3,11 @@ from dash import dcc, html
 from dash.dependencies import Input, Output
 import numpy as np
 
-from Crypto.DataProcessing.data_consts import COINS
+# from Crypto.DataProcessing.data_consts import COINS
 from Nasdaq.data_utils import get_data_nasdaq
 from Plots.plotly_fig import get_updated_fig
 import dash_bootstrap_components as dbc
+from data_utils import resample_ohlcv_higher_1d
 from Nasdaq.symbols import NASDAQ_PREPATH
 import sys
 import os
@@ -19,20 +20,20 @@ stock_names = [n.split('_')[0] for n in data_paths]
 # ('M', 30),
 # ('3M', 90),
 # ('Y', 365)]
-intervals = np.array([('1', '1min'),
-                      ('5', '5min'),
-                      ('15', '15min'),
-                      ('H', '1h'),
-                      ('D', '1D'),
-                      ('W', '7D'),
-                      ('M', '30D'),
-                      ('Y', '365D')])
+intervals = [('1', '1min'),
+             ('5', '5min'),
+             ('15', '15min'),
+             ('H', '1h'),
+             ('D', '1D'),
+             ('W', '7D'),
+             ('M', '30D'),
+             ('Y', '365D')]
 
-interval_names = intervals[:, 0]
-interval_values = intervals[:, 1]
+interval_names = [d[0] for d in intervals]
+interval_values = [d[1] for d in intervals]
 
-interval_names = [f" {k} | " for k in interval_names[:-1]] + [f" {interval_names[-1]}"]
-interval_radio_options = dict(zip(interval_values, interval_names))
+interval_names_str = [f" {k} | " for k in interval_names[:-1]] + [f" {interval_names[-1]}"]
+interval_radio_options = dict(zip(interval_values, interval_names_str))
 
 title = 'Nasdaq'
 
@@ -45,7 +46,7 @@ title_html = html.H4(title, style={'padding-right': '5%', 'margin-left': '2%'})
 coin_html = dcc.Dropdown(stock_names, stock_names[0], id='coin-type', clearable=False,
                          style=dict(width='120pt'))
 # live_update_html = html.Div(id='live-update-text', style={'margin': 'auto'}, children="")  # 'width': '20%',
-interval_selector_html = dcc.RadioItems(options=interval_radio_options, value=interval_values[0], id='interval-type',
+interval_selector_html = dcc.RadioItems(options=interval_radio_options, value=interval_values[4], id='interval-type',
                                         inline=True)
 # https://dash-bootstrap-components.opensource.faculty.ai/docs/components/input/ # RadioItems and Checklist
 # disabled toggle: "disabled": True in options dict
@@ -138,9 +139,18 @@ def update_graph_live(symbol, tf, input_lookahead):
     print(symbol, tf, input_lookahead)
     from yahoo_finance import get_from_yfinance_now
     df_ohlcv = get_from_yfinance_now(symbol, tf, tz='Israel')
-    # df_ohlcv = get_data_nasdaq(NASDAQ_PREPATH + coin + '_10y.csv', int(interval), filter_ts=True)
-    fig = get_updated_fig(df_ohlcv, lookahead=14, xy_limit=False)
-    return fig
+    tf_name = interval_names[interval_values.index(tf)]
+
+    if len(df_ohlcv):
+        import pandas as pd
+        if pd.to_timedelta(tf).days > 1:
+            interval_set = '1' + tf_name
+            df_ohlcv = resample_ohlcv_higher_1d(df_ohlcv, interval_set)
+            print('resampled to:', interval_set)
+        # df_ohlcv = get_data_nasdaq(NASDAQ_PREPATH + coin + '_10y.csv', int(interval), filter_ts=True)
+        fig = get_updated_fig(df_ohlcv, lookahead=14, xy_limit=False)
+        return fig
+    return {'data': None}
 
 
 if __name__ == '__main__':

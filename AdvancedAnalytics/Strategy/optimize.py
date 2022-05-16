@@ -8,9 +8,6 @@ import os
 from AdvancedAnalytics.Strategy.DataWrap import ProviderData
 from AdvancedAnalytics.Strategy.Strategies import *
 
-TIME_CONV = "%Y-%m-%dT%H:%M:%S"
-
-
 # TODO: Strategy: A better way to test stratgies is to compare each day the market, and look whenever there is a new oppertunity.
 #  Selecting the best oppertunity should be chosen if wanted (maybe lowest RSI)
 #  Next, maybe compare with a budget, and buying a trade with comparing other opportunities.
@@ -138,6 +135,7 @@ def find_optimal_strategy(provider: ProviderData, strategy: str, optimized_param
     # save df
     time = datetime.now()
     print(f"TIME TOOK: {int((time - time_start).total_seconds() / 60)} min")
+    TIME_CONV = "%Y%m%dT%H%M%S"
     name = f'{time.strftime(TIME_CONV)}_{provider.name}_{strategy}'
 
     output_path = 'AdvancedAnalytics/Strategy/strategy_output/'

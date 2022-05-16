@@ -2,6 +2,8 @@ import pandas as pd
 import sqlite3
 
 
+# TODO MOVE THIS TO Crypto / Nasdaq Directory.
+
 def cols_str(cols):
     return ', '.join([f'{p[0]} {p[1]}' for p in cols])
 

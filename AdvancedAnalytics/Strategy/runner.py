@@ -37,9 +37,9 @@ if __name__ == '__main__':
             'RSIBB_n_rsi_soon': range(5, 14, 2),
             'RSIBB_rsi_ahead': range(10, 17, 2),
             'RSIBB_bb_ahead': range(10, 30, 2),
-            'RSIBB_rsi_low': range(26, 36, 2),
-            'RSIBB_rsi_high': range(66, 76, 2),
-            'RSIBB_bb_std': [1.8, 2, 2.5, 3]
+            'RSIBB_rsi_low': range(22, 36, 2),
+            'RSIBB_rsi_high': range(66, 78, 2),
+            'RSIBB_bb_std': np.linspace(1.8, 3, 6)
         }
         find_optimal_strategy(data_wrapper, strategy='RSIBB', optimized_params=strategy_params_rsi)
 
