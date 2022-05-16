@@ -1,2 +1,2 @@
 export PYTHONPATH=.
-python3 Nasdaq/dash_nasdaq.py -port 8050
+python3 Dashboard/dash_nasdaq.py -port 8050

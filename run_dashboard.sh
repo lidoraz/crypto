@@ -1,2 +1,2 @@
 export PYTHONPATH=.
-python3 Crypto/dash_crypto_ccxt.py -port 8050
+python3 Dashboard/dash_crypto_ccxt.py -port 8050
