@@ -117,8 +117,14 @@ if __name__ == '__main__':
     show_start_msg = parsed_args['show_start_msg']
     data_wrapper = CryptoData.get_wrapper(live=True, start_date='2022-05-01')
     symbols = data_wrapper.get_symbols()
-    strategy = BB()
-    # strategy = RSIBB(dict(RSIBB_n_rsi_soon=5, RSIBB_ind_ahead=14, RSIBB_BB_std=2.5))
+    # strategy = BB()
+    strategy_params = dict(RSIBB_n_rsi_soon=7,
+                           RSIBB_rsi_ahead=16,
+                           RSIBB_bb_ahead=12,
+                           RSIBB_rsi_low=30,
+                           RSIBB_rsi_high=70,
+                           RSIBB_bb_std=2.16)
+    strategy = RSIBB(strategy_params)
 
     tb_notify = TelegramBot()
     buy_change = set()

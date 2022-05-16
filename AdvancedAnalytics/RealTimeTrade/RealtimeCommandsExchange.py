@@ -1,7 +1,7 @@
-from Strategy.DataWrap import CryptoData
-from Strategy.Strategies import BB, RSIBB
+from AdvancedAnalytics.Strategy.DataWrap import CryptoData
+from AdvancedAnalytics.Strategy.Strategies import BB, RSIBB
+from AdvancedAnalytics.RealtimeCommandsBroadcast import get_latest_buy_sell
 from Utils.utils import WaitToMinEveryHour
-from RealtimeCommandsBroadcast import get_latest_buy_sell
 from datetime import datetime
 from Utils.notify import TelegramBot
 import pandas as pd
@@ -50,9 +50,16 @@ if __name__ == '__main__':
     print(f'Broadcasting every {timeframe}, at {trigger_minutes} min every hour')
 
     data_wrapper = CryptoData.get_wrapper(live=True, start_date='2022-05-01')
+    # TODO: NEED TO FILTER OUT SYMBOLS, first run on very minimal set -> 5 coins at most from binance.
     symbols = data_wrapper.get_symbols()
-    strategy = BB()
-    # strategy = RSIBB(dict(RSIBB_n_rsi_soon=5, RSIBB_ind_ahead=14, RSIBB_BB_std=2.5))
+    # generated 340% profit after 1.5 month.
+    strategy_params = dict(RSIBB_n_rsi_soon=7,
+                           RSIBB_rsi_ahead=16,
+                           RSIBB_bb_ahead=12,
+                           RSIBB_rsi_low=30,
+                           RSIBB_rsi_high=70,
+                           RSIBB_bb_std=2.16)
+    strategy = RSIBB(strategy_params)
 
     tb_notify = TelegramBot()
     buy_change = set()
@@ -74,22 +81,23 @@ if __name__ == '__main__':
                                                                 tf=timeframe)
 
         buy_curr = set([detail['coin'] for detail in buy_details_lst])
-        notify_coins = buy_curr - buy_change
-        buy_change = buy_curr
-        buy_notify = [detail for detail in buy_details_lst if detail['coin'] in notify_coins]
-
-        sell_curr = set([detail['coin'] for detail in sell_details_lst])
-        notify_coins = sell_curr - sell_change
-        sell_change = sell_curr
-        sell_notify = [detail for detail in sell_details_lst if detail['coin'] in notify_coins]
-
-        owned_coins.add(buy_notify)
-        sell_notify = [c for c in sell_notify if c in owned_coins]
-        print('-> Getting time_now_minus_tf =', time_now_minus_tf)
-        print('buy_lst', buy_details_lst)
-        # print('buy_change:', buy_change)
-        print('buy_notify:', buy_notify)
-        print('sell_lst', sell_details_lst)
-        # print('sell_change:', sell_change)
-        print('sell_notify:', sell_notify)
+        owned_coins.add(buy_curr)
+        # notify_coins = buy_curr - buy_change
+        # buy_change = buy_curr
+        # buy_notify = [detail for detail in buy_details_lst if detail['coin'] in notify_coins]
+        #
+        # sell_curr = set([detail['coin'] for detail in sell_details_lst])
+        # notify_coins = sell_curr - sell_change
+        # sell_change = sell_curr
+        # sell_notify = [detail for detail in sell_details_lst if detail['coin'] in notify_coins]
+        #
+        # owned_coins.add(buy_notify)
+        # sell_notify = [c for c in sell_notify if c in owned_coins]
+        # print('-> Getting time_now_minus_tf =', time_now_minus_tf)
+        # print('buy_lst', buy_details_lst)
+        # # print('buy_change:', buy_change)
+        # print('buy_notify:', buy_notify)
+        # print('sell_lst', sell_details_lst)
+        # # print('sell_change:', sell_change)
+        # print('sell_notify:', sell_notify)
         handle_buy_sell(title_strategy, buy_notify, sell_notify, tb_notify)

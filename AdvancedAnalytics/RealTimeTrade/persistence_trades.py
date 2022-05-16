@@ -95,6 +95,8 @@ class PersistenceTrades:
         if amount_sold != record['amount']:
             # TODO: Add basic replace for not allowed strings, like "'", "," and maybe more.
             # TODO: Really important bottom
+            # TODO can alter trade amount so it will reduce the amount it sold
+            # TODO: Next time it will buy the same amount but sell the whole amount.
             print(f'close_trade: Amount sold is not equal!!!!!!', trade_id)
             # Workaround for this is to record number sold, and sell whatever we own.
             # Another way is to use 3rd table that will be called assets, if we have asset, we can sell it.
