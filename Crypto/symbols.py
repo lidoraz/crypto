@@ -17,7 +17,7 @@ exchance_symbol_pairs = [
     ('binance', 'CRV/USDT'),
     ('binance', 'APE/USDT'),
     ('binance', 'ROSE/USDT'),
-    # ('binance', 'LUNA/USDT'),
+    ('binance', 'LUNA/USDT'),
     ('binance', 'OGN/USDT'),
     ('binance', 'RNDR/USDT'),
     ('binance', 'GLMR/USDT'),
