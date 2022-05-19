@@ -9,6 +9,7 @@ def get_latest_buy_sell(data_wrapper, time_now_minus_tf, symbols, stratgy, tf='1
     buy_lst = []
     sell_lst = []
     n_candles_to_get = 100
+    checked_coins = []
     start_date = str(time_now_minus_tf.date() - pd.to_timedelta(tf) * n_candles_to_get)
     for coin in symbols:
         # TODO: add to get_data option to filter out for most recent data, not only on init class.
@@ -17,6 +18,7 @@ def get_latest_buy_sell(data_wrapper, time_now_minus_tf, symbols, stratgy, tf='1
         if df is None:
             print('Skipping:', coin, tf)
             continue
+        checked_coins.append(coin)
         df = stratgy.add_indicators(df)
         df = df[:time_now_minus_tf]  # filter out
 
@@ -35,7 +37,7 @@ def get_latest_buy_sell(data_wrapper, time_now_minus_tf, symbols, stratgy, tf='1
 
         if last_row['SELL_ALGO']:
             sell_lst.append(dict(coin=coin, sell_price=last_row['close'], ts=ts))
-
+    print(f'Checked {len(checked_coins)} coins')
     return buy_lst, sell_lst
 
 

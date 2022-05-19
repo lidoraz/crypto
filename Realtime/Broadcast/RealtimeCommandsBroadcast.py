@@ -40,9 +40,7 @@ def handle_args():
     raise ValueError(usage)
 
 
-# Test validity of this algorithm, and how to use it.
-# looks on the bright side that the async code works well and did not crash during weekend.
-if __name__ == '__main__':
+def run_broadcast():
     parsed_args = handle_args()
     timeframe = parsed_args['timeframe']
     trigger_minutes = parsed_args['trigger_minutes']
@@ -97,3 +95,9 @@ if __name__ == '__main__':
         # print('sell_change:', sell_change)
         print('sell_notify:', sell_notify)
         handle_buy_sell(title_strategy, buy_notify, sell_notify, tb_notify, prod)
+
+
+# Test validity of this algorithm, and how to use it.
+# looks on the bright side that the async code works well and did not crash during weekend.
+if __name__ == '__main__':
+    run_broadcast()

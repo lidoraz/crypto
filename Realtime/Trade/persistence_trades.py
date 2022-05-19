@@ -7,21 +7,25 @@ cols_history = [('trade_id', 'number'),
                 ('buy_ts', 'number'),
                 ('exchange', 'varchar'),
                 ('symbol', 'varchar'),
-                ('buy_price', 'real'),
+                ('buyPrice', 'real'),
                 ('amount', 'real'),
                 ('sell_ts', 'number'),
-                ('sell_price', 'real'),
+                ('sellPrice', 'real'),
                 ('profit', 'real'),
                 ('profit_pct', 'real')]
 
-cols_open_trades = [('trade_id', 'number'),
-                    ('buy_ts', 'number'),
-                    ('exchange', 'varchar'),
-                    ('symbol', 'varchar'),
-                    ('buy_price', 'real'),
-                    ('amount', 'real')]
+cols_open_trades = [
+    ('trade_id', 'number'),
+    ('buy_ts', 'number'),
+    ('exchange', 'varchar'),
+    ('symbol', 'varchar'),
+    ('buyPrice', 'real'),
+    ('amountRequest', 'real'),
+    ('amountFilled', 'real')
+]
 
 
+# TODO: Rework this class, it needs to be aligned with the write to db function in RealtimeTrade
 class PersistenceTrades:
     def __init__(self, db_path):
         self.con = sqlite3.connect(db_path)
@@ -76,11 +80,11 @@ class PersistenceTrades:
             return df.iloc[0]
         return None
 
-    def add_trade(self, trade_id, exchange, symbol, buy_price, amount):
+    def add_trade(self, trade_id, exchange_name, symbol, buy_price, amount, amount_filled):
         # symbol = symbol.replace('-', '_').replace('/', '_').replace('.', '_').strip().upper()
         buy_ts = int(time.time())
         q = f"""
-        INSERT INTO open_trades VALUES ({trade_id}, {buy_ts}, '{exchange}', '{symbol}', {buy_price}, {amount})
+        INSERT INTO open_trades VALUES ({trade_id}, {buy_ts}, '{exchange_name}', '{symbol}', {buy_price}, {amount}, {amount_filled})
         """
         con = self.con.cursor()
         con.execute(q)

@@ -9,6 +9,7 @@ os.chdir(root)
 
 
 def test_db_latest_record(db, allowed_sec=300):
+    print('test_db_latest_record')
     tables = db.get_all_tables()
     sql = """
     SELECT ts from {table} order by ts desc limit 1
@@ -27,6 +28,7 @@ def test_db_latest_record(db, allowed_sec=300):
 
 
 def test_db_ts_diff(db, start_date):
+    print('test_db_ts_diff')
     tables = db.get_all_tables()
     sql = """
     with ts_delta as(
@@ -49,5 +51,5 @@ if __name__ == '__main__':
 
     # KUCOIN_RMRK_USDT_1M
     start_date = '2022-05-01'
-    # test_db_ts_diff(db, start_date)
     test_db_latest_record(db)
+    test_db_ts_diff(db, start_date)

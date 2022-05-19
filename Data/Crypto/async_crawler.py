@@ -13,10 +13,12 @@ print('async-fetch-ohlcv-multiple-symbols-cont')
 print('CCXT Version:', ccxt.__version__)
 
 # TODO: Move ExchangeNotAvailable to a seperate catch such that it will handle times where there is no internet.
+# not sure if this is needed, just increase the ntries to something higher.
 df_cols = ['ts', 'open', 'high', 'low', 'close', 'volume']
 ccxt_errors = (ccxt.errors.RateLimitExceeded,
                ccxt.errors.BadRequest,
                ccxt.errors.RequestTimeout,
+               ccxt.errors.ExchangeError,
                ccxt.errors.ExchangeNotAvailable)
 
 
@@ -24,7 +26,7 @@ FETCH_LIMIT = 1000
 # START_TS = 1651000000  # 1646000000  # Sunday, February 27, 2022
 time_delta_sec_month = 60 * 60 * 24 * 30
 START_TS = int(time.time()) - time_delta_sec_month * 3  # Take two month before from script start
-N_TRIES_LIMIT = 50
+N_TRIES_LIMIT = 100
 
 
 # binary search
