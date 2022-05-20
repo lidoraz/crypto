@@ -1,7 +1,7 @@
 from Realtime.Trade.RealtimeTrade import RealtimeTrade
 from Realtime.realtime_utils import handle_args
 from Data import CryptoData
-from Backtesting.Strategies import BB, RSIBB
+from Backtesting.Strategies import BB, RSIBB  # , MACross
 from Realtime.realtime_utils import get_latest_buy_sell
 from Utils.notify import TelegramBot
 from Utils.utils import WaitToMinEveryHour
@@ -22,28 +22,30 @@ def handle_buys_sells(buy_lst, sell_lst, trader: RealtimeTrade):
     for buy_details in buy_lst:
         code = trader.handle_buy(buy_details)
         print(f"Trader:: handle_buy - {buy_details['coin']} {code}")
-        res['buy'].append(dict(coin=buy_details['coin'], code=code))
+        buy_details['trade_code'] = code
+        res['buy'].append(buy_details)
     for sell_details in sell_lst:
         code = trader.handle_sell(sell_details)
         print(f"Trader:: handle_sell - {sell_details['coin']} {code}")
-        res['sell'].append(dict(coin=sell_details['coin'], code=code))
+        sell_details['trade_code'] = code
+        res['sell'].append(sell_details)
     return res
 
 
-def get_broadcast_buy_sell(res, strategy):
+def get_broadcast_buy_sell(result, strategy):
     # res = {'buy': [], 'sell': []}
     buys_txt = ""
     buy_str = "Buy Status:\n"
-    for buy_res in res['buy']:
-        buys_txt += f"{buy_res['coin']} ({buy_res['code']})\n"
+    for res in result['buy']:
+        buys_txt += f"{res['coin']} p={res['buy_price']:.2f}, ({res['sell_price_lose_stop']:.2f}, {res['sell_price_win_stop']:.2f}), code({res['trade_code']})\n"
     nl = ""
     if len(buys_txt):
         buys_txt = buy_str + buys_txt[:-1]
         nl = "\n"
     sells_txt = ""
     sell_str = f"{nl}Sell Status:\n"
-    for sell_res in res['sell']:
-        sells_txt += f"{sell_res['coin']} ({sell_res['code']})\n"
+    for res in result['sell']:
+        sells_txt += f"{res['coin']} p={res['sell_price']:.2f}, code({res['trade_code']})\n"
     if len(sells_txt):
         sells_txt = sell_str + sells_txt[:-1]
     broadcast_text = buys_txt + sells_txt
@@ -104,7 +106,7 @@ def realtime_exchange():
                            RSIBB_bb_std=2.16)
     strategy = RSIBB(strategy_params)
     # strategy = BB()
-
+    # strategy = MACross() # Will throw a lot of buy sells.
     wait = WaitToMinEveryHour(trigger_minutes)
     start_msg = get_start_msg(symbols, timeframe, strategy)
     print(start_msg)
