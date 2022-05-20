@@ -86,17 +86,6 @@ def realtime_exchange():
     trader.exchange.checkRequiredCredentials()  # raises AuthenticationError
     tb_notify = TelegramBot(prod=prod, verbose=0)
     print('Checking Keys.. All OK')
-    if prod:
-        print(f'----------------> $$$$ Trading every {timeframe}, at {trigger_minutes} min every hour')
-        sleep_before()
-    else:
-        print(f'-----> TEST Trading every {timeframe}, at {trigger_minutes} min every hour')
-
-    exchange_name = trader.exchange_name
-
-    data_wrapper = CryptoData.get_wrapper(live=True, start_date='2022-05-01', only_exchange=exchange_name)
-    # FILTER OUT SYMBOLS, first run on very minimal set -> 5 coins at most from binance.
-    symbols = data_wrapper.get_symbols()
     # generated 340% profit after 1.5 month.
     strategy_params = dict(RSIBB_n_rsi_soon=7,
                            RSIBB_rsi_ahead=16,  # RSI over 10 becomes less sesitive but its not linear, like expo.
@@ -107,6 +96,18 @@ def realtime_exchange():
     strategy = RSIBB(strategy_params)
     # strategy = BB()
     # strategy = MACross() # Will throw a lot of buy sells.
+    if prod:
+        print(
+            f'----------------> $$$$ Strategy {strategy}, Trading every {timeframe}, at {trigger_minutes} min every hour')
+        sleep_before()
+    else:
+        print(f'-----> TEST Strategy {strategy}, Trading every {timeframe}, at {trigger_minutes} min every hour')
+
+    exchange_name = trader.exchange_name
+
+    data_wrapper = CryptoData.get_wrapper(live=True, start_date='2022-05-01', only_exchange=exchange_name)
+    # FILTER OUT SYMBOLS, first run on very minimal set -> 5 coins at most from binance.
+    symbols = data_wrapper.get_symbols()
     wait = WaitToMinEveryHour(trigger_minutes)
     start_msg = get_start_msg(symbols, timeframe, strategy)
     print(start_msg)
