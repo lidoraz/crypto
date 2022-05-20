@@ -31,14 +31,30 @@ exchance_symbol_pairs = [
     ('binance', 'MATIC/USDT'),
     ('binance', 'MOVR/USDT'),
     ('binance', 'GALA/USDT'),
-    ('kucoin', 'QRDO/USDT'),
-    ('kucoin', 'HTR/USDT'),
-    ('kucoin', 'RMRK/USDT'),
-    ('kucoin', 'SOUL/USDT'),
-    ('kucoin', 'LYXE/USDT'),
-    ('kucoin', 'TEL/USDT'),
-    ('kucoin', 'VRA/USDT'),
-    ('mexc_global', 'GCOIN/USDT')
+
+    ('binance', 'TRX/USDT'),
+    ('binance', 'BCH/USDT'),
+    ('binance', 'LTC/USDT'),
+    ('binance', 'DOGE/USDT'),
+    ('binance', 'KNC/USDT'),
+    ('binance', 'ATOM/USDT'),
+    ('binance', 'UNI/USDT'),
+    ('binance', 'FIL/USDT'),
+    ('binance', 'LINK/USDT'),
+    ('binance', 'VET/USDT'),
+    ('binance', 'ETC/USDT'),
+    ('binance', 'BNB/USDT'),
+    ('binance', 'MKR/USDT'),
+
+    # TODO: Maybe fetch from other exchange, kucoin is not reliable.!
+    # ('kucoin', 'QRDO/USDT'),
+    # ('kucoin', 'HTR/USDT'),
+    # ('kucoin', 'RMRK/USDT'),
+    # ('kucoin', 'SOUL/USDT'),
+    # ('kucoin', 'LYXE/USDT'),
+    # ('kucoin', 'TEL/USDT'),
+    # ('kucoin', 'VRA/USDT'),
+    # ('mexc_global', 'GCOIN/USDT')
 ]
 
 DB_PATH = 'ccxt_1m.db'
