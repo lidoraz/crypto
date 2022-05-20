@@ -103,9 +103,9 @@ def realtime_exchange():
     else:
         print(f'-----> TEST Strategy {strategy}, Trading every {timeframe}, at {trigger_minutes} min every hour')
 
-    exchange_name = trader.exchange_name
-
-    data_wrapper = CryptoData.get_wrapper(live=True, start_date='2022-05-01', only_exchange=exchange_name)
+    data_wrapper = CryptoData.get_wrapper(live=True,
+                                          start_date='2022-05-01',
+                                          only_exchange=trader.exchange_name)
     # FILTER OUT SYMBOLS, first run on very minimal set -> 5 coins at most from binance.
     symbols = data_wrapper.get_symbols()
     wait = WaitToMinEveryHour(trigger_minutes)
@@ -116,12 +116,9 @@ def realtime_exchange():
     while True:
         if prod:
             wait.wait()
-        trader.refresh_markets()
-        dt_now = pd.to_datetime(datetime.utcnow(), utc=True).tz_convert('Israel')
-        time_now_minus_tf = dt_now - pd.to_timedelta(timeframe)
-        buy_details_lst, sell_details_lst = get_latest_buy_sell(data_wrapper, time_now_minus_tf,
-                                                                symbols, strategy,
-                                                                tf=timeframe)
+        # trader.refresh_markets()
+        buy_details_lst, sell_details_lst = get_latest_buy_sell(data_wrapper, symbols,
+                                                                strategy, tf=timeframe)
         res = handle_buys_sells(buy_details_lst, sell_details_lst, trader)
         broadcast_text = get_broadcast_buy_sell(res, strategy)
         if broadcast_text:

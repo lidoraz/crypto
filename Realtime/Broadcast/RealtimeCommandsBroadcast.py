@@ -42,9 +42,8 @@ def run_broadcast():
     while True:
         if prod:
             wait.wait()
-        time_now_minus_tf = datetime.now(tz.gettz('Israel')) - pd.to_timedelta(timeframe)
-        buy_details_lst, sell_details_lst = get_latest_buy_sell(data_wrapper, time_now_minus_tf, symbols, strategy,
-                                                                tf=timeframe)
+        buy_details_lst, sell_details_lst = get_latest_buy_sell(data_wrapper, symbols,
+                                                                strategy, tf=timeframe)
 
         buy_curr = set([detail['coin'] for detail in buy_details_lst])
         notify_coins = buy_curr - buy_change
@@ -56,7 +55,6 @@ def run_broadcast():
         sell_change = sell_curr
         sell_notify = [detail for detail in sell_details_lst if detail['coin'] in notify_coins]
 
-        print('-> Getting time_now_minus_tf =', time_now_minus_tf)
         print('buy_lst', buy_details_lst)
         # print('buy_change:', buy_change)
         print('buy_notify:', buy_notify)

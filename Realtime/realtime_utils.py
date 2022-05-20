@@ -1,4 +1,7 @@
 import pandas as pd
+from datetime import datetime
+
+TIME_CONV = "%Y-%m-%dT%H:%M:%S"  # .strftime
 
 
 def handle_args():
@@ -33,48 +36,48 @@ def handle_args():
     raise ValueError(usage)
 
 
-def get_latest_buy_sell(data_wrapper, time_now_minus_tf, symbols, stratgy, tf='1H'):
-    # on crypto it updated every 1 min so no problem
-    # has saftey mechanism from datawrapper crypto live if db is not updated!
-    # Implmenet with act buy, so it will be generalized and support stoplosses
-    # n_candle = -1  # last updated candle, -1 updates on hour basis, so on open hour it will not be correct
+def get_latest_buy_sell(data_wrapper, symbols, strategy, tf='1H', n_candles_to_get=150, use_closed=True):
+    """ gets latest coins to buy or sell based on strategy.
+        Provides support with use_closed to filter out most recent unclosed candle
+        It is designed to be used when a timeframe has been closed, such as right after a new hour has started
+        For experimental option, use_closed can be False
+    """
     buy_lst = []
     sell_lst = []
-    n_candles_to_get = 100
     checked_coins = []
-    start_date = str(time_now_minus_tf.date() - pd.to_timedelta(tf) * n_candles_to_get)
+    dt_now = pd.to_datetime(datetime.utcnow(), utc=True).tz_convert('Israel')
+    time_now_minus_tf = dt_now - pd.to_timedelta(tf)
+    start_date = str(dt_now.date() - pd.to_timedelta(tf) * n_candles_to_get)
     for coin in symbols:
-        # TODO: add to get_data option to filter out for most recent data, not only on init class.
         df = data_wrapper.get_data(coin, tf, start_date)
-        # TODO: get the data, and check its ts if it matches current machine ts to make sure we are sending correct ts.
         if df is None:
             print('Skipping:', coin, tf)
             continue
-        checked_coins.append(coin)
-        df = stratgy.add_indicators(df)
-        df = df[:time_now_minus_tf]  # filter out
+        df = strategy.add_indicators(df)
+        if use_closed:  # filter out to last closed candle
+            df = df[:time_now_minus_tf]
 
         last_row = df.iloc[-1]
         ts = df.index[-1]
-        buy_vars = stratgy.act_buy(0, last_row)
-        # print(ts, coin, tf)
-        #            return {'buy_idx': buy_idx,
-        #                     'buy_price': buy_price,
-        #                     'sell_price_win_stop': sell_price_win_stop,
-        #                     'sell_price_lose_stop': sell_price_lose_stop}
-        if buy_vars:
-            buy_vars['coin'] = coin
-            buy_vars['ts'] = ts
-            buy_lst.append(buy_vars)
+        checked_coins.append(coin)
 
+        buy_vars = strategy.act_buy(0, last_row)
+        if buy_vars:
+            buy_lst.append(dict(coin=coin,
+                                buy_price=last_row['close'],
+                                sell_price_win_stop=buy_vars['sell_price_win_stop'],
+                                sell_price_lose_stop=buy_vars['sell_price_lose_stop'],
+                                ts=ts))
         if last_row['SELL_ALGO']:
-            sell_lst.append(dict(coin=coin, sell_price=last_row['close'], ts=ts))
-    print(f'Checked {len(checked_coins)} coins, Latest Buys ({len(buy_lst)}) / Sell ({len(sell_lst)})')
+            sell_lst.append(dict(coin=coin,
+                                 sell_price=last_row['close'],
+                                 ts=ts))
+    print(f'At: {dt_now.strftime(TIME_CONV)} - Checked {len(checked_coins)} coins,'
+          f' #Buy={len(buy_lst)} / #Sell={len(sell_lst)}, use_closed={use_closed}')
     return buy_lst, sell_lst
 
 
 def handle_buy_sell(title_strategy, buy_lst, sell_lst, tb_notify, prod=False):
-    TIME_CONV = "%Y-%m-%dT%H:%M:%S"  # .strftime
 
     def extract_to_txt_buy(lst):
         return [f"{x['coin']}: {x['buy_price']} ({x['sell_price_win_stop']:.2f}, {x['sell_price_lose_stop']:.2f})" for x

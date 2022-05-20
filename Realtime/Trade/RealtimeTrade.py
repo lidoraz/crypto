@@ -83,7 +83,6 @@ class RealtimeTrade:
         # This is done in ccxt every create / cancel/ order
         try:
             self.exchange.load_markets()
-            print('Refreshed markets')
         except Exception as e:
             print(self.exchange_name, f'load_markets failed:', type(e).__name__, str(e))
 
