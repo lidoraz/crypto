@@ -3,8 +3,14 @@ import pandas as pd
 import ccxt
 
 
-def get_coins():
-    coins = [p[1].split('/')[0] for p in exchance_symbol_pairs]
+def get_coins(only_exchange=None):
+    if only_exchange:
+        print(f'Filtered coins only traded in: {only_exchange}')
+        coins = [p[1].split('/')[0] for p in exchance_symbol_pairs if p[0] == only_exchange.lower()]
+    else:
+        coins = [p[1].split('/')[0] for p in exchance_symbol_pairs]
+    if not len(coins):
+        raise ValueError('No coins were selected to follow')
     return coins
 
 

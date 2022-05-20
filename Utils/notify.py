@@ -39,7 +39,10 @@ class SMSNotify:
 
 
 class TelegramBot:
-    def __init__(self):
+    def __init__(self, prod, verbose=0):
+        assert verbose in (0, 1)
+        self.verbose = verbose
+        self.prod = prod
         self.bot_token = os.environ.get('TELEGRAM_TOKEN')
         self.group_id = os.environ.get('TELEGRAM_GROUP')
         if self.bot_token is None or self.group_id is None:
@@ -50,11 +53,15 @@ class TelegramBot:
     def send(self, txt):
         url = self.url.format(token=self.bot_token, group_id=self.group_id, msg=txt)
         try:
-            resp = requests.get(url)
-            print(resp.text)
+            print('-> Sending broadcast message to a Telegram channel')
+            print(txt)
+            print('<- End message <----------------------------------')
+            if self.prod:
+                resp = requests.get(url)
+                if self.verbose > 0:
+                    print(resp.text)
         except requests.ConnectionError as e:
-            print('Something is wrong with telegram api')
-            print(e)
+            print('Something is wrong with telegram api', e)
 
 
 if __name__ == '__main__':

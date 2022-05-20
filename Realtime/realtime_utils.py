@@ -1,6 +1,38 @@
 import pandas as pd
 
 
+def handle_args():
+    import sys
+    args = sys.argv[1:]
+    usage = 'usage: {15min, 1h} (prod) (start_msg)'
+    print(usage)
+    if len(args) >= 1:
+        prod = False
+        show_start_msg = False
+        if args[0].lower() == '15min':
+            timeframe = '15min'
+            trigger_minutes = [0, 15, 30, 45]
+        elif args[0].lower() == '1h':
+            timeframe = '1h'
+            trigger_minutes = [0]
+        else:
+            raise ValueError(usage)
+        args = args[1:]
+        if 'prod' in args:
+            prod = True
+        if 'start_msg' in args:
+            show_start_msg = True
+        params = dict(timeframe=timeframe, trigger_minutes=trigger_minutes, prod=prod, show_start_msg=show_start_msg)
+        print('******* Realtime Params ********\n'
+              f'Fetch every {timeframe}\n'
+              f'At {trigger_minutes} min every hour\n'
+              f'PROD={prod}\n'
+              f'show_msg={show_start_msg}\n',
+              '******* ******* ******* ********\n')
+        return params
+    raise ValueError(usage)
+
+
 def get_latest_buy_sell(data_wrapper, time_now_minus_tf, symbols, stratgy, tf='1H'):
     # on crypto it updated every 1 min so no problem
     # has saftey mechanism from datawrapper crypto live if db is not updated!
@@ -37,7 +69,7 @@ def get_latest_buy_sell(data_wrapper, time_now_minus_tf, symbols, stratgy, tf='1
 
         if last_row['SELL_ALGO']:
             sell_lst.append(dict(coin=coin, sell_price=last_row['close'], ts=ts))
-    print(f'Checked {len(checked_coins)} coins')
+    print(f'Checked {len(checked_coins)} coins, Latest Buys ({len(buy_lst)}) / Sell ({len(sell_lst)})')
     return buy_lst, sell_lst
 
 

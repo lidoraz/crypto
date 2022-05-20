@@ -77,11 +77,10 @@ class CryptoData(ProviderData):
         return PreLoaded(self._data, self.symbols)
 
     @staticmethod
-    def get_wrapper(live, start_ts=None, start_date=None):
+    def get_wrapper(live, start_ts=None, start_date=None, only_exchange=None):
         if start_date and start_ts:
             raise ValueError('Only one start can be set.')
         print(f'CryptoData: {live, start_ts, start_date}')
-        coins = get_coins()
+        coins = get_coins(only_exchange)
         data_wrapper = CryptoData(coins, live, start_ts, start_date)
         return data_wrapper
-

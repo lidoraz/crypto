@@ -5,39 +5,7 @@ from datetime import datetime
 from Utils.notify import TelegramBot
 import pandas as pd
 from dateutil import tz
-from Realtime.realtime_utils import get_latest_buy_sell, handle_buy_sell
-
-
-def handle_args():
-    import sys
-    args = sys.argv[1:]
-    usage = 'usage: {15min, 1h} (prod) (start_msg)'
-    print(usage)
-    if len(args) >= 1:
-        prod = False
-        show_start_msg = False
-        if args[0].lower() == '15min':
-            timeframe = '15min'
-            trigger_minutes = [0, 15, 30, 45]
-        elif args[0].lower() == '1h':
-            timeframe = '1h'
-            trigger_minutes = [0]
-        else:
-            raise ValueError(usage)
-        args = args[1:]
-        if 'prod' in args:
-            prod = True
-        if 'start_msg' in args:
-            show_start_msg = True
-        params = dict(timeframe=timeframe, trigger_minutes=trigger_minutes, prod=prod, show_start_msg=show_start_msg)
-        print('******* Broadcast Params ********\n'
-              f'Broadcasting every {timeframe}\n'
-              f'At {trigger_minutes} min every hour\n'
-              f'PROD={prod}\n'
-              f'show_msg={show_start_msg}\n',
-              '******* ******* ******* ********\n')
-        return params
-    raise ValueError(usage)
+from Realtime.realtime_utils import get_latest_buy_sell, handle_buy_sell, handle_args
 
 
 def run_broadcast():
@@ -46,6 +14,7 @@ def run_broadcast():
     trigger_minutes = parsed_args['trigger_minutes']
     prod = parsed_args['prod']
     show_start_msg = parsed_args['show_start_msg']
+    print(f'----> Broadcast every {timeframe}, at {trigger_minutes} min every hour')
     data_wrapper = CryptoData.get_wrapper(live=True, start_date='2022-05-01')
     symbols = data_wrapper.get_symbols()
     # strategy = BB()
@@ -57,7 +26,7 @@ def run_broadcast():
                            RSIBB_bb_std=2.16)
     strategy = RSIBB(strategy_params)
 
-    tb_notify = TelegramBot()
+    tb_notify = TelegramBot(prod=prod)
     buy_change = set()
     sell_change = set()
     owned_coins = set()

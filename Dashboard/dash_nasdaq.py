@@ -8,6 +8,7 @@ from Plots.plotly_fig import get_updated_fig
 from Data.Nasdaq.yahoo_finance import get_from_yfinance_now
 from Data.Nasdaq.data_utils import resample_ohlcv_higher_1d
 from Data.Nasdaq.symbols import nasdq_100, ta_125
+import random
 
 stock_names = nasdq_100  # + ta_125
 intervals = [('1', '1min'),
@@ -33,8 +34,13 @@ server = app.server  # needed for deployment
 app.title = title
 
 title_html = html.H4(title, style={'padding-right': '5%', 'margin-left': '2%'})
-coin_html = dcc.Dropdown(stock_names, stock_names[0], id='coin-type', clearable=False,
-                         style=dict(width='120pt'))
+
+random_stock_idx = random.randint(0, len(stock_names))
+coin_html = html.Div(children=[
+    dcc.Dropdown(stock_names, stock_names[random_stock_idx], id='coin-type', clearable=False,
+                 style=dict(width='120pt')),
+    dcc.Input(id='coin-type-free', type='text', placeholder='custom stock', value="")
+], style=dict(display='flex'))
 # live_update_html = html.Div(id='live-update-text', style={'margin': 'auto'}, children="")  # 'width': '20%',
 interval_selector_html = dcc.RadioItems(options=interval_radio_options, value=interval_values[4], id='interval-type',
                                         inline=True)
@@ -123,10 +129,13 @@ def _adjust_input_lookahead(input_lookahead):
 
 @app.callback(Output('live-update-graph', 'figure'),
               Input('coin-type', 'value'),
+              Input('coin-type-free', 'value'),
               Input('interval-type', 'value'),
               Input('input_lookahead', 'value'))
-def update_graph_live(symbol, tf, input_lookahead):
-    print(symbol, tf, input_lookahead)
+def update_graph_live(symbol, symbol_free, tf, input_lookahead):
+    print(symbol, symbol_free, tf, input_lookahead)
+    if symbol_free:
+        symbol = symbol_free
     df_ohlcv = get_from_yfinance_now(symbol, tf, tz='Israel')
     tf_name = interval_names[interval_values.index(tf)]
 
