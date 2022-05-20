@@ -117,7 +117,7 @@ async def fetch_ohlcv_sync_with_db(db, exchange, symbol, timeframe, ts):
         if db_latest_ts == -1:
             print(f'fetching history for {symbol}, no rows at all db_latest_ts', db_latest_ts)
         else:
-            print(f'fetching history for {symbol}missing rows: {limit_sync_rows}, db_latest_ts:{db_latest_ts}')
+            print(f'fetching history for {symbol}, missing rows: {limit_sync_rows}, db_latest_ts:{db_latest_ts}')
         await fetch_ohlcv_history_to_db(db, exchange, symbol, timeframe, ts, db_latest_ts)
         return
     # print(save_symbol, 'fetching', limit_sync_rows, 'rows', f'db_latest_ts={db_latest_ts}, ts={ts}')
@@ -131,15 +131,16 @@ async def fetch_ohlcv_sync_with_db(db, exchange, symbol, timeframe, ts):
         if len(df_sync):
             to_dt = datetime.fromtimestamp
             if len(df_sync) > 1:
-                print(f'{save_symbol}\tSaving {len(df_sync)} records'
-                      f'\t({to_dt(df_sync.index.min())},'
-                      f'{to_dt(df_sync.index.max())})',
-                      f'\tinto db, db_ts:{to_dt(db_latest_ts)}')
+                print(f'{save_symbol}\tSaving {len(df_sync)} records into db({to_dt(db_latest_ts)})'
+                      f'\trecords: ({to_dt(df_sync.index.min())},{to_dt(df_sync.index.max())})')
+            else:
+                print(f'{save_symbol}\tSaving {len(df_sync)} records into db({to_dt(db_latest_ts)})'
+                      f'\trecord: {to_dt(df_sync.index.min())}')
             db.add(df_sync, save_symbol, timeframe)
 
 
 async def fetch_ohlcv_forever_retry(db, exchange, symbol, timeframe):  # always take current -1
-    print(f'Starting to fetch forever: {symbol}')
+    print(f'Starting to fetch forever: From={exchange.name} symbol={symbol}')
     while True:
         # this function will update exchange if db is updated atleast of 1000 candles before that.
         n_tries = 1

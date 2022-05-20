@@ -9,7 +9,7 @@ from Plots.plotly_fig import get_updated_fig
 import dash_bootstrap_components as dbc
 from datetime import datetime
 
-coins = [c[1].split('/')[0] for c in exchance_symbol_pairs]
+coins = sorted([c[1].split('/')[0] for c in exchance_symbol_pairs])
 resample_keywords = list(INTERVAL_CANDLE_LOOKBACK_TABLE.keys())
 resample_keywords_text = [f" {k} | " for k in resample_keywords[:-1]] + [f" {resample_keywords[-1]}"]
 resample_radio_options = dict(
@@ -128,7 +128,8 @@ def update_graph_live(n, coin, resample, input_lookahead):
     print(f'ready at:{round(t1, 2)}sec')
     db_dt = pd.to_datetime(df_ohlcv.attrs['curr_ts_db'], unit='s', utc=True).tz_convert('Israel')
     db_dt = db_dt + pd.to_timedelta('1min')
-    text = [html.Span('{}, Price={}, Updated to: {}'.format(coin, db_dt, df_ohlcv.iloc[-1]['close']))]  # {0:.2f}
+    last_value = df_ohlcv.iloc[-1]['close']
+    text = [html.Span('{}, Price={}, updatedTo: {}'.format(coin, last_value, db_dt))]  # {0:.2f}
     return fig, text
 
 
