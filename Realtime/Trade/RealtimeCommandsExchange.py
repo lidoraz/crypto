@@ -80,11 +80,13 @@ def realtime_exchange():
     prod = parsed_args['prod']
     show_start_msg = parsed_args['show_start_msg']
     print(f'----> $$$$ Trading every {timeframe}, at {trigger_minutes} min every hour')
-    sleep_before()
-
+    print('Checking Keys..')
     trader = RealtimeTrade(prod)
     trader.exchange.checkRequiredCredentials()  # raises AuthenticationError
     tb_notify = TelegramBot(prod=prod, verbose=0)
+    print('Checking Keys.. All OK')
+    sleep_before()
+
     exchange_name = trader.exchange_name
 
     data_wrapper = CryptoData.get_wrapper(live=True, start_date='2022-05-01', only_exchange=exchange_name)
