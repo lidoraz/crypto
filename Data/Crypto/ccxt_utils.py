@@ -55,7 +55,8 @@ def _get_candles_from_db(db, exchange_name, symbol, tf, start_ts=None, start_dat
     db_symbol = f'{exchange_name}_{symbol}'.upper()
     df = db.get_df(db_symbol, '1m', start_ts, start_date)
     if df is None:
-        return
+        print(f'Warning: {exchange_name}_{db_symbol} does not exists!')
+        return None
     df_ohlcv = _resample_from_ohlcv(df, tf)
     return df_ohlcv
 
