@@ -1,10 +1,10 @@
 # from Crypto.DataProcessing.data_consts import COINS, HOURLY_COLS, START_DATA_DATE
 from Utils import Persistence
-from Data.Crypto.symbols import exchance_symbol_pairs, DB_PATH
+from Data.Crypto.symbols import exchange_symbol_pairs, DB_PATH
 from Data.Crypto.ccxt_utils import _resample_from_ohlcv
 from Dashboard.Plots.plotly_fig import get_updated_fig
 
-coins = [c[1].split('/')[0] for c in exchance_symbol_pairs]
+coins = [c[1].split('/')[0] for c in exchange_symbol_pairs]
 resample_keywords = ['2Min', '5Min', '15Min', '1H', '4H', '1D']
 coin = coins[5]
 resample = resample_keywords[-3]

@@ -1,5 +1,5 @@
 # TODO: Build a class over this data, so it will provide exchange, coin..
-exchance_symbol_pairs = [
+exchange_symbol_pairs = [
     ('binance', 'ACA/USDT'),
     ('binance', 'GAL/USDT'),
     ('binance', 'GMT/USDT'),
@@ -31,7 +31,9 @@ exchance_symbol_pairs = [
     ('binance', 'MATIC/USDT'),
     ('binance', 'MOVR/USDT'),
     ('binance', 'GALA/USDT'),
-
+    # more..
+    ('binance', 'PEOPLE/USDT'),
+    ('binance', 'AVAX/USDT'),
     ('binance', 'TRX/USDT'),
     ('binance', 'BCH/USDT'),
     ('binance', 'LTC/USDT'),
@@ -43,7 +45,6 @@ exchance_symbol_pairs = [
     ('binance', 'LINK/USDT'),
     ('binance', 'VET/USDT'),
     ('binance', 'ETC/USDT'),
-    ('binance', 'BNB/USDT'),
     ('binance', 'MKR/USDT'),
 
     # TODO: Maybe fetch from other exchange, kucoin is not reliable.!
@@ -56,5 +57,5 @@ exchance_symbol_pairs = [
     # ('kucoin', 'VRA/USDT'),
     # ('mexc_global', 'GCOIN/USDT')
 ]
-
+exchange_symbol_pairs = list(set(exchange_symbol_pairs))
 DB_PATH = 'ccxt_1m.db'

@@ -1,4 +1,4 @@
-from Data.Crypto.symbols import exchance_symbol_pairs
+from Data.Crypto.symbols import exchange_symbol_pairs
 import pandas as pd
 import ccxt
 
@@ -6,9 +6,9 @@ import ccxt
 def get_coins(only_exchange=None):
     if only_exchange:
         print(f'Filtered coins only traded in: {only_exchange}')
-        coins = [p[1].split('/')[0] for p in exchance_symbol_pairs if p[0] == only_exchange.lower()]
+        coins = [p[1].split('/')[0] for p in exchange_symbol_pairs if p[0] == only_exchange.lower()]
     else:
-        coins = [p[1].split('/')[0] for p in exchance_symbol_pairs]
+        coins = [p[1].split('/')[0] for p in exchange_symbol_pairs]
     if not len(coins):
         raise ValueError('No coins were selected to follow')
     return coins
@@ -61,7 +61,7 @@ def _get_candles_from_db(db, exchange_name, symbol, tf, start_ts=None, start_dat
 
 
 def get_exchange_symbol_by_coin(coin):
-    exchange_name, symbol = [(ex, sy) for ex, sy in exchance_symbol_pairs if sy.startswith(coin)][0]
+    exchange_name, symbol = [(ex, sy) for ex, sy in exchange_symbol_pairs if sy.startswith(coin)][0]
     return exchange_name, symbol
 
 

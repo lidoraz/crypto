@@ -153,19 +153,19 @@ if __name__ == '__main__':
     db_path = 'test_trades.db'
     db = PersistenceTrades(db_path)
     import numpy as np
-    from Data.Crypto.symbols import exchance_symbol_pairs
+    from Data.Crypto.symbols import exchange_symbol_pairs
 
     owned_pairs = set()
     print(db.get_open_trades())
     trade_usdt_value = 100
     for i in range(15):
-        pair_idx = np.random.randint(0, len(exchance_symbol_pairs))
+        pair_idx = np.random.randint(0, len(exchange_symbol_pairs))
         if pair_idx in owned_pairs:
             print(pair_idx, 'owned')
             continue
         owned_pairs.add(pair_idx)
         trade_id = int(np.random.random() * 1e12)
-        exchange, symbol = exchance_symbol_pairs[pair_idx]
+        exchange, symbol = exchange_symbol_pairs[pair_idx]
         buy_price = np.random.random() * 1000
 
         amount = trade_usdt_value / buy_price
@@ -177,8 +177,8 @@ if __name__ == '__main__':
 
     print('Selling...')
     for i in range(10):
-        pair_idx = np.random.randint(0, len(exchance_symbol_pairs))
-        exchange, symbol = exchance_symbol_pairs[pair_idx]
+        pair_idx = np.random.randint(0, len(exchange_symbol_pairs))
+        exchange, symbol = exchange_symbol_pairs[pair_idx]
         record = db.get_open_trade_by_symbol(exchange, symbol)
         if pair_idx not in owned_pairs:
             if record is not None:

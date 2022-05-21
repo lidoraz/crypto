@@ -1,5 +1,5 @@
 from Data.Crypto.ccxt_utils import get_candles_from_db, get_latest_ts_db
-from Data.Crypto.symbols import exchance_symbol_pairs, DB_PATH
+from Data.Crypto.symbols import exchange_symbol_pairs, DB_PATH
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
@@ -9,7 +9,7 @@ from Plots.plotly_fig import get_updated_fig
 import dash_bootstrap_components as dbc
 from datetime import datetime
 
-coins = sorted([c[1].split('/')[0] for c in exchance_symbol_pairs])
+coins = sorted([c[1].split('/')[0] for c in exchange_symbol_pairs])
 resample_keywords = list(INTERVAL_CANDLE_LOOKBACK_TABLE.keys())
 resample_keywords_text = [f" {k} | " for k in resample_keywords[:-1]] + [f" {resample_keywords[-1]}"]
 resample_radio_options = dict(

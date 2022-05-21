@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from asyncio import get_event_loop, gather
 from Utils import Persistence
 import ccxt.async_support as ccxt
-from symbols import exchance_symbol_pairs, DB_PATH
+from symbols import exchange_symbol_pairs, DB_PATH
 import time
 
 print('Async crawler for selected symbols, creates table and fetches history')
@@ -177,12 +177,12 @@ async def main():
         x = x.lower().replace(' ', '_')
         return x
 
-    db.create_multiple_tables(exchance_symbol_pairs, timeframe)
+    db.create_multiple_tables(exchange_symbol_pairs, timeframe)
 
     # map exchange name to their correspond exchanges
     exchanges_symbols = [
         (exchanges[list(map(lambda ex: treat_ex_name(ex.name), exchanges)).index(exchange_name)], symbol) for
-        exchange_name, symbol in exchance_symbol_pairs]
+        exchange_name, symbol in exchange_symbol_pairs]
     # exchanges_symbols = exchanges_symbols  # [5:6]
     # print(exchanges_symbols)
     loops = [fetch_ohlcv_forever_retry(db, exchange, symbol, timeframe) for exchange, symbol in exchanges_symbols]
