@@ -5,6 +5,7 @@ from Indicators import *
 
 def get_updated_fig(df_ohlcv, lookahead=14, support_lookahead=None, support_index=-1, xy_limit=True):
     interval = df_ohlcv.attrs['interval']
+    coin = df_ohlcv.attrs['symbol']
     ind_candle = CandleStick(interval, ohlc=df_ohlcv, plot_loc=1)
 
     sub_plots = [
@@ -21,7 +22,7 @@ def get_updated_fig(df_ohlcv, lookahead=14, support_lookahead=None, support_inde
 
     fig = make_subplots(rows=len(sub_plots) + 1, cols=1,
                         row_heights=row_heights,  # [6, 3, 1, 1]
-                        vertical_spacing=0,  # 0.04,
+                        vertical_spacing=0.02,  # 0.04,
                         # specs=[[{"secondary_y": True}], [{"secondary_y": False}]],
                         shared_xaxes=True)
     ind_candle.plot(fig)
@@ -47,6 +48,7 @@ def get_updated_fig(df_ohlcv, lookahead=14, support_lookahead=None, support_inde
     fig_update_layout_combined_view(fig)
     if xy_limit:
         fig_update_xylimits(fig, df_ohlcv, interval)
+        fig.update_layout(uirevision=f'{coin}{interval}')
 
     return fig
 

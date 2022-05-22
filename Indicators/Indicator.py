@@ -24,7 +24,7 @@ def human_format(num):
         magnitude += 1
         num /= 1000.0
     # add more suffixes if you need them
-    return '%.2f%s' % (num, ['', 'K', 'M', 'B', 'T', 'P'][magnitude])
+    return '%.2f%s' % (num, ['', 'K', 'M', 'B', 'T', 'P'][magnitude])  # does not work for low values ('μ', 'm',)
 
 
 def human_format_time(time_sec):

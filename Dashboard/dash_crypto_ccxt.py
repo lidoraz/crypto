@@ -1,13 +1,14 @@
-from Data.Crypto.ccxt_utils import get_candles_from_db, get_latest_ts_db
-from Data.Crypto.symbols import exchange_symbol_pairs, DB_PATH
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
-from Utils import Persistence
-from Plots.plot_utils import *
-from Plots.plotly_fig import get_updated_fig
 import dash_bootstrap_components as dbc
 from datetime import datetime
+import sys
+from Data.Crypto.ccxt_utils import get_candles_from_db
+from Data.Crypto.symbols import exchange_symbol_pairs, DB_PATH
+from Plots.plotly_fig import get_updated_fig
+from Plots.plot_utils import *
+from Utils import Persistence
 
 coins = sorted([c[1].split('/')[0] for c in exchange_symbol_pairs])
 resample_keywords = list(INTERVAL_CANDLE_LOOKBACK_TABLE.keys())
@@ -19,7 +20,6 @@ db_path = DB_PATH
 db = Persistence(db_path, check_same_thread=False)
 
 live_update = True
-print(f'live_update = {live_update}')
 title = 'Crypto Live Feed'
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.CYBORG],
@@ -27,20 +27,20 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.CYBORG],
 server = app.server  # needed for deployment
 app.title = title
 
-title_html = html.H4(title, style={'padding-right': '5%', 'margin-left': '2%'})
+title_html = html.H4(title, style={'paddingRight': '5%', 'marginLeft': '2%'})
 coin_html = dcc.Dropdown(coins, 'BTC', id='coin-type', clearable=False, style=dict(width='60pt'))
 live_update_html = html.Div(id='live-update-text', style={'margin': 'auto'}, children="")  # 'width': '20%',
 resample_selector_html = dcc.RadioItems(options=resample_radio_options, value=resample_keywords[2], id='resample-type',
                                         inline=True)
 # https://dash-bootstrap-components.opensource.faculty.ai/docs/components/input/ # RadioItems and Checklist
-live_update_switch_html = dbc.Switch(id="live-update-button", label="Live Update", value=live_update)
-
 right_portion_html = html.Div(id='right-portion',
                               children=[html.Div(resample_selector_html),
-                                        html.Div(id='live-switch-update-container',
-                                                 children=live_update_switch_html,
-                                                 style={'padding-left': '3%'})],
-                              # style={'display': 'flex', 'width': '40%'}
+                                        html.Div(id='live-switch-update-container',  # , style={'padding-left': '3%'}
+                                                 children=[dbc.Switch(id='show-legend', label='Legend ', value=True),
+                                                           dbc.Switch(id="live-update-button", label="Live Update",
+                                                                      value=live_update)],
+                                                 style={'display': 'flex', 'alignItems': 'center', 'flexWrap': 'wrap',
+                                                        'boxSizing': 'borderBox', 'columnGap': '7%'})],
                               )
 app.layout = html.Div([
     html.Div(children=[
@@ -54,7 +54,7 @@ app.layout = html.Div([
             style=dict(width='30pt')),
         live_update_html,
         right_portion_html],
-        style={'display': 'flex', 'align-items': 'center'},
+        style={'display': 'flex', 'alignItems': 'center', 'flexWrap': 'wrap'},
     ),
     html.Div(id='graph-container', children=[
         dcc.Graph(id='live-update-graph', config={'scrollZoom': True,
@@ -71,7 +71,6 @@ app.layout = html.Div([
             type="circle",
             loading_state={}
         ),
-        # dcc.Interval(id='clock-component', interval=1 * 1000, n_intervals=0),
         dcc.Interval(id='interval-component', interval=INTERVAL_UPDATE_SECONDS * 1000, n_intervals=0,
                      disabled=not live_update)
     ], style=dict(display="None")
@@ -89,7 +88,6 @@ app.layout = html.Div([
 )
 def start_stop_interval(value, _1, _2, _3):
     is_on = value
-    # print('callback_func_start_stop_interval', is_on)
     disabled = not is_on
     return disabled, 0
 
@@ -98,7 +96,6 @@ def start_stop_interval(value, _1, _2, _3):
 @app.callback(Output('graph-container', 'style'),
               Input('live-update-graph', 'figure'))
 def show_graph_when_loaded(figure):
-    # print("show_graph_when_loaded", figure)
     if figure is None:
         return {'display': 'None'}
     else:
@@ -115,8 +112,8 @@ def create_text(coin, df_ohlcv):
     db_dt = pd.to_datetime(df_ohlcv.attrs['curr_ts_db'], unit='s', utc=True).tz_convert('Israel')
     db_dt = db_dt + pd.to_timedelta('1min')
     last_value = df_ohlcv.iloc[-1]['close']
-    time_conv = "%Y-%m-%dT%H:%M:%S"  # .strftime
-    text = [html.Span('{} --> {}, {}'.format(db_dt.strftime(time_conv), coin, last_value))]  # {0:.2f}
+    time_conv = "%b %d , %H:%M"  # .strftime
+    text = [html.Span('{} | {}  {}'.format(db_dt.strftime(time_conv), coin, last_value))]  # {0:.2f}
     return text
 
 
@@ -125,8 +122,9 @@ def create_text(coin, df_ohlcv):
               Input('interval-component', 'n_intervals'),
               Input('coin-type', 'value'),
               Input('resample-type', 'value'),
+              Input('show-legend', 'value'),
               Input('input-lookahead', 'value'))
-def update_graph_live(n, coin, resample, input_lookahead):
+def update_graph_live(n, coin, resample, show_legend, input_lookahead):
     t0 = datetime.now()
     print(n, coin, resample, input_lookahead)
     start_ts = int((datetime.utcnow() - INTERVAL_CANDLE_LOOKBACK_TABLE[resample]).timestamp())
@@ -136,24 +134,9 @@ def update_graph_live(n, coin, resample, input_lookahead):
     t1 = (datetime.now() - t0).total_seconds()
     print(f'ready at:{round(t1, 2)}sec')
     text = create_text(coin, df_ohlcv)
+    fig.update_layout(showlegend=show_legend)
     return fig, text
 
-
-# @app.callback(Output('interval-component', 'n_intervals'),
-#               Input('live-update-button', 'value'),
-#               Input('clock-component', 'n_intervals'),
-#               Input('interval-component', 'n_intervals'))
-# def clock_update(live_button, clock, interval):
-#     if not live_button:
-#         return interval
-#     time_sec = datetime.now().second
-#     print('clock_update', clock, time_sec, interval)
-#     if time_sec in [10, 20, 30, 40, 50]:  # 10:  #
-#         return interval + 1
-#     return interval
-
-
-import sys
 
 if __name__ == '__main__':
 

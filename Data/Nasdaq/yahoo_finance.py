@@ -60,6 +60,7 @@ def get_from_yfinance_now(symbol, tf: str, tz='Israel'):
     print(start_date, tf)
     df = get_from_yfinance(symbol, start_date, tf, tz)
     df.attrs['interval'] = tf
+    df.attrs['symbol'] = symbol
     return df
 
 

@@ -5,17 +5,17 @@ import pandas as pd
 TIME_CONV = "%Y-%m-%dT%H:%M:%S"  # strftime
 INTERVAL_UPDATE_SECONDS = 30
 # 1 -> not limit , 0.5 -> display half data
-INTERVAL_CANDLE_LOOKBACK_DISPLAY_DIVIDED = 0.4  # this will alter the display
-# values are start_ts from current time
+INTERVAL_CANDLE_LOOKBACK_DISPLAY_DIVIDED = 0.5  # this will alter the display
+# loading multiplier
+LOAD_DATA_MUL = 4
 INTERVAL_CANDLE_LOOKBACK_TABLE = {
-    '1Min': timedelta(hours=4),
-    # '3Min': timedelta(hours=10),
-    '5Min': timedelta(hours=20),
-    '15Min': timedelta(hours=100),
-    '1H': timedelta(days=15),
-    '4H': timedelta(days=60),
-    '12H': timedelta(days=30 * 3),
-    '1D': timedelta(days=30 * 4)
+    '1T': timedelta(hours=0.5 * LOAD_DATA_MUL),
+    '5T': timedelta(hours=5 * LOAD_DATA_MUL),
+    '15T': timedelta(hours=15 * LOAD_DATA_MUL),
+    '1H': timedelta(hours=60 * LOAD_DATA_MUL),
+    '4H': timedelta(hours=60 * 4 * LOAD_DATA_MUL),
+    '12H': timedelta(hours=60 * 4 * 3 * LOAD_DATA_MUL),
+    '1D': timedelta(hours=60 * 4 * 6 * LOAD_DATA_MUL)
 }
 
 
@@ -23,8 +23,9 @@ def fig_update_xylimits(fig, df_ohlc, resample, ylimit=False):
     # x axis
     start_data_dt = df_ohlc.index[0]
     last_data_dt = df_ohlc.index[-1]
-    start_display_dt = start_data_dt + INTERVAL_CANDLE_LOOKBACK_TABLE[
-        resample] * INTERVAL_CANDLE_LOOKBACK_DISPLAY_DIVIDED
+    start_display_dt = min(last_data_dt,
+                           start_data_dt + INTERVAL_CANDLE_LOOKBACK_TABLE[
+                               resample] * INTERVAL_CANDLE_LOOKBACK_DISPLAY_DIVIDED)
     print(f'start_data_dt={start_data_dt}, start_display_dt={start_display_dt}, last_data_dt={last_data_dt}')
 
     # yaxis

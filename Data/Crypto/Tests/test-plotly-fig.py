@@ -6,7 +6,7 @@ from Dashboard.Plots.plotly_fig import get_updated_fig
 
 coins = [c[1].split('/')[0] for c in exchange_symbol_pairs]
 resample_keywords = ['2Min', '5Min', '15Min', '1H', '4H', '1D']
-coin = coins[5]
+coin = "SHIB"  # coins[5]
 resample = resample_keywords[-3]
 # start_date = START_DATA_DATE  # '2022-03-26'
 # print(start_date, coin, resample)
@@ -17,7 +17,7 @@ exchange_str = 'binance'
 symbol_str = f'{coin}/USDT'
 db_symbol = f'{exchange_str}_{symbol_str}'.upper()
 df = db.get_df(db_symbol, '1m')
-df_ohlcv = _resample_from_ohlcv(df, resample)
+df_ohlcv = _resample_from_ohlcv(df, coin, resample)
 # providers = get_data_providers()
 
 # filter_date = pd.to_datetime('2022-04-09', utc=True).tz_convert('Israel')

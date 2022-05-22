@@ -14,7 +14,7 @@ def get_coins(only_exchange=None):
     return coins
 
 
-def _resample_from_ohlcv(ohlcv, interval):
+def _resample_from_ohlcv(ohlcv, coin, interval):
     if 'curr_ts_db' not in ohlcv.attrs:
         raise ValueError('ohlcv must have attrs = curr_ts_db')
     if interval.lower() not in ['1min', '1t']:
@@ -27,7 +27,7 @@ def _resample_from_ohlcv(ohlcv, interval):
         ohlcv_up.attrs['curr_ts_db'] = ohlcv.attrs['curr_ts_db']
         ohlcv = ohlcv_up
     ohlcv.attrs['interval'] = interval
-
+    ohlcv.attrs['symbol'] = coin
     return ohlcv.sort_index()
 
 
@@ -57,7 +57,7 @@ def _get_candles_from_db(db, exchange_name, symbol, tf, start_ts=None, start_dat
     if df is None:
         print(f'Warning: {exchange_name}_{db_symbol} does not exists!')
         return None
-    df_ohlcv = _resample_from_ohlcv(df, tf)
+    df_ohlcv = _resample_from_ohlcv(df, symbol, tf)
     return df_ohlcv
 
 
@@ -77,4 +77,5 @@ def get_candles_from_ccxt(coin, tf):
     df = df.set_index('ts')
     df.index = pd.to_datetime(df.index, unit='ms', utc=True).tz_convert('Israel')
     df.attrs['interval'] = tf
+    df.attrs['symbol'] = coin
     return df

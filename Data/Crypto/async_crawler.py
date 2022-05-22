@@ -5,8 +5,8 @@ from asyncio import get_event_loop, gather
 from Utils import Persistence
 import ccxt.async_support as ccxt
 from symbols import exchange_symbol_pairs, DB_PATH
+import sqlite3
 import time
-
 print('Async crawler for selected symbols, creates table and fetches history')
 print('async-fetch-ohlcv-multiple-symbols-cont')
 
@@ -19,7 +19,8 @@ ccxt_errors = (ccxt.errors.RateLimitExceeded,
                ccxt.errors.BadRequest,
                ccxt.errors.RequestTimeout,
                ccxt.errors.ExchangeError,
-               ccxt.errors.ExchangeNotAvailable)
+               ccxt.errors.ExchangeNotAvailable,
+               sqlite3.OperationalError)
 
 
 FETCH_LIMIT = 1000

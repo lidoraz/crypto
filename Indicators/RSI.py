@@ -44,6 +44,9 @@ class RSI(Indicator):
         trace = go.Scatter(x=ra.index, y=ra, name=f'RSI({self.lookahead})', line_color=self.color, line_width=1.2)
         loc = dict(row=self.plot_loc[0], col=self.plot_loc[1])
         fig.add_trace(trace, **loc)
+        # fig.add_hline(y=80, **loc, line_width=0.8, opacity=0.0)
+        # fig.add_hline(y=20, **loc, line_width=0.8, opacity=0.0)
+
         fig.add_hline(y=70, **loc, line_width=0.8, line_color='red')
         fig.add_hline(y=30, **loc, line_width=0.8, line_color='green')
         return fig
