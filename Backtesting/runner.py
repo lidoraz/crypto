@@ -58,6 +58,7 @@ def run_RSIBB():
 if __name__ == '__main__':
     # DS ################################################################################################################################################
     # TODO: in optimizer filter out params that are not being used. can extract this with a list from each strategy
+    # TODO: add n_jobs as run parameter, when debug, use 1, else 8.
     # optimize_params = {'tf': ['1H', '4H'],  # ['15Min', '1H']
     #                    'sell_pct': np.arange(0, 0.10, 0.02)}  # 0.15 is too much # not a good  paramter.
     # check more for 5min and 15min, and if there is a difference between 15 days trading to 1.5 month of trading
