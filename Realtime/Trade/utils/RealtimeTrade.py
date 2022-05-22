@@ -1,5 +1,5 @@
-from Realtime.Trade.mocks import *
-from Realtime.Trade.persistence_trades_simple import PersistenceOrders
+from Realtime.Trade.utils.mocks import *
+from Realtime.Trade.utils.persistence_trades_simple import PersistenceOrders
 import ccxt
 import os
 import time

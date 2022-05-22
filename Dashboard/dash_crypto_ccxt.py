@@ -111,6 +111,15 @@ def _adjust_input_lookahead(input_lookahead):
     return max(min(input_lookahead, 100), 3)
 
 
+def create_text(coin, df_ohlcv):
+    db_dt = pd.to_datetime(df_ohlcv.attrs['curr_ts_db'], unit='s', utc=True).tz_convert('Israel')
+    db_dt = db_dt + pd.to_timedelta('1min')
+    last_value = df_ohlcv.iloc[-1]['close']
+    time_conv = "%Y-%m-%dT%H:%M:%S"  # .strftime
+    text = [html.Span('{} --> {}, {}'.format(db_dt.strftime(time_conv), coin, last_value))]  # {0:.2f}
+    return text
+
+
 @app.callback(Output('live-update-graph', 'figure'),
               Output('live-update-text', 'children'),
               Input('interval-component', 'n_intervals'),
@@ -126,10 +135,7 @@ def update_graph_live(n, coin, resample, input_lookahead):
     fig = get_updated_fig(df_ohlcv, lookahead=input_lookahead, xy_limit=True)
     t1 = (datetime.now() - t0).total_seconds()
     print(f'ready at:{round(t1, 2)}sec')
-    db_dt = pd.to_datetime(df_ohlcv.attrs['curr_ts_db'], unit='s', utc=True).tz_convert('Israel')
-    db_dt = db_dt + pd.to_timedelta('1min')
-    last_value = df_ohlcv.iloc[-1]['close']
-    text = [html.Span('{}, Price={}, updatedTo: {}'.format(coin, last_value, db_dt))]  # {0:.2f}
+    text = create_text(coin, df_ohlcv)
     return fig, text
 
 

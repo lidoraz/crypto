@@ -44,8 +44,8 @@ class MACD(Indicator):
         t_hist = go.Scatter(x=self.macd['MCADHIST'].index, y=self.macd['MCADHIST'], line_color='white',
                             fill='tozeroy',
                             **kwrags)
-        # fig.add_trace(t_mcad, row=loc[0], col=loc[1])
-        # fig.add_trace(trace_sma, row=loc[0], col=loc[1])
+        fig.add_trace(t_mcad, row=self.plot_loc[0], col=self.plot_loc[1])
+        fig.add_trace(trace_sma, row=self.plot_loc[0], col=self.plot_loc[1])
         fig.add_trace(t_hist, row=self.plot_loc[0], col=self.plot_loc[1])
         fig.add_hline(y=0, row=self.plot_loc[0], col=self.plot_loc[1], line_width=0.5, line_color='Red')
         return fig

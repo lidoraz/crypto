@@ -24,7 +24,7 @@ def run_BB():
         # 'BB_win_pct': np.linspace(0.1, 0.5, 5),  # np.linspace(0, 0.5, 5),  # range(10)
         # 'BB_lose_pct': np.linspace(0.1, 0.5, 5)  #
     }
-    n_jobs = 8
+    n_jobs = 1
     find_optimal_strategy(data_wrapper, strategy='BB', optimized_params=strategy_params_bb, n_jobs=n_jobs)
 
 
@@ -32,7 +32,7 @@ def run_BB():
 # sell_pct is not good for RSIBB, really need to keep it on 0.
 def run_RSIBB():
     strategy_params_rsi = {
-        'tf': ['1H'],  # ['1H'] # '15min',
+        'tf': ['1h'],  # ['1H'] # '15min',
         'sell_pct': [0],
         'RSIBB_n_rsi_soon': np.linspace(3, 14, 3),
         'RSIBB_rsi_ahead': np.linspace(10, 17, 3),
@@ -62,8 +62,9 @@ if __name__ == '__main__':
     #                    'sell_pct': np.arange(0, 0.10, 0.02)}  # 0.15 is too much # not a good  paramter.
     # check more for 5min and 15min, and if there is a difference between 15 days trading to 1.5 month of trading
 
-    start_date = '2022-05-11'
-    data_wrapper = CryptoData.get_wrapper(live=False, start_date=start_date)  # start_date='2022-04-25'
+    start_date = '2022-04-01'
+    data_wrapper = CryptoData.get_wrapper(live=False, start_date=start_date,
+                                          only_exchange='binance')  # start_date='2022-04-25'
 
     print('START_DATE = ', start_date)
     run_RSIBB()

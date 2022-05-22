@@ -8,10 +8,10 @@ def get_updated_fig(df_ohlcv, lookahead=14, support_lookahead=None, support_inde
     ind_candle = CandleStick(interval, ohlc=df_ohlcv, plot_loc=1)
 
     sub_plots = [
-        Volume(),
+        # Volume(),
         # CandleIdentification(normalize_detected_patterns=False),
-        RSI(lookahead),
-        # MACD(),
+        # RSI(lookahead),
+        MACD(),
     ]
     for idx, s_plot in enumerate(sub_plots):
         s_plot.plot_loc = (idx + 2, 1)

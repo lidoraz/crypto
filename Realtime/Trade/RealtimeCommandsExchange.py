@@ -1,13 +1,11 @@
-from Realtime.Trade.RealtimeTrade import RealtimeTrade
+from Realtime.Trade.utils.RealtimeTrade import RealtimeTrade
 from Realtime.realtime_utils import handle_args
 from Data import CryptoData
-from Backtesting.Strategies import BB, RSIBB  # , MACross
+from Backtesting.Strategies import RSIBB  # , MACross
 from Realtime.realtime_utils import get_latest_buy_sell
 from Utils.notify import TelegramBot
 from Utils.utils import WaitToMinEveryHour
-from datetime import datetime
 from tqdm import tqdm
-import pandas as pd
 import time
 
 
