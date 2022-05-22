@@ -21,7 +21,7 @@ def get_updated_fig(df_ohlcv, lookahead=14, support_lookahead=None, support_inde
 
     fig = make_subplots(rows=len(sub_plots) + 1, cols=1,
                         row_heights=row_heights,  # [6, 3, 1, 1]
-                        vertical_spacing=0.02,
+                        vertical_spacing=0,  # 0.04,
                         # specs=[[{"secondary_y": True}], [{"secondary_y": False}]],
                         shared_xaxes=True)
     ind_candle.plot(fig)

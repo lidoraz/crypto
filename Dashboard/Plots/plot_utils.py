@@ -61,8 +61,7 @@ def fig_update_layout_combined_view(fig):
                       legend=dict(x=-0.07, y=1, font=dict(family="sans-serif", size=10, color="white"),
                                   traceorder="normal", ),
                       dragmode='pan')
-    fig.update_layout(xaxis_showticklabels=True, xaxis2_showticklabels=False, )
-    # fig.for_each_xaxis(lambda x: x.update(xaxis_showticklabels=True))
+    fig.update_layout(xaxis_showticklabels=True, xaxis2_showticklabels=False, xaxis3_showticklabels=False)
     fig.for_each_yaxis(lambda x: x.update(side="right"))
     spike_params = dict(showspikes=True, spikedash='dash', spikemode='across', spikecolor="grey", spikesnap="cursor",
                         spikethickness=0.5)
