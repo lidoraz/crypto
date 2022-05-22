@@ -9,52 +9,46 @@ from Data import ProviderData
 from Backtesting.Strategies import *
 
 
-# TODO: Strategy: A better way to test stratgies is to compare each day the market, and look whenever there is a new oppertunity.
-#  Selecting the best oppertunity should be chosen if wanted (maybe lowest RSI)
-#  Next, maybe compare with a budget, and buying a trade with comparing other opportunities.
 
-# it looks like lookahead of less than 5 is very volatile, need to restrict number of transactions
-# Some coins do not change as frequent like GCOIN, so it is harder to count on the performance on these coins.
-# 15Min trade made the highest value, but number of trades was very high as well and cannot be guaranteed.
-
-
-def run_strategy(df, stragey: Strategy, sell_pct, trade_comission=0.001):
+def run_strategy(df, stragey: Strategy, trade_comission=0.001):
     sum_pct_net = 0
     buy_idx_vars = None
     trades_str = []
-    buy_idx = None
-    for idx, row in df.iterrows():
-        if not buy_idx:
-            buy_vars = stragey.act_buy(idx, row)
+    buy_ts = None
+    for curr_ts, row in df.iterrows():
+        if not buy_ts:
+            buy_vars = stragey.act_buy(curr_ts, row)
             if buy_vars:
-                buy_idx = buy_vars['buy_idx']
+                buy_ts = buy_vars['buy_idx']
                 buy_idx_vars = buy_vars
         else:
-            sell_idx = idx
+            sell_ts = curr_ts
             buy_price = buy_idx_vars['buy_price']
             sell_price_win_stop = buy_idx_vars['sell_price_win_stop']
             sell_price_lose_stop = buy_idx_vars['sell_price_lose_stop']
-            sell_price = df['close'].loc[sell_idx]
-            hours_holding = (sell_idx - buy_idx).total_seconds() // 3600
-            profit_pct = (sell_price / buy_price) - 1
+            sell_price = df['close'].loc[sell_ts]
+            hours_holding = int((sell_ts - buy_ts).total_seconds() // 3600)
+            if sell_price > sell_price_win_stop:
+                sold_cause = 'WIN_STOP'
+                sold_price = sell_price_win_stop
+            elif sell_price < sell_price_lose_stop:
+                sold_cause = 'LOSE_STOP'
+                sold_price = sell_price_lose_stop
+            elif row['SELL_ALGO']:
+                sold_cause = 'ALGO_SELL'
+                sold_price = sell_price
+            else:
+                continue
+            profit_pct = (sold_price / buy_price) - 1
             profit_pct_net = profit_pct - (trade_comission * 2)  # plus commission
-            if sell_pct == 0 or (abs(profit_pct_net) > sell_pct > 0):
-                if sell_price > sell_price_win_stop:
-                    sell_cause = 'WIN_STOP'
-                elif sell_price < sell_price_lose_stop:
-                    sell_cause = 'LOSE_STOP'
-                elif row['SELL_ALGO']:
-                    sell_cause = 'ALGO_SELL'
-                else:
-                    continue
-                trade_arr = [sell_cause, buy_idx, round(buy_price, 2),
-                             sell_idx, round(sell_price, 2), hours_holding, f'{profit_pct_net:.2%}']
-                trade_arr = list(map(str, trade_arr))
-                transaction = 'Trade:' + "\t".join(trade_arr)
-                trades_str.append(transaction)
-                sum_pct_net += profit_pct_net
-                buy_idx = None
-    is_trade_open = buy_idx is not None
+            trade_arr = [sold_cause, buy_ts, round(buy_price, 2),
+                         sell_ts, round(sold_price, 2), hours_holding, f'{profit_pct_net:.2%}']
+            trade_arr = list(map(str, trade_arr))
+            transaction = 'Trade:' + "\t".join(trade_arr)
+            trades_str.append(transaction)
+            sum_pct_net += profit_pct_net
+            buy_ts = None
+    is_trade_open = buy_ts is not None
     return sum_pct_net, trades_str, is_trade_open
 
 
@@ -64,17 +58,11 @@ def mark_enter_exit_points(provider: ProviderData, strategy: str, params):
     trades_str = []
     n_open_trades = 0
     tf = params['tf']
-    sell_pct = params['sell_pct']
     for symbol in symbols:
         df = provider.get_data(symbol, tf)
-        # print(symbol)
-        # if symbol == 'GCOIN':
-        #     print()
         strategy_class = All_STRATEGIES[strategy.upper()](params)
         df = strategy_class.add_indicators(df)
-        # df = df.dropna() # TODO: Test this
-        act_sum_pct, act_trades_str, is_open = run_strategy(df, strategy_class,
-                                                            sell_pct=sell_pct, trade_comission=0.001)
+        act_sum_pct, act_trades_str, is_open = run_strategy(df, strategy_class, trade_comission=0.001)
         act_trades_str = [f'{symbol}- {trade}' for trade in act_trades_str]  # add symbol
         sum_pct += act_sum_pct
         trades_str += act_trades_str
@@ -85,7 +73,7 @@ def mark_enter_exit_points(provider: ProviderData, strategy: str, params):
     return sum_pct, trades_str, n_open_trades
 
 
-def find_optimal_strategy(provider: ProviderData, strategy: str, optimized_params: dict, n_jobs=8):
+def find_optimal_strategy(provider: ProviderData, start_date, strategy: str, optimized_params: dict, n_jobs=8):
     time_start = datetime.now()
     # filter out not relevant params:
     keys_to_remove = [k for k in optimized_params if not k.startswith(strategy) and k not in ['tf', 'sell_pct']]
@@ -133,8 +121,8 @@ def find_optimal_strategy(provider: ProviderData, strategy: str, optimized_param
     # save df
     time = datetime.now()
     print(f"TIME TOOK: {int((time - time_start).total_seconds() / 60)} min")
-    TIME_CONV = "%Y%m%dT%H%M%S"
-    name = f'{time.strftime(TIME_CONV)}_{provider.name}_{strategy}'
+    TIME_CONV = "%y%m%dT%H%M%S"
+    name = f'{time.strftime(TIME_CONV)}_{start_date}_{provider.name}_{strategy}'
 
     output_path = 'Backtesting/strategy_output/'
     os.makedirs(output_path, exist_ok=True)
