@@ -149,6 +149,7 @@ class BacktestOptimizer:
     def run(self):
         self.prepare_run_data()
         history = []
+        counter = dict()
         n_buys = 0
         n_algosells = 0
         n_stopwins = 0
@@ -169,11 +170,12 @@ class BacktestOptimizer:
                     if res:
                         buy_info, sell_info = res
                         print(str(sell_info).replace("'", '').replace(' ', '\t'))
-                        n_buys += context['n_buys']
-                        n_algosells += context['n_algosells']
-                        n_stopwins += context['n_stopwins']
-                        n_stoploses += context['n_stoploses']
                         # history.append(dict(symbol=symbol, BUY=buy_info, SELL=sell_info))
+        for symbol, context in _dict.items():
+            n_buys += context['n_buys']
+            n_algosells += context['n_algosells']
+            n_stopwins += context['n_stopwins']
+            n_stoploses += context['n_stoploses']
         # print(history)
         assets_valuation_sum, assets = self.get_assets_valuation(_dict)
         run_results = dict(free_balance=round(self.free_balance, 3), assets_valuation=round(assets_valuation_sum, 3),
@@ -200,8 +202,10 @@ def run_optimizer(provider: ProviderData, strategy: str, params, env_params):
 
 
 def find_optimal_strategy(provider: ProviderData, start_date, strategy: str, optimized_params: dict, n_jobs=8):
-    budget = 500
-    env_params = dict(budget=budget, trade_value=25, min_trade=10, trade_com=0.001)
+    budget = 250
+    trade_value = max(int(0.05 * budget), 11)
+    assert trade_value >= 11, 'trade_value must be higher than 10, increase budget'
+    env_params = dict(budget=budget, trade_value=trade_value, min_trade=10, trade_com=0.001)  # trade_v = 25
     print('---> env_params =', env_params)
     time_start = datetime.now()
     # filter out not relevant params:

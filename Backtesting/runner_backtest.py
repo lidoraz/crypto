@@ -16,11 +16,13 @@ def run_MACross(data_wrapper, start_date, n_jobs):
 
 
 def run_BB(data_wrapper, start_date, n_jobs):
-    params = {  # tODO: Still fucked up, how can it be at stop loss is higher than buy value?
+    # {'tf': '1H', 'BB_ind_ahead': 20, 'BB_std': 2.0, 'BB_stop_lookahead': 70,
+    # 'total_balance': 338.338, 'n_trades': 0, 'n_open_trades': 28}
+    params = {
         'tf': ['1H'],
         'BB_ind_ahead': [20],
-        'BB_std': [2],
-        'BB_stop_lookahead': [75]
+        'BB_std': [2.0],
+        'BB_stop_lookahead': [70, 120, 150]
         # 'tf': ['1H'],
         # 'BB_ind_ahead': range(10, 22, 4),
         # 'BB_std': [1.8, 2, 2.5],
@@ -37,7 +39,7 @@ def run_BB(data_wrapper, start_date, n_jobs):
 def run_RSIBB(data_wrapper, start_date, n_jobs):
     params = {  # 1h,9,14,15,26.0,68.0,1.9,324.30691727745153
         'tf': ['1h'],  # ['1H'] # '15min',
-        'RSIBB_aggressive': [True, False],
+        'RSIBB_aggressive': [False],  # True,
         'RSIBB_n_rsi_soon': [9],
         'RSIBB_rsi_ahead': [14],
         'RSIBB_bb_ahead': [15],
@@ -67,14 +69,14 @@ def run_optimizer():
     # strategy_str = data['strategy']
     # data.pop('start_date')
     # data.pop('mp')
-    start_date = '2022-04-01'
+    start_date = '2022-03-01'
     strategy = 'RSIBB'
 
     n_jobs = os.cpu_count()
     data_wrapper = CryptoData.get_wrapper(live=False, start_date=start_date,
                                           only_exchange='binance')  # start_date='2022-04-25'
-    run_RSIBB(data_wrapper, start_date, n_jobs)
-    # run_BB(data_wrapper, start_date, n_jobs)
+    # run_RSIBB(data_wrapper, start_date, n_jobs)
+    run_BB(data_wrapper, start_date, n_jobs)
     # strategy = strategy.upper()
     # if strategy == 'RSIBB':
     #     run_RSIBB(data_wrapper, start_date, n_jobs)

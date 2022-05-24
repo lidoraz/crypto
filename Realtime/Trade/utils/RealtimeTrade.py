@@ -185,7 +185,7 @@ class RealtimeTrade:
                 order_details = mock_binance_market_buy()
             order_details['valuation'] = self.stable_coin_trade_amount
             self._add_order_to_db(symbol, order_details)
-            time.sleep(5)  # sleep few seconds to allow register #
+            time.sleep(5)  # TODO see if this is needed sleep few seconds to allow register #
             code = self._create_binance_sell_oco_order(coin, stop_loss_price, stop_win_price, order_details['filled'],
                                                        retry=True)
             # self._create_stop_loss_request(coin, stop_loss_price, order_details)

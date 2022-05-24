@@ -1,7 +1,7 @@
 from Realtime.Trade.utils.RealtimeTrade import RealtimeTrade
 from Realtime.realtime_utils import handle_args
 from Data import CryptoData
-from Backtesting.Strategies import RSIBB  # , MACross
+from Backtesting.Strategies import RSIBB, BB  # , MACross
 from Realtime.realtime_utils import get_latest_buy_sell
 from Utils.notify import TelegramBot
 from Utils.utils import WaitToMinEveryHour
@@ -85,14 +85,15 @@ def realtime_exchange():
     tb_notify = TelegramBot(prod=prod, verbose=0)
     print('Checking Keys.. All OK')
     # generated 340% profit after 1.5 month.
-    strategy_params = dict(RSIBB_n_rsi_soon=7,
-                           RSIBB_rsi_ahead=16,  # RSI over 10 becomes less sesitive but its not linear, like expo.
-                           RSIBB_bb_ahead=12,
-                           RSIBB_rsi_low=30,
-                           RSIBB_rsi_high=70,
-                           RSIBB_bb_std=2.16)
-    strategy = RSIBB(strategy_params)
-    # strategy = BB()
+    # strategy_params = dict(RSIBB_n_rsi_soon=7,
+    #                        RSIBB_rsi_ahead=16,  # RSI over 10 becomes less sesitive but its not linear, like expo.
+    #                        RSIBB_bb_ahead=12,
+    #                        RSIBB_rsi_low=30,
+    #                        RSIBB_rsi_high=70,
+    #                        RSIBB_bb_std=2.16)
+
+    # strategy = RSIBB(strategy_params)
+    strategy = BB({'BB_ind_ahead': 20, 'BB_std': 2.0, 'BB_stop_lookahead': 70})
     # strategy = MACross() # Will throw a lot of buy sells.
     if prod:
         print(

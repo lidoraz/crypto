@@ -70,45 +70,33 @@ class SupportResistanceLines2(Indicator):
         self.n_lookahead_points = 7
         self.plot_ts = None
         self.plot_loc = (plot_loc, 1 if plot_loc else None)
+        self.ohlcv = None
+        self.resistances_value = None
+        self.supports_value = None
+        self.lookaheads = None
 
     # TODO: support resistance should be calculated in predfined intervals, OR by getting k maximums as resistances and supports.
+    # TODO: Improve perfromance for this algorithm, can add option if plot to calculate indexes
     def calc(self, ohlc: pd.DataFrame):
-        # idx = np.random.randint(0, len(ohlc))
         idx = len(ohlc) + self.plot_index
         self.plot_ts = ohlc.index[idx]
-        # import time
-        # calc_ts = time.time()
-        # print('calc called', calc_ts)
         first_lookup = int(len(ohlc) * 0.05)
         max_lookup = len(ohlc)  # // 2
         # start with multiple lookaheads, but combine them later.
-        lookaheads = np.linspace(first_lookup, max_lookup, self.n_lookahead_points).astype(int)
         if self.lookback_ratio:
             lookahead = int(len(ohlc) * self.lookback_ratio)
             lookaheads = [int(len(ohlc) * self.lookback_ratio)]
             self.lookahead_index = lookahead
         elif self.lookahead_index:
             lookaheads = [self.lookahead_index]
-
+        else:
+            lookaheads = np.linspace(first_lookup, max_lookup, self.n_lookahead_points).astype(int)
         # for each point in data, we will have n_lookaheads of support and resistance.
-        resistances_value = [calc_roll(ohlc, lk, is_idx=False, is_max=True) for lk in lookaheads]
-        supports_value = [calc_roll(ohlc, lk, is_idx=False, is_max=False) for lk in lookaheads]
-        resistances_ts = [calc_roll(ohlc, lk, is_idx=True, is_max=True) for lk in lookaheads]
-        supports_ts = [calc_roll(ohlc, lk, is_idx=True, is_max=False) for lk in lookaheads]
-        # combine all into one dataframe, each support resistance will have #number of lookaheads
-        all_combined = pd.concat(resistances_value + resistances_ts + supports_value + supports_ts, axis=1)
-        # TODO: limit res to one major line.
-        # used for plot, combines ts and its support / resistance level into ts/value series
-        supports, resistances = combine_value_ts_supports_by_index(ohlc.index, all_combined, idx=idx)
-        self.v_lines_min = supports
-        self.v_lines_max = resistances
-        # res
-        # TODO: Can combine multiple supports if they are realtive close to each other, by 5% ...
-        # TODO: Does not work at the moment
-        # print('calc_time', time.time() - calc_ts)
-        # lk = str(lk)
-        # res_selected = res[[c for c in res.columns if lk in c and 'idx' not in c]]
-        res = pd.concat([resistances_value[0], supports_value[0]], axis=1)
+        self.ohlcv = ohlc
+        self.resistances_value = [calc_roll(ohlc, lk, is_idx=False, is_max=True) for lk in lookaheads]
+        self.supports_value = [calc_roll(ohlc, lk, is_idx=False, is_max=False) for lk in lookaheads]
+        self.lookaheads = lookaheads
+        res = pd.concat([self.resistances_value[0], self.supports_value[0]], axis=1)
         res = res.rename(
             columns={f'high_{self.lookahead_index}': 'resistance', f'low_{self.lookahead_index}': 'support'})
         return res
@@ -124,6 +112,19 @@ class SupportResistanceLines2(Indicator):
         return fig
 
     def plot(self, fig):
+        ohlc = self.ohlcv
+        lookaheads = self.lookaheads
+        idx = len(ohlc) + self.plot_index
+        resistances_ts = [calc_roll(ohlc, lk, is_idx=True, is_max=True) for lk in lookaheads]
+        supports_ts = [calc_roll(ohlc, lk, is_idx=True, is_max=False) for lk in lookaheads]
+        # combine all into one dataframe, each support resistance will have #number of lookaheads
+        all_combined = pd.concat(self.resistances_value + resistances_ts + self.supports_value + supports_ts, axis=1)
+        # TODO: limit res to one major line.
+        # used for plot, combines ts and its support / resistance level into ts/value series
+        supports, resistances = combine_value_ts_supports_by_index(ohlc.index, all_combined, idx=idx)
+        self.ohlcv_index = ohlc.index
+        self.v_lines_min = supports
+        self.v_lines_max = resistances
         for min_ts, min_v in self.v_lines_min.items():
             fig = self._plot(fig, min_ts, min_v, False)
         for max_ts, max_v in self.v_lines_max.items():

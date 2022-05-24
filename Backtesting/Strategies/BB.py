@@ -20,6 +20,7 @@ class BB(Strategy):
         self.bb_std = params.get('BB_std', 2)
         self.ind_bb = BollingerBands(self.ind_lookahead, self.bb_std)
         self.ind_sr = SupportResistanceLines2(params.get('BB_stop_lookahead', 250))
+        # TODO: enable print option to print its params to make sure everything is set
         # self.ind_sr = WinLossStoploss(params.get('BB_win_pct', 0.2),
         #                               params.get('BB_lose_pct', 0.2))
         # ind_sma = SMA(100)
@@ -42,12 +43,10 @@ class BB(Strategy):
             buy_idx = idx
             buy_price = row['close']
             # add stop-loss
-            try:
-                row['resistance']
-            except Exception as e:
-                print()
             sell_price_win_stop = row['resistance']
             sell_price_lose_stop = row['support']
+            if buy_price < sell_price_lose_stop or sell_price_win_stop < buy_price:
+                print('Warning BB act buy')
             return {'buy_idx': buy_idx,
                     'buy_price': buy_price,
                     'sell_price_win_stop': sell_price_win_stop,

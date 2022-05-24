@@ -2,7 +2,7 @@ from Data.Crypto.ccxt_utils import get_candles_from_db, get_coins
 from Data.Crypto.symbols import DB_PATH
 from Utils import Persistence
 from .ProviderData import ProviderData, PreLoaded
-import pandas as pd
+from tqdm import tqdm
 import time
 
 
@@ -71,7 +71,7 @@ class CryptoData(ProviderData):
     def get_offline_wrapper(self, tfs):
         if isinstance(tfs, str):
             tfs = [tfs]
-        for symbol in self.symbols:
+        for symbol in tqdm(self.symbols, desc='fetching offline data'):
             for tf in tfs:
                 _ = self.get_data(symbol, tf)
         return PreLoaded(self._data, self.symbols)
