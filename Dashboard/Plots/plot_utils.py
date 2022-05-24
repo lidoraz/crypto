@@ -5,9 +5,9 @@ import pandas as pd
 TIME_CONV = "%Y-%m-%dT%H:%M:%S"  # strftime
 INTERVAL_UPDATE_SECONDS = 30
 # 1 -> not limit , 0.5 -> display half data
-INTERVAL_CANDLE_LOOKBACK_DISPLAY_DIVIDED = 0.5  # this will alter the display
+INTERVAL_CANDLE_LOOKBACK_DISPLAY_DIVIDED = 0.6  # start display from this relative value (pct)
 # loading multiplier
-LOAD_DATA_MUL = 4
+LOAD_DATA_MUL = 4  # 3.5 # 40 # TODO: this needs to be fixed, as a parameter for dashboard not a constant
 INTERVAL_CANDLE_LOOKBACK_TABLE = {
     '1T': timedelta(hours=0.5 * LOAD_DATA_MUL),
     '5T': timedelta(hours=5 * LOAD_DATA_MUL),
@@ -23,10 +23,10 @@ def fig_update_xylimits(fig, df_ohlc, resample, ylimit=False):
     # x axis
     start_data_dt = df_ohlc.index[0]
     last_data_dt = df_ohlc.index[-1]
-    start_display_dt = min(last_data_dt,
-                           start_data_dt + INTERVAL_CANDLE_LOOKBACK_TABLE[
-                               resample] * INTERVAL_CANDLE_LOOKBACK_DISPLAY_DIVIDED)
-    print(f'start_data_dt={start_data_dt}, start_display_dt={start_display_dt}, last_data_dt={last_data_dt}')
+    # take percent of display.
+    start_display_idx = int(len(df_ohlc) * INTERVAL_CANDLE_LOOKBACK_DISPLAY_DIVIDED)
+    start_display_dt = df_ohlc.index[start_display_idx]
+    print(f'start_data_dt={start_data_dt}, last_data_dt={last_data_dt}, start_display_dt={start_display_dt}')
 
     # yaxis
     df_ohlc_f = df_ohlc[df_ohlc.index > start_display_dt]

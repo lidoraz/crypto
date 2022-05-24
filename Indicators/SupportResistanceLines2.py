@@ -38,7 +38,7 @@ def calc_roll(ohlc, lk, is_idx, is_max):
     #         f'{col}_{lk}')
 
 
-def lines_by_index(ohlc_index, res, idx=None):
+def combine_value_ts_supports_by_index(ohlc_index, res, idx=None):
     val_cols = [c for c in res.columns if 'idx' not in c]
     idx_cols = [c for c in res.columns if 'idx' in c]
     # ts_at_idx = res.index[idx]  # res.index[idx] + pd.Timedelta()
@@ -59,50 +59,65 @@ def lines_by_index(ohlc_index, res, idx=None):
 
 
 class SupportResistanceLines2(Indicator):
-    def __init__(self, lookahead=None, plot_index=-1, plot_loc=None):
-        self.lookahead = lookahead
+    def __init__(self, lookahead_index=None, lookback_ratio=None, plot_index=-1, plot_loc=None):
+        if lookahead_index and lookback_ratio:
+            raise ValueError('cant have both lookahead_index, lookback_ratio')
+        if lookback_ratio is not None:
+            assert 0 < lookback_ratio <= 1, lookback_ratio
+        self.lookahead_index = lookahead_index
+        self.lookback_ratio = lookback_ratio
         self.plot_index = plot_index
         self.n_lookahead_points = 7
-        self.current_ts = None
+        self.plot_ts = None
         self.plot_loc = (plot_loc, 1 if plot_loc else None)
 
     # TODO: support resistance should be calculated in predfined intervals, OR by getting k maximums as resistances and supports.
     def calc(self, ohlc: pd.DataFrame):
+        # idx = np.random.randint(0, len(ohlc))
+        idx = len(ohlc) + self.plot_index
+        self.plot_ts = ohlc.index[idx]
         # import time
         # calc_ts = time.time()
         # print('calc called', calc_ts)
-        first_lookup = 30
+        first_lookup = int(len(ohlc) * 0.05)
         max_lookup = len(ohlc)  # // 2
+        # start with multiple lookaheads, but combine them later.
         lookaheads = np.linspace(first_lookup, max_lookup, self.n_lookahead_points).astype(int)
-        # TODO: take only middle
-        lk = self.lookahead
-        if self.lookahead:
-            lookaheads = [self.lookahead]
+        if self.lookback_ratio:
+            lookahead = int(len(ohlc) * self.lookback_ratio)
+            lookaheads = [int(len(ohlc) * self.lookback_ratio)]
+            self.lookahead_index = lookahead
+        elif self.lookahead_index:
+            lookaheads = [self.lookahead_index]
 
-        # for each point, we will have n_points of support and resistance.
-        resistances = [calc_roll(ohlc, lk, is_idx=False, is_max=True) for lk in lookaheads]
-        supports = [calc_roll(ohlc, lk, is_idx=False, is_max=False) for lk in lookaheads]
-        resistances_idx = [calc_roll(ohlc, lk, is_idx=True, is_max=True) for lk in lookaheads]
-        supports_idx = [calc_roll(ohlc, lk, is_idx=True, is_max=False) for lk in lookaheads]
-        res = pd.concat(resistances + resistances_idx + supports + supports_idx, axis=1)
-        idx = len(ohlc) + self.plot_index
-        # idx = np.random.randint(0, len(ohlc))
-        supports, resistances = lines_by_index(ohlc.index, res, idx=idx)
-        # TODO: Can combine multiple supports if they are realtive close to each other, by 5% ...
-        self.current_ts = ohlc.index[idx]
+        # for each point in data, we will have n_lookaheads of support and resistance.
+        resistances_value = [calc_roll(ohlc, lk, is_idx=False, is_max=True) for lk in lookaheads]
+        supports_value = [calc_roll(ohlc, lk, is_idx=False, is_max=False) for lk in lookaheads]
+        resistances_ts = [calc_roll(ohlc, lk, is_idx=True, is_max=True) for lk in lookaheads]
+        supports_ts = [calc_roll(ohlc, lk, is_idx=True, is_max=False) for lk in lookaheads]
+        # combine all into one dataframe, each support resistance will have #number of lookaheads
+        all_combined = pd.concat(resistances_value + resistances_ts + supports_value + supports_ts, axis=1)
+        # TODO: limit res to one major line.
+        # used for plot, combines ts and its support / resistance level into ts/value series
+        supports, resistances = combine_value_ts_supports_by_index(ohlc.index, all_combined, idx=idx)
         self.v_lines_min = supports
         self.v_lines_max = resistances
+        # res
+        # TODO: Can combine multiple supports if they are realtive close to each other, by 5% ...
+        # TODO: Does not work at the moment
         # print('calc_time', time.time() - calc_ts)
-        lk = str(lk)
-        res_selected = res[[c for c in res.columns if lk in c and 'idx' not in c]]
-        res_selected = res_selected.rename(columns={f'high_{lk}': 'resistance', f'low_{lk}': 'support'})
-        return res_selected
+        # lk = str(lk)
+        # res_selected = res[[c for c in res.columns if lk in c and 'idx' not in c]]
+        res = pd.concat([resistances_value[0], supports_value[0]], axis=1)
+        res = res.rename(
+            columns={f'high_{self.lookahead_index}': 'resistance', f'low_{self.lookahead_index}': 'support'})
+        return res
 
     def _plot(self, fig, ts, v, is_max):
         c = 'red' if is_max else 'green'
         # can use first ts if using lines in the middle.
-        time_delta_str = get_str_name(self.current_ts, ts, v, is_max=is_max)
-        t = go.Scatter(x=[ts, self.current_ts], y=[v, v], name=time_delta_str, mode='lines',
+        time_delta_str = get_str_name(self.plot_ts, ts, v, is_max=is_max)
+        t = go.Scatter(x=[ts, self.plot_ts], y=[v, v], name=time_delta_str, mode='lines',
                        hoverinfo='skip', legendgroup='support_resistance',
                        line_dash="dot", line_color=c, line_width=1)
         fig.add_trace(t, row=self.plot_loc[0], col=self.plot_loc[1])

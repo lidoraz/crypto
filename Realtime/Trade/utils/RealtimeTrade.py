@@ -62,9 +62,10 @@ class RealtimeTrade:
         self.is_production = prod
         self.stable_coin_name = 'USDT'
         self.stable_coin_trade_amount = 12
-        self.stable_coin_min_amount = 10
+        self.stable_coin_min_amount = 10  # must be at least 10USD to
         self.price_diff_pct = 0.05
         self.sell_price_from_stop_pct = 0.99
+        self.rebuy_coin = False  # don't buy again if own at least min amount for sell. easier for backtesting. TODO: organize.
         self._check_init()
         exchange = ccxt.binance({
             'apiKey': os.environ.get('BINANCE_API'),
@@ -113,7 +114,7 @@ class RealtimeTrade:
             print(self.exchange_name, f'get_assets_holding failed:', type(e).__name__, str(e))
             raise e
 
-    def _get_current_price(self, symbol):
+    def get_curr_price(self, symbol):
         ticker = self.exchange.fetch_ticker(symbol)
         return ticker['last']
 
@@ -151,7 +152,7 @@ class RealtimeTrade:
         use_locked = False
         symbol = f'{coin}/{self.stable_coin_name}'
         amount_holding, amount_locked = self._get_asset_holding_amount(self.stable_coin_name)
-        curr_price = self._get_current_price(symbol)
+        curr_price = self.get_curr_price(symbol)
         is_enough_funds = amount_holding > self.stable_coin_trade_amount
         # # check if locked is needed, as the usdt will never be on an open order.
         # is_enough_locked_funds = amount_locked * curr_price > self.stable_coin_trade_amount
@@ -166,8 +167,12 @@ class RealtimeTrade:
     def _create_market_buy(self, coin, buy_price, stop_loss_price, stop_win_price):
         symbol = f'{coin}/{self.stable_coin_name}'
         try:
-            self._check_algo_price(symbol, buy_price)
+            _, amount, amount_stable, _ = self._check_sell_and_price(coin, just_check=True)
+            if not self.rebuy_coin and amount_stable > self.stable_coin_min_amount:
+                print(f'Owning {coin} - amount={amount} , amount_stable= {amount_stable}')
+                return -11  # already own the symbol # TODO: Test this and reorgnize codes
             curr_price, use_locked = self._check_buy_and_price(coin)
+            self._compare_algo_price(symbol, buy_price, curr_price)  # TODO: Rework abit, checking price many time.
             amount = self.stable_coin_trade_amount / curr_price
             f_curr_price = self.exchange.price_to_precision(symbol, curr_price)
             f_amount = self.exchange.amount_to_precision(symbol, amount)
@@ -192,7 +197,7 @@ class RealtimeTrade:
             return -1
 
     # Buy at 10usdt each, sell everything......
-    def _check_sell_and_price(self, coin):
+    def _check_sell_and_price(self, coin, just_check):
         """
         TODO: There it will prefer to take free amount instead of using both free and locked, thing if this is the right way.
             ADD option when there were multiple buys, to cancel all of them when trying to sell! this will free up everything.
@@ -203,7 +208,7 @@ class RealtimeTrade:
         use_locked = False
         symbol = f'{coin}/{self.stable_coin_name}'
         amount, amount_locked = self._get_asset_holding_amount(coin)
-        curr_price = self._get_current_price(symbol)
+        curr_price = self.get_curr_price(symbol)
         amount_stable = amount * curr_price  # convert to stable coin
         is_enough_funds = amount_stable > self.stable_coin_min_amount
         amount_locked_stable = amount_locked * curr_price
@@ -212,13 +217,13 @@ class RealtimeTrade:
             amount_stable = amount_locked_stable + amount_stable
             is_enough_funds = True
             use_locked = True
-        if not is_enough_funds:
+        if not is_enough_funds and not just_check:
             raise ccxt.errors.InsufficientFunds(f'Not enough {coin} to sell (curr_price={curr_price}, '
                                                 f'amount={amount}, amount_stable={amount_stable}, use_locked={use_locked})')
         return curr_price, amount, amount_stable, use_locked
 
-    def _check_algo_price(self, symbol, req_price):
-        curr_price = self._get_current_price(symbol)
+    def _compare_algo_price(self, symbol, req_price, curr_price):
+        # curr_price = self.get_curr_price(symbol)
         diff_pct = (req_price / curr_price) - 1
         if diff_pct > self.price_diff_pct:  # 0.09 > 0.05
             print(f'Warning: {symbol} algo price *LARGER* than {int(self.price_diff_pct * 100)}%'
@@ -256,8 +261,8 @@ class RealtimeTrade:
         """
         symbol = f'{coin}/{self.stable_coin_name}'
         try:
-            self._check_algo_price(symbol, sell_price)
-            curr_price, amount_holding, amount_stable, use_locked = self._check_sell_and_price(coin)
+            curr_price, amount_holding, amount_stable, use_locked = self._check_sell_and_price(coin, just_check=False)
+            self._compare_algo_price(symbol, sell_price, curr_price)
             if use_locked:
                 self._unlock_symbol(symbol)
             f_amount = self.exchange.amount_to_precision(symbol, amount_holding)
@@ -363,16 +368,22 @@ class RealtimeTrade:
 
 def show_portfolio_value(trader):
     all_holding_usdt = trader.get_assets_holding()
+    print('All portfolio value in stable coin value')
     print(all_holding_usdt)
 
 
 def test_buy_stop_sell_works(trader):
-    buy_details = {'buy_idx': 0, 'buy_price': 1.168, 'sell_price_win_stop': 1.3, 'sell_price_lose_stop': 1.1,
-                   'coin': 'CRV'}
+    symbol = 'CRV/USDT'
+    coin = symbol.split('/')[0]
+
+    curr_price = trader.get_curr_price(symbol)
+    buy_details = {'buy_idx': 0, 'buy_price': curr_price, 'sell_price_win_stop': curr_price * 1.05,
+                   'sell_price_lose_stop': curr_price * 0.95,
+                   'coin': coin}
     print(buy_details)
     trader.handle_buy(buy_details)
     time.sleep(5)
-    sell_details = {'sell_idx': 0, 'sell_price': 1.168, 'coin': 'CRV'}
+    sell_details = {'sell_idx': 0, 'sell_price': curr_price, 'coin': coin}
     print(sell_details)
     trader.handle_sell(sell_details)
 
@@ -392,10 +403,10 @@ def run_trade(prod):
     print('@@@@ ----------->> prod', prod)
     trader = RealtimeTrade(prod=prod)
     show_portfolio_value(trader)
-    # test_buy_stop_sell_works(trader)
+    test_buy_stop_sell_works(trader)
     # test_buy_stop_sell_fails(trader)
     # trader.refresh_markets()
 
 
 if __name__ == '__main__':
-    run_trade(prod=True)
+    run_trade(prod=False)

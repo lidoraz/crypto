@@ -1,5 +1,5 @@
 from Data import CryptoData
-from Backtesting.Strategies import RSIBB
+from Backtesting.Strategies import RSIBB, BB
 from Utils.utils import WaitToMinEveryHour
 from datetime import datetime
 from Utils.notify import TelegramBot
@@ -24,7 +24,8 @@ def run_broadcast():
                            RSIBB_rsi_low=30,
                            RSIBB_rsi_high=70,
                            RSIBB_bb_std=2.16)
-    strategy = RSIBB(strategy_params)
+    # strategy = RSIBB(strategy_params)
+    strategy = BB()
 
     tb_notify = TelegramBot(prod=prod)
     buy_change = set()

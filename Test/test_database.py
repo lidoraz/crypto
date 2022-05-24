@@ -27,6 +27,7 @@ def test_db_latest_record(db, allowed_sec=300):
                 print(f"{t}, {db_dt}, Over {allowed_sec} sec, {hours}H")
 
 
+# test for missing data
 def test_db_ts_diff(db, start_date):
     print('test_db_ts_diff')
     tables = db.get_all_tables()
