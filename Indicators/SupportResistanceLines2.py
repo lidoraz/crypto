@@ -90,8 +90,6 @@ class SupportResistanceLines2(Indicator):
     def calc(self, ohlc: pd.DataFrame):
         idx = len(ohlc) + self.plot_index
         self.plot_ts = ohlc.index[idx]
-        first_lookup = int(len(ohlc) * 0.05)
-        max_lookup = len(ohlc)  # // 2
         # start with multiple lookaheads, but combine them later.
         if self.lookahead_index:  # TODO: remove loockahead index, reduandant
             lookaheads = [self.lookahead_index]
@@ -101,6 +99,8 @@ class SupportResistanceLines2(Indicator):
                 lookaheads = [lookahead]
                 self.lookahead_index = lookahead
             else:
+                first_lookup = int(len(ohlc) * 0.05)
+                max_lookup = len(ohlc)
                 lookaheads = np.linspace(first_lookup, max_lookup, self.n_lookahead_points).astype(int)
                 self.lookahead_index = lookaheads[0]  # just return something so dashboard wont fall
 

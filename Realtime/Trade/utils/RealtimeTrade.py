@@ -63,6 +63,7 @@ class RealtimeTrade:
         self.stable_coin_name = 'USDT'
         self.stable_coin_trade_amount = 12
         self.stable_coin_min_amount = 10  # must be at least 10USD to
+        self.trade_commission = 0.001
         self.price_diff_pct = 0.05
         self.sell_price_from_stop_pct = 0.99
         self.rebuy_coin = False  # don't buy again if own at least min amount for sell. easier for backtesting. TODO: organize.
@@ -135,15 +136,23 @@ class RealtimeTrade:
         else:
             return 0, 0
 
+    def get_asset_holding_all_stable(self, coin):
+        symbol = f'{coin}/{self.stable_coin_name}'
+        amount, amount_locked = self._get_asset_holding_amount(coin)
+        curr_price = self.get_curr_price(symbol)
+        amount_stable = (amount + amount_locked) * curr_price
+        return amount_stable
+
     def _add_order_to_db(self, symbol, res):
-        # order_timestamp = int(order_details.get(['timestamp'], 0)) // 1000
         timestamp = int(time.time())
         if res['id'] is None:
             trade_id = -1
         else:
             trade_id = int(res['id'])
-
-        valuation = res.get('valuation', 0)
+        if res['price'] and res['filled']:
+            valuation = res['price'] * res['filled'] * (1 - self.trade_commission)
+        else:
+            valuation = 0
         order_dt = res.get('datetime', None)
         res = dict(ts=timestamp, id=trade_id, symbol=symbol, type=res['type'], side=res['side'],
                    price=res['price'], amount_req=res['amount'], amount_filled=res['filled'],
@@ -177,9 +186,9 @@ class RealtimeTrade:
             _, amount, amount_stable, _ = self._check_sell_and_price(coin, just_check=True)
             if not self.rebuy_coin and amount_stable > self.stable_coin_min_amount:
                 print(f'Owning {coin} - amount={amount} , amount_stable= {amount_stable}')
-                return -11  # already own the symbol # TODO: Test this and reorgnize codes
+                return -11  # already own the symbol
             curr_price, use_locked = self._check_buy_and_price(coin)
-            self._compare_algo_price(symbol, buy_price, curr_price)  # TODO: Rework abit, checking price many time.
+            self._compare_algo_price(symbol, buy_price, curr_price)
             amount = self.stable_coin_trade_amount / curr_price
             f_curr_price = self.exchange.price_to_precision(symbol, curr_price)
             f_amount = self.exchange.amount_to_precision(symbol, amount)
@@ -190,12 +199,11 @@ class RealtimeTrade:
                                                            amount=f_amount)  # price=f_curr_price
             else:
                 order_details = mock_binance_market_buy()
-            order_details['valuation'] = self.stable_coin_trade_amount
             self._add_order_to_db(symbol, order_details)
-            time.sleep(1)  # TODO see if this is needed sleep few seconds to allow register #
+            # time.sleep(1)  # TODO see if this is needed sleep few seconds to allow register #
             code = self._create_binance_sell_oco_order(coin, stop_loss_price, stop_win_price, order_details['filled'],
                                                        retry=True)
-            # self._create_stop_loss_request(coin, stop_loss_price, order_details)
+            # self._create_stop_loss_request(coin, stop_loss_price, order_details['filled'])
             return code
         except Exception as e:
             print(self.exchange_name, symbol, f'failed create MARKET-BUY order:', type(e).__name__, str(e))
@@ -206,9 +214,9 @@ class RealtimeTrade:
     # Buy at 10usdt each, sell everything......
     def _check_sell_and_price(self, coin, just_check):
         """
-        TODO: There it will prefer to take free amount instead of using both free and locked, thing if this is the right way.
-            ADD option when there were multiple buys, to cancel all of them when trying to sell! this will free up everything.
-            # solution: Can combine amount + amount locked, to one, and test if needs to be unlocked to release the locked funds, do that.
+        There it will prefer to take free amount instead of using both free and locked, thing if this is the right way.
+        ADD option when there were multiple buys, to cancel all of them when trying to sell! this will free up everything.
+        solution: Can combine amount + amount locked, to one, and test if needs to be unlocked to release the locked funds, do that.
         :param coin:
         :return:
         """
@@ -280,7 +288,6 @@ class RealtimeTrade:
                 order_details = self.exchange.create_order(symbol, 'MARKET', 'SELL', amount=f_amount)
             else:
                 order_details = mock_binance_market_sell()
-            order_details['valuation'] = amount_stable
             self._add_order_to_db(symbol, order_details)
             return 0
         except Exception as e:
@@ -300,6 +307,9 @@ class RealtimeTrade:
         n_tries = 0
         while n_tries < max_tries:
             try:
+                # TODO: can remove these 2 rows if everything works
+                amount_stable = self.get_asset_holding_all_stable(coin)
+                print(f'_create_binance_sell_oco_order -> coin={coin} amount holding:', amount_stable)
                 market = ex.market(symbol)  # market should be loaded, if not will throw error
                 f_amount = ex.amount_to_precision(symbol, amount_filled)
                 f_win_price = ex.price_to_precision(symbol, win_price)
@@ -326,33 +336,32 @@ class RealtimeTrade:
                 print(self.exchange_name, symbol, f'failed create STOP_LOSS_SELL order ({n_tries}/{max_tries}):',
                       type(e).__name__, str(e),
                       f'(f_win_price={f_win_price},f_stop_price={f_stop_price},'
-                      f' f_lose_price={f_lose_price}, f_amount={f_amount},)')
+                      f' f_lose_price={f_lose_price}, f_amount={f_amount}')
                 time.sleep(3)
         print(self.exchange_name, symbol, f'Failed create STOP_LOSS_SELL order, max tries over.')
         return -2
 
     # Replaced for oco stop_loss
-    def _create_stop_loss_request(self, coin, stop_price, order_details):
+    def _create_stop_loss_request(self, coin, stop_price, amount):
         symbol = f'{coin}/{self.stable_coin_name}'
-        amount = order_details['filled']
         sell_price = stop_price * self.sell_price_from_stop_pct
         f_amount = self.exchange.amount_to_precision(symbol, amount)
         f_stop_price = self.exchange.price_to_precision(symbol, sell_price)
         f_sell_price = self.exchange.price_to_precision(symbol, sell_price)
         try:
-            curr_price, amount_holding, amount_holding_stable, use_locked = self._check_sell_and_price(coin)
-            if not use_locked:
-                if self.is_production:
-                    order_details = self.exchange.create_order(symbol, 'STOP_LOSS_LIMIT', 'sell', f_amount,
-                                                               price=f_sell_price, params={'stopPrice': f_stop_price})
-                else:
-                    order_details = mock_binance_create_sell_stop_loss()
-                self._add_order_to_db(symbol, order_details)
+            # curr_price, amount_holding, amount_holding_stable, use_locked = self._check_sell_and_price(coin)
+            # if not use_locked:
+            if self.is_production:
+                order_details = self.exchange.create_order(symbol, 'STOP_LOSS_LIMIT', 'sell', f_amount,
+                                                           price=f_sell_price, params={'stopPrice': f_stop_price})
             else:
-                raise ValueError(f'Trying to create stop_loss order when there is amount locked for {coin}')
+                order_details = mock_binance_create_sell_stop_loss()
+            self._add_order_to_db(symbol, order_details)
+        # else:
+        # raise ValueError(f'Trying to create stop_loss order when there is amount locked for {coin}')
         except Exception as e:
             print(self.exchange_name, symbol, f'failed create STOP_LOSS-SELL order:', type(e).__name__, str(e),
-                  f'details: f_amount={f_amount} f_stop_price={f_stop_price}, f_sell_price{f_sell_price}')
+                  f'(f_stop_price={f_stop_price}, f_sell_price{f_sell_price}, f_amount={f_amount})')
 
     # Codes: 0 success / buy , sell
     #        -1 failed buy / sell
@@ -416,4 +425,4 @@ def run_trade(prod):
 
 
 if __name__ == '__main__':
-    run_trade(prod=False)
+    run_trade(prod=True)

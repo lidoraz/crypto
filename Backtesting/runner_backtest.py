@@ -17,7 +17,7 @@ def run_MACross(data_wrapper, start_date, n_jobs):
 
 def run_SMAStochRSI(data_wrapper, start_date, n_jobs):
     params = {
-        'tf': ['1H']
+        'tf': ['15min']
     }
 
     find_optimal_strategy(data_wrapper, start_date, strategy='SMAStochRSI', optimized_params=params, n_jobs=n_jobs)
@@ -27,7 +27,7 @@ def run_BB(data_wrapper, start_date, n_jobs):
     # {'tf': '1H', 'BB_ind_ahead': 20, 'BB_std': 2.0, 'BB_stop_lookahead': 70,
     # 'total_balance': 338.338, 'n_trades': 0, 'n_open_trades': 28}
     params = {
-        'tf': ['1H'],
+        'tf': ['15min'],
         'BB_ind_ahead': [20],
         'BB_std': [2.0],
         'BB_stop_lookahead': [70, 120, 150]
@@ -38,7 +38,6 @@ def run_BB(data_wrapper, start_date, n_jobs):
         # 'BB_win_pct': np.linspace(0.1, 0.5, 5),  # np.linspace(0, 0.5, 5),  # range(10)
         # 'BB_lose_pct': np.linspace(0.1, 0.5, 5)  #
     }
-    n_jobs = 1
     find_optimal_strategy(data_wrapper, start_date, strategy='BB', optimized_params=params, n_jobs=n_jobs)
 
 
@@ -46,14 +45,22 @@ def run_BB(data_wrapper, start_date, n_jobs):
 # sell_pct is not good for RSIBB, really need to keep it on 0.
 def run_RSIBB(data_wrapper, start_date, n_jobs):
     params = {  # 1h,9,14,15,26.0,68.0,1.9,324.30691727745153
-        'tf': ['1h'],  # ['1H'] # '15min',
+        'tf': ['15min'],  # ['1H'] # '15min',
         'RSIBB_aggressive': [False],  # True,
-        'RSIBB_n_rsi_soon': [5, 9],
+        'RSIBB_n_rsi_soon': [7],
         'RSIBB_rsi_ahead': [14],
-        'RSIBB_bb_ahead': [15],
-        'RSIBB_rsi_low': [28, 30, 32],
-        'RSIBB_rsi_high': [68, 70, 72],
-        'RSIBB_bb_std': [2.5]
+        'RSIBB_bb_ahead': [15, 20],
+        'RSIBB_rsi_low': [30],
+        'RSIBB_rsi_high': [70],
+        'RSIBB_bb_std': [2.1]
+        # 'tf': ['15min'],  # ['1H'] # '15min',
+        # 'RSIBB_aggressive': [False],  # True,
+        # 'RSIBB_n_rsi_soon': [5, 9],
+        # 'RSIBB_rsi_ahead': [10, 14],
+        # 'RSIBB_bb_ahead': [15, 20],
+        # 'RSIBB_rsi_low': [28, 30, 32],
+        # 'RSIBB_rsi_high': [68, 70, 72],
+        # 'RSIBB_bb_std': [2.0, 2.5]
         # 'tf': ['1h'],  # ['1H'] # '15min',
         # 'RSIBB_n_rsi_soon': [int(x) for x in np.linspace(5, 14, 3)],
         # 'RSIBB_rsi_ahead': [int(x) for x in np.linspace(5, 17, 6)],
@@ -74,14 +81,13 @@ def run_optimizer():
     # data.pop('start_date')
     # data.pop('mp')
     start_date = '2022-03-01'
-    strategy = 'RSIBB'
 
-    n_jobs = os.cpu_count()
+    n_jobs = 8  # os.cpu_count()
     data_wrapper = CryptoData.get_wrapper(live=False, start_date=start_date,
                                           only_exchange='binance')  # start_date='2022-04-25'
     run_RSIBB(data_wrapper, start_date, n_jobs)
-    # run_BB(data_wrapper, start_date, n_jobs)
-    # run_SMAStochRSI(data_wrapper, start_date, 8)
+    run_BB(data_wrapper, start_date, n_jobs)
+    run_SMAStochRSI(data_wrapper, start_date, n_jobs)
 
     # strategy = strategy.upper()
     # if strategy == 'RSIBB':
