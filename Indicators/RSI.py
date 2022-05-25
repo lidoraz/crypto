@@ -5,7 +5,7 @@ import numpy as np
 from .Indicator import Indicator
 
 
-def _calc_rsi(prices, n):
+def calc_rsi(prices, n):
     if n >= len(prices):  # fail safe in case of an error
         n = len(prices) - 1
 
@@ -35,7 +35,7 @@ class RSI(Indicator):
 
     def calc(self, ohlc) -> pd.DataFrame:
         prices = ohlc['close']
-        self.ra = _calc_rsi(prices, self.lookahead)
+        self.ra = calc_rsi(prices, self.lookahead)
         self.ra.name = f"RSI_{self.lookahead}"
         return self.ra.to_frame()
 

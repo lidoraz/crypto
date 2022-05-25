@@ -45,8 +45,6 @@ class BB(Strategy):
             # add stop-loss
             sell_price_win_stop = row['resistance']
             sell_price_lose_stop = row['support']
-            if buy_price < sell_price_lose_stop or sell_price_win_stop < buy_price:
-                print('Warning BB act buy')
             return {'buy_idx': buy_idx,
                     'buy_price': buy_price,
                     'sell_price_win_stop': sell_price_win_stop,

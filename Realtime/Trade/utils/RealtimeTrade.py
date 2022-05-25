@@ -88,7 +88,13 @@ class RealtimeTrade:
             print(self.exchange_name, f'load_markets failed:', type(e).__name__, str(e))
 
     def get_assets_holding(self, convert_to_usd=True, filter_out_val=10):
-        # filter out by 10 USD value.
+        """
+        Gets all holding assets holding, by default it will convert to Stable coin.
+         And filters out those that have under 10 USD valuation
+        :param convert_to_usd:
+        :param filter_out_val:
+        :return: sorted dict by highest valuation if convert to usd is true, otherwise by coin's amount desc
+        """
         try:
             balances = self.exchange.fetch_balance()
             balances = {k: balances[k] for k in balances if k in self.exchange.currencies}
@@ -112,7 +118,7 @@ class RealtimeTrade:
             return coin_balances_sorted
         except Exception as e:
             print(self.exchange_name, f'get_assets_holding failed:', type(e).__name__, str(e))
-            raise e
+            return None
 
     def get_curr_price(self, symbol):
         ticker = self.exchange.fetch_ticker(symbol)
@@ -132,10 +138,11 @@ class RealtimeTrade:
     def _add_order_to_db(self, symbol, res):
         # order_timestamp = int(order_details.get(['timestamp'], 0)) // 1000
         timestamp = int(time.time())
-        try:
-            trade_id = int(res['id'])
-        except TypeError:
+        if res['id'] is None:
             trade_id = -1
+        else:
+            trade_id = int(res['id'])
+
         valuation = res.get('valuation', 0)
         order_dt = res.get('datetime', None)
         res = dict(ts=timestamp, id=trade_id, symbol=symbol, type=res['type'], side=res['side'],
@@ -185,7 +192,7 @@ class RealtimeTrade:
                 order_details = mock_binance_market_buy()
             order_details['valuation'] = self.stable_coin_trade_amount
             self._add_order_to_db(symbol, order_details)
-            time.sleep(5)  # TODO see if this is needed sleep few seconds to allow register #
+            time.sleep(1)  # TODO see if this is needed sleep few seconds to allow register #
             code = self._create_binance_sell_oco_order(coin, stop_loss_price, stop_win_price, order_details['filled'],
                                                        retry=True)
             # self._create_stop_loss_request(coin, stop_loss_price, order_details)
@@ -318,8 +325,8 @@ class RealtimeTrade:
                 n_tries += 1
                 print(self.exchange_name, symbol, f'failed create STOP_LOSS_SELL order ({n_tries}/{max_tries}):',
                       type(e).__name__, str(e),
-                      f'(f_amount={f_amount}, f_win_price={f_win_price},'
-                      f' f_stop_price={f_stop_price}, f_lose_price={f_lose_price})')
+                      f'(f_win_price={f_win_price},f_stop_price={f_stop_price},'
+                      f' f_lose_price={f_lose_price}, f_amount={f_amount},)')
                 time.sleep(3)
         print(self.exchange_name, symbol, f'Failed create STOP_LOSS_SELL order, max tries over.')
         return -2

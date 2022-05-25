@@ -63,7 +63,8 @@ def run_broadcast():
         # print('sell_change:', sell_change)
         print('sell_notify:', sell_notify)
         handle_buy_sell(title_strategy, buy_notify, sell_notify, tb_notify, prod)
-
+        if not prod:
+            break
 
 # Test validity of this algorithm, and how to use it.
 # looks on the bright side that the async code works well and did not crash during weekend.

@@ -10,6 +10,7 @@ from .SupportResistanceLines2 import SupportResistanceLines2
 from .WinLossStoploss import WinLossStoploss
 from .CandleStick import CandleStick
 from .Volume import Volume
+from .StochRSI import StochRSI
 
 # TODO: Add PCT change, maybe volume.
 # TODO:  The ADX Indicator

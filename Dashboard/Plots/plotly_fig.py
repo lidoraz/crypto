@@ -12,6 +12,7 @@ def get_updated_fig(df_ohlcv, lookahead=14, support_lookback_ratio=None, support
         Volume(),
         # CandleIdentification(normalize_detected_patterns=False),
         RSI(lookahead),
+        # StochRSI(lookahead, 5)
         # MACD(),
     ]
     for idx, s_plot in enumerate(sub_plots):

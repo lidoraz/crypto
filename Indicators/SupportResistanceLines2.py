@@ -58,8 +58,16 @@ def combine_value_ts_supports_by_index(ohlc_index, res, idx=None):
     return supports, resistances
 
 
+def fix_support_resistance_to_close_price(res, close, pct_win=1.15, pct_lose=.90):
+    win_val = close * pct_win
+    lose_val = close * pct_lose
+    res['resistance'] = np.maximum(res['resistance'], win_val)
+    res['support'] = np.minimum(res['support'], lose_val)
+    return res
+
+
 class SupportResistanceLines2(Indicator):
-    def __init__(self, lookahead_index=None, lookback_ratio=None, plot_index=-1, plot_loc=None):
+    def __init__(self, lookahead_index=None, lookback_ratio=None, fix_if_too_close=True, plot_index=-1, plot_loc=None):
         if lookahead_index and lookback_ratio:
             raise ValueError('cant have both lookahead_index, lookback_ratio')
         if lookback_ratio is not None:
@@ -74,6 +82,8 @@ class SupportResistanceLines2(Indicator):
         self.resistances_value = None
         self.supports_value = None
         self.lookaheads = None
+        # TODO: add a print of that to the __repr__.
+        self.fix_if_too_close = fix_if_too_close
 
     # TODO: support resistance should be calculated in predfined intervals, OR by getting k maximums as resistances and supports.
     # TODO: Improve perfromance for this algorithm, can add option if plot to calculate indexes
@@ -83,14 +93,17 @@ class SupportResistanceLines2(Indicator):
         first_lookup = int(len(ohlc) * 0.05)
         max_lookup = len(ohlc)  # // 2
         # start with multiple lookaheads, but combine them later.
-        if self.lookback_ratio:
-            lookahead = int(len(ohlc) * self.lookback_ratio)
-            lookaheads = [int(len(ohlc) * self.lookback_ratio)]
-            self.lookahead_index = lookahead
-        elif self.lookahead_index:
+        if self.lookahead_index:  # TODO: remove loockahead index, reduandant
             lookaheads = [self.lookahead_index]
         else:
-            lookaheads = np.linspace(first_lookup, max_lookup, self.n_lookahead_points).astype(int)
+            if self.lookback_ratio:
+                lookahead = int(len(ohlc) * self.lookback_ratio)
+                lookaheads = [lookahead]
+                self.lookahead_index = lookahead
+            else:
+                lookaheads = np.linspace(first_lookup, max_lookup, self.n_lookahead_points).astype(int)
+                self.lookahead_index = lookaheads[0]  # just return something so dashboard wont fall
+
         # for each point in data, we will have n_lookaheads of support and resistance.
         self.ohlcv = ohlc
         self.resistances_value = [calc_roll(ohlc, lk, is_idx=False, is_max=True) for lk in lookaheads]
@@ -98,7 +111,10 @@ class SupportResistanceLines2(Indicator):
         self.lookaheads = lookaheads
         res = pd.concat([self.resistances_value[0], self.supports_value[0]], axis=1)
         res = res.rename(
-            columns={f'high_{self.lookahead_index}': 'resistance', f'low_{self.lookahead_index}': 'support'})
+            columns={f'high_{self.lookahead_index}': 'resistance',
+                     f'low_{self.lookahead_index}': 'support'})
+        if self.fix_if_too_close:
+            res = fix_support_resistance_to_close_price(res, ohlc.close)
         return res
 
     def _plot(self, fig, ts, v, is_max):

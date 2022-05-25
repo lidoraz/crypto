@@ -5,7 +5,7 @@ import pandas as pd
 TIME_CONV = "%Y-%m-%dT%H:%M:%S"  # strftime
 INTERVAL_UPDATE_SECONDS = 30
 # 1 -> not limit , 0.5 -> display half data
-INTERVAL_CANDLE_LOOKBACK_DISPLAY_DIVIDED = 0.6  # start display from this relative value (pct)
+INTERVAL_CANDLE_LOOKBACK_DISPLAY_DIVIDED = 0.4  # start display from this relative value (pct)
 # loading multiplier
 LOAD_DATA_MUL = 4  # 3.5 # 40 # TODO: this needs to be fixed, as a parameter for dashboard not a constant
 INTERVAL_CANDLE_LOOKBACK_TABLE = {

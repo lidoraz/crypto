@@ -121,7 +121,8 @@ def update_graph_live(coin, resample, support_lookback_ratio, ts_pct):
     print(f'ready at:{t1:0.2f}sec')
     t1_str = f'{t1:0.2f}'
     text = [
-        html.Span(f'{t1_str}s, {df_ohlcv.index[ts_val]} | {len(df_ohlcv)}, {coin}, lk_ratio={support_lookback_ratio}')]
+        html.Span(
+            f'{t1_str}s, {df_ohlcv.index[ts_val]} | {len(df_ohlcv)}, {coin}, lk_ratio={support_lookback_ratio}, lk={int(support_lookback_ratio * len(df_ohlcv))}')]
     return fig, text
 
 

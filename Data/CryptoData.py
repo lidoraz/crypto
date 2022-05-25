@@ -80,7 +80,7 @@ class CryptoData(ProviderData):
     def get_wrapper(live, start_ts=None, start_date=None, only_exchange=None):
         if start_date and start_ts:
             raise ValueError('Only one start can be set.')
-        print(f'CryptoData: {live, start_ts, start_date}')
+        print(f'CryptoData: live={live}, start_ts={start_ts}, start_date={start_date}, only_exchange={only_exchange}')
         coins = get_coins(only_exchange)
         data_wrapper = CryptoData(coins, live, start_ts, start_date)
         return data_wrapper

@@ -1,7 +1,7 @@
 from Realtime.Trade.utils.RealtimeTrade import RealtimeTrade
 from Realtime.realtime_utils import handle_args
 from Data import CryptoData
-from Backtesting.Strategies import RSIBB, BB  # , MACross
+from Backtesting.Strategies import RSIBB, BB, MACross
 from Realtime.realtime_utils import get_latest_buy_sell
 from Utils.notify import TelegramBot
 from Utils.utils import WaitToMinEveryHour
@@ -22,11 +22,18 @@ def handle_buys_sells(buy_lst, sell_lst, trader: RealtimeTrade):
         print(f"Trader:: handle_buy - {buy_details['coin']} {code}")
         buy_details['trade_code'] = code
         res['buy'].append(buy_details)
+    coins_in_stable_count = trader.get_assets_holding()
     for sell_details in sell_lst:
+        coin = sell_details['coin']
+        # double check as might be null
+        if coins_in_stable_count and coin not in coins_in_stable_count:
+            print(f'{coin} was listed to sell but holding less than min trade amount. code(-3)')
+            continue
         code = trader.handle_sell(sell_details)
-        print(f"Trader:: handle_sell - {sell_details['coin']} {code}")
+        print(f"Trader:: handle_sell - {coin} {code}")
         sell_details['trade_code'] = code
         res['sell'].append(sell_details)
+
     return res
 
 

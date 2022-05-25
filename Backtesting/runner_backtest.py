@@ -15,6 +15,14 @@ def run_MACross(data_wrapper, start_date, n_jobs):
     find_optimal_strategy(data_wrapper, start_date, strategy='MACROSS', optimized_params=params, n_jobs=n_jobs)
 
 
+def run_SMAStochRSI(data_wrapper, start_date, n_jobs):
+    params = {
+        'tf': ['1H']
+    }
+
+    find_optimal_strategy(data_wrapper, start_date, strategy='SMAStochRSI', optimized_params=params, n_jobs=n_jobs)
+
+
 def run_BB(data_wrapper, start_date, n_jobs):
     # {'tf': '1H', 'BB_ind_ahead': 20, 'BB_std': 2.0, 'BB_stop_lookahead': 70,
     # 'total_balance': 338.338, 'n_trades': 0, 'n_open_trades': 28}
@@ -40,11 +48,11 @@ def run_RSIBB(data_wrapper, start_date, n_jobs):
     params = {  # 1h,9,14,15,26.0,68.0,1.9,324.30691727745153
         'tf': ['1h'],  # ['1H'] # '15min',
         'RSIBB_aggressive': [False],  # True,
-        'RSIBB_n_rsi_soon': [9],
+        'RSIBB_n_rsi_soon': [5, 9],
         'RSIBB_rsi_ahead': [14],
         'RSIBB_bb_ahead': [15],
-        'RSIBB_rsi_low': [26],
-        'RSIBB_rsi_high': [68],
+        'RSIBB_rsi_low': [28, 30, 32],
+        'RSIBB_rsi_high': [68, 70, 72],
         'RSIBB_bb_std': [2.5]
         # 'tf': ['1h'],  # ['1H'] # '15min',
         # 'RSIBB_n_rsi_soon': [int(x) for x in np.linspace(5, 14, 3)],
@@ -54,11 +62,7 @@ def run_RSIBB(data_wrapper, start_date, n_jobs):
         # 'RSIBB_rsi_high': np.linspace(68, 74, 3),
         # 'RSIBB_bb_std': [1.9, 2.1, 2.5]
     }
-    # convert to int.
-    # for key, vals in params.items():
-    #     if key.startswith('RSIBB'):
-    #         params[key] = [int(x) for x in vals]
-    find_optimal_strategy(data_wrapper, start_date, strategy='RSIBB', optimized_params=params, n_jobs=1)
+    find_optimal_strategy(data_wrapper, start_date, strategy='RSIBB', optimized_params=params, n_jobs=n_jobs)
 
 
 def run_optimizer():
@@ -75,8 +79,10 @@ def run_optimizer():
     n_jobs = os.cpu_count()
     data_wrapper = CryptoData.get_wrapper(live=False, start_date=start_date,
                                           only_exchange='binance')  # start_date='2022-04-25'
-    # run_RSIBB(data_wrapper, start_date, n_jobs)
-    run_BB(data_wrapper, start_date, n_jobs)
+    run_RSIBB(data_wrapper, start_date, n_jobs)
+    # run_BB(data_wrapper, start_date, n_jobs)
+    # run_SMAStochRSI(data_wrapper, start_date, 8)
+
     # strategy = strategy.upper()
     # if strategy == 'RSIBB':
     #     run_RSIBB(data_wrapper, start_date, n_jobs)
