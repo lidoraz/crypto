@@ -17,17 +17,22 @@ import time
 
 def handle_buys_sells(buy_lst, sell_lst, trader: RealtimeTrade):
     res = {'buy': [], 'sell': []}
+    coins_in_stable_count = trader.get_assets_holding()
     for buy_details in buy_lst:
+        coin = buy_details['coin']
+        if coins_in_stable_count and coin in coins_in_stable_count:
+            print(f'{coin} is listed to buy, but already holding it. code(-11)')
+            continue
         code = trader.handle_buy(buy_details)
         print(f"Trader:: handle_buy - {buy_details['coin']} {code}")
         buy_details['trade_code'] = code
         res['buy'].append(buy_details)
-    coins_in_stable_count = trader.get_assets_holding()
+
     for sell_details in sell_lst:
         coin = sell_details['coin']
         # double check as might be null
         if coins_in_stable_count and coin not in coins_in_stable_count:
-            print(f'{coin} was listed to sell but holding less than min trade amount. code(-3)')
+            print(f'{coin} is listed to sell, but holding less than min trade amount. code(-3)')
             continue
         code = trader.handle_sell(sell_details)
         print(f"Trader:: handle_sell - {coin} {code}")
@@ -40,7 +45,7 @@ def handle_buys_sells(buy_lst, sell_lst, trader: RealtimeTrade):
 def get_broadcast_buy_sell(result, strategy):
     # res = {'buy': [], 'sell': []}
     buys_txt = ""
-    buy_str = "Buy Status:\n"
+    buy_str = "🟢<b>Buy Status:</b>\n"
     for res in result['buy']:
         buys_txt += f"{res['coin']} p={res['buy_price']:.2f}, ({res['sell_price_lose_stop']:.2f}, {res['sell_price_win_stop']:.2f}), code({res['trade_code']})\n"
     nl = ""
@@ -48,7 +53,7 @@ def get_broadcast_buy_sell(result, strategy):
         buys_txt = buy_str + buys_txt[:-1]
         nl = "\n"
     sells_txt = ""
-    sell_str = f"{nl}Sell Status:\n"
+    sell_str = f"{nl}🔴<b>Sell Status:</b>\n"
     for res in result['sell']:
         sells_txt += f"{res['coin']} p={res['sell_price']:.2f}, code({res['trade_code']})\n"
     if len(sells_txt):

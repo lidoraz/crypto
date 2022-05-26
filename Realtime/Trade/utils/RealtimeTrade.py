@@ -64,7 +64,7 @@ class RealtimeTrade:
         self.stable_coin_trade_amount = 12
         self.stable_coin_min_amount = 10  # must be at least 10USD to
         self.trade_commission = 0.001
-        self.price_diff_pct = 0.05
+        self.price_diff_pct = 0.02
         self.sell_price_from_stop_pct = 0.99
         self.rebuy_coin = False  # don't buy again if own at least min amount for sell. easier for backtesting. TODO: organize.
         self._check_init()
@@ -136,13 +136,6 @@ class RealtimeTrade:
         else:
             return 0, 0
 
-    def get_asset_holding_all_stable(self, coin):
-        symbol = f'{coin}/{self.stable_coin_name}'
-        amount, amount_locked = self._get_asset_holding_amount(coin)
-        curr_price = self.get_curr_price(symbol)
-        amount_stable = (amount + amount_locked) * curr_price
-        return amount_stable
-
     def _add_order_to_db(self, symbol, res):
         timestamp = int(time.time())
         if res['id'] is None:
@@ -183,6 +176,7 @@ class RealtimeTrade:
     def _create_market_buy(self, coin, buy_price, stop_loss_price, stop_win_price):
         symbol = f'{coin}/{self.stable_coin_name}'
         try:
+            # TODO: these lines can be removed and are controlled in the exchange
             _, amount, amount_stable, _ = self._check_sell_and_price(coin, just_check=True)
             if not self.rebuy_coin and amount_stable > self.stable_coin_min_amount:
                 print(f'Owning {coin} - amount={amount} , amount_stable= {amount_stable}')
@@ -201,7 +195,9 @@ class RealtimeTrade:
                 order_details = mock_binance_market_buy()
             self._add_order_to_db(symbol, order_details)
             # time.sleep(1)  # TODO see if this is needed sleep few seconds to allow register #
-            code = self._create_binance_sell_oco_order(coin, stop_loss_price, stop_win_price, order_details['filled'],
+            amount, _ = self._get_asset_holding_amount(coin)  # TODO get real amount instead
+            print(f'Before: _create_binance_sell_oco_order -> coin={coin} amount holding:', amount_stable)
+            code = self._create_binance_sell_oco_order(coin, stop_loss_price, stop_win_price, amount,
                                                        retry=True)
             # self._create_stop_loss_request(coin, stop_loss_price, order_details['filled'])
             return code
@@ -296,7 +292,7 @@ class RealtimeTrade:
                 return -3
             return -1
 
-    def _create_binance_sell_oco_order(self, coin, stop_price, win_price, amount_filled, retry):
+    def _create_binance_sell_oco_order(self, coin, stop_price, win_price, amount, retry):
         # create sell oco order (what comes first)
         # | stop_price_lose <- stop_price  <-(-)-curr_price-(+)->  price_win |
         symbol = f'{coin}/{self.stable_coin_name}'
@@ -307,11 +303,8 @@ class RealtimeTrade:
         n_tries = 0
         while n_tries < max_tries:
             try:
-                # TODO: can remove these 2 rows if everything works
-                amount_stable = self.get_asset_holding_all_stable(coin)
-                print(f'_create_binance_sell_oco_order -> coin={coin} amount holding:', amount_stable)
                 market = ex.market(symbol)  # market should be loaded, if not will throw error
-                f_amount = ex.amount_to_precision(symbol, amount_filled)
+                f_amount = ex.amount_to_precision(symbol, amount)
                 f_win_price = ex.price_to_precision(symbol, win_price)
                 f_stop_price = ex.price_to_precision(symbol, stop_price)
                 f_lose_price = ex.price_to_precision(symbol, stop_price * self.sell_price_from_stop_pct)
