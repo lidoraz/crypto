@@ -9,3 +9,11 @@ class Strategy(ABC):
     @abstractmethod
     def act_buy(self, idx, row):
         pass
+
+    @abstractmethod
+    def __repr__(self):
+        pass
+
+    @abstractmethod
+    def __str__(self):
+        pass

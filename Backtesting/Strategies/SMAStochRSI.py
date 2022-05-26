@@ -11,40 +11,36 @@ class SMAStochRSI(Strategy):
         super().__init__(*args, **kwargs)
         if params is None:
             params = {}
-        self.name = 'SMAStochRSI'
-        # self.aggressive = params.get('RSIBB_aggressive', False)
-        self.rsi_ahead = 14  # params.get('RSIBB_rsi_ahead', 14)
-        # self.bb_ahead = params.get('RSIBB_bb_ahead', 20)
-        # self.bb_std = params.get('RSIBB_bb_std', 2)
-        # self.n_rsi_soon = params.get('RSIBB_n_rsi_soon', 10)
-        # self.low_rsi = params.get('RSIBB_rsi_low', 30)
-        # self.high_rsi = params.get('RSIBB_rsi_high', 70)
-        self.ind_rsi = StochRSI(14, 5)
-        self.high_rsi = 80
-        self.low_rsi = 20
+        self.name = 'RSISTO'
+        self.rsi_ahead = params.get('RSISTO_rsi_ahead', 14)
+        self.rsi_smooth = 5
+        self.rsi_high = 80
+        self.rsi_low = 20
         self.n_rsi_soon = 5
-        self.ind_sma = SMA(12)
-        self.ind_lines = SupportResistanceLines2(70)
-        # print(f'RSIBB {}')
-        # ind_sma = SMA(100)
+        self.sma_ahead = params.get('RSISTO_sma_ahead', 10)
+        self.support_ahead = params.get('RSISTO_support_ahead', 70)
+        self.tolerance_close = 0.03
+        self._ind_rsi = StochRSI(self.rsi_ahead, self.rsi_smooth)
+        self._ind_sma = SMA(self.sma_ahead)
+        self._ind_lines = SupportResistanceLines2(self.support_ahead)
 
     def add_indicators(self, df):
         # n_rsi_soon: when RSI has alert, how forward to notify that alert
-        df = df.join(self.ind_rsi.calc(df))
-        df = df.join(self.ind_sma.calc(df))
-        df = df.join(self.ind_lines.calc(df))
+        df = df.join(self._ind_rsi.calc(df))
+        df = df.join(self._ind_sma.calc(df))
+        df = df.join(self._ind_lines.calc(df))
 
         # rsi_col = f"RSI_{self.rsi_ahead}"
-        df['StochRSI_above'] = df[self.ind_rsi.ra.name] > self.high_rsi  # has passed RSI 70
-        df['StochRSI_below'] = df[self.ind_rsi.ra.name] < self.low_rsi  # has passed RSI 30
+        df['StochRSI_above'] = df[self._ind_rsi.ra.name] > self.rsi_high  # has passed RSI 70
+        df['StochRSI_below'] = df[self._ind_rsi.ra.name] < self.rsi_low  # has passed RSI 30
 
         # buy condition
         df[f'RSI_BELOW_ROWS'] = df['StochRSI_below'].rolling(self.n_rsi_soon).sum() > 0
-        df['OVER_MID'] = df['close'] > df[self.ind_sma.ra.name]
+        df['OVER_MID'] = df['close'] > df[self._ind_sma.ra.name] * (1 - self.tolerance_close)
 
         # sell condition
         df[f'RSI_ABOVE_ROWS'] = df['StochRSI_above'].rolling(self.n_rsi_soon).sum() > 0
-        df[f'BELOW_MID'] = df['close'] < df[self.ind_sma.ra.name]
+        df[f'BELOW_MID'] = df['close'] < df[self._ind_sma.ra.name] * (1 + self.tolerance_close)
 
         df['BUY_ALGO'] = df[f'RSI_BELOW_ROWS'] & df['OVER_MID']
         df['SELL_ALGO'] = df[f'RSI_ABOVE_ROWS'] & df['BELOW_MID']
@@ -66,4 +62,8 @@ class SMAStochRSI(Strategy):
                     'sell_price_lose_stop': sell_price_lose_stop}
 
     def __repr__(self):
-        return 'SMAStochRSI'
+        props = vars(self)
+        return str({k: props[k] for k in props if not k.startswith('_')})
+
+    def __str__(self):
+        return self.name

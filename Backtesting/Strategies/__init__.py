@@ -8,4 +8,4 @@ from .Strategy import Strategy
 All_STRATEGIES = dict(RSIBB=RSIBB,
                       BB=BB,
                       MACROSS=MACross,
-                      SMASTOCHRSI=SMAStochRSI)
+                      RSISTO=SMAStochRSI)

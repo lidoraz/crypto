@@ -30,7 +30,7 @@ def update_trade_stats(run_dict):
 
 # TODO: How to handle multiple buys with buy price? and the stop losses?
 class BacktestOptimizer:
-    def __init__(self, provider: ProviderData, strategy: str, params, env_params):
+    def __init__(self, provider: ProviderData, strategy: Strategy, params, env_params):
         self.provider = provider
         self.symbols = sorted(provider.get_symbols())
         self.trades_str = []
@@ -43,7 +43,7 @@ class BacktestOptimizer:
         self.min_trade = env_params['min_trade']
         self.trade_com = env_params['trade_com']
         self.dfs = []
-        self.strategy_class = All_STRATEGIES[strategy.upper()](params)
+        self.strategy = strategy
         self.run_optimizer_ts = None
         self.trades_str = []
         self.verbose = env_params['verbose']
@@ -52,7 +52,7 @@ class BacktestOptimizer:
         index_ts = None
         for i, symbol in enumerate(self.symbols):
             df = self.provider.get_data(symbol, self.tf)
-            df = self.strategy_class.add_indicators(df)
+            df = self.strategy.add_indicators(df)
             if index_ts is not None:
                 if len(df.index) > len(index_ts):
                     index_ts = df.index
@@ -79,7 +79,7 @@ class BacktestOptimizer:
 
     def _handle_buy(self, curr_ts, row, symbol, context):
         if self.free_balance > self.trade_value_stable and not context['open']:
-            buy_vars = self.strategy_class.act_buy(curr_ts, row)
+            buy_vars = self.strategy.act_buy(curr_ts, row)
             if not buy_vars:
                 return None
             # buy_ts = buy_vars['buy_idx']
@@ -130,8 +130,8 @@ class BacktestOptimizer:
             # value we get after selling all coins.
             sold_value = (context['coin_amount'] * sold_price) * (1 - self.trade_com)
             context['t_sell_value'] += sold_value
-            profit = sold_value - buy_value
-            profit_pct = (sold_price / buy_price) - 1
+            profit = round(sold_value - buy_value, 2)
+            profit_pct = round((sold_price / buy_price) - 1, 4)
             context['coin_amount'] = 0  # assuming we always sell all
             # close trade
             hours_holding = int((sell_ts - buy_ts).total_seconds() // 3600)
@@ -179,23 +179,31 @@ class BacktestOptimizer:
 
         assets_valuation_sum, assets = self.get_assets_valuation(_dict)
         trade_stats = update_trade_stats(_dict)
-        run_results = dict(free_balance=round(self.free_balance, 3),
-                           assets_valuation=round(assets_valuation_sum, 3),
-                           **trade_stats,
-                           n_open=self.n_open_trades,
-                           assets=assets)
         total_balance = round(self.free_balance + assets_valuation_sum, 3)
-        print(f'\nrun: Starting at={self.start_budget} ==> {total_balance}'
-              f'(balance={self.free_balance :0.2f},asset={assets_valuation_sum:0.2f})'
-              f' stats={trade_stats}, n_open={self.n_open_trades}\n'
-              f'Profits: {total_balance - self.start_budget :0.2f}, pct={(total_balance / self.start_budget) - 1 :0.2%}')
-        return total_balance, self.trades_str, run_results
+        total_profit = round(total_balance - self.start_budget, 2)
+        total_profit_pct = round((total_balance / self.start_budget) - 1, 4)
+        run_results = dict(
+            profit=total_profit,
+            profit_pct=total_profit_pct,
+            total_balance=total_balance,
+            free_balance=round(self.free_balance, 3),
+            assets_valuation=round(assets_valuation_sum, 3),
+            **trade_stats,
+            n_open=self.n_open_trades)
+        # print(f'\nrun: Starting at={self.start_budget} ==> {total_balance}'
+        #       f'(balance={self.free_balance :0.2f},asset={assets_valuation_sum:0.2f})'
+        #       f' stats={trade_stats}, n_open={self.n_open_trades}\n'
+        #       f'Profits: {total_balance - self.start_budget :0.2f}, pct={(total_balance / self.start_budget) - 1 :0.2%}')
+        return run_results, self.trades_str, assets
 
 
-def run_optimizer(provider: ProviderData, strategy: str, params, env_params):
-    print(f'Running optimizer using {strategy} with: {params}')
+def run_optimizer(provider: ProviderData, strategy_name: str, params, env_params):
+    strategy = All_STRATEGIES[strategy_name.upper()](params)
     op = BacktestOptimizer(provider, strategy, params, env_params)
-    return op.run()
+    run_results, trades_str, assets = op.run()
+    print(f'#strategy= {repr(strategy)}\n'
+          f'res={run_results}')
+    return run_results, trades_str, assets
 
 
 def find_optimal_strategy(provider: ProviderData, start_date, strategy: str, optimized_params: dict, n_jobs=8):
@@ -226,22 +234,24 @@ def find_optimal_strategy(provider: ProviderData, start_date, strategy: str, opt
             delayed(run_optimizer)(provider_loaded, strategy, params, env_params=env_params) for params in
             tqdm(permutations_dicts))
 
-    metric = 'total_balance'
-
+    metric = 'profit_pct'
+    common_cols = [
+        'total_balance',
+        'profit',
+        'profit_pct',
+        'free_balance',
+        'assets_valuation',
+        'n_trades',
+        'n_buys',
+        'n_algosells',
+        'n_stopwins',
+        'n_stoploses',
+        'n_open']
     l_trades_str = []
     res = []
     for params, job_result in zip(permutations_dicts, job_results):
-        total_balance, trades_str, run_res = job_result
-        params[metric] = total_balance
-        params['profit'] = f'{total_balance - budget:.2f}'
-        params['profit_pct'] = f'{(total_balance / budget) - 1:.2%}'
-        params['free_balance'] = run_res['free_balance']
-        params['assets_valuation'] = run_res['assets_valuation']
-        params['n_trades'] = run_res['n_trades']
-        params['n_buys'] = run_res['n_buys']
-        params['n_algosells'] = run_res['n_algosells']
-        params['n_stopwins'] = run_res['n_stopwins']
-        params['n_stoploses'] = run_res['n_stoploses']
+        run_res, trades_str, assets = job_result
+        params.update(run_res)
         l_trades_str.append(trades_str)
         res.append(params)
 
@@ -257,10 +267,10 @@ def find_optimal_strategy(provider: ProviderData, start_date, strategy: str, opt
     print(f'Total Portfoio Balance: PROFIT: {win_portfolio_balance - budget:0.2f},'
           f' pct: {(win_portfolio_balance / budget) - 1 :.2%}')
 
-    if n_jobs > 1:
-        for trade in win_trades:
-            print(trade)
-        print("Total trades:", len(win_trades))
+    # if n_jobs > 1:
+    #     for trade in win_trades:
+    #         print(trade)
+    #     print("Total trades:", len(win_trades))
 
     # save df
     time = datetime.now()
@@ -276,3 +286,20 @@ def find_optimal_strategy(provider: ProviderData, start_date, strategy: str, opt
     with open(full_path_trades, 'w') as f:
         for trade in win_trades:
             print(trade, file=f)
+
+    common_cols = [
+        'total_balance',
+        'profit',
+        'profit_pct',
+        'free_balance',
+        'assets_valuation',
+        'n_trades',
+        'n_buys',
+        'n_algosells',
+        'n_stopwins',
+        'n_stoploses', ]
+    best_run = df.iloc[0][common_cols]
+    # best_run[metric] = best_run[metric].apply(lambda x: f'{x:.2%}')
+    # best_run.name = str(strategy)
+    return str(strategy), best_run.to_dict()
+    # return win_portfolio_balance

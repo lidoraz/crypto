@@ -1,7 +1,7 @@
 # TODO: For example, a simple trading strategy may be a moving average crossover whereby a short-term moving average
 # crosses above or below a long-term moving average.
 from .Strategy import Strategy
-from Indicators import SMA, SupportResistanceLines
+from Indicators import SMA, SupportResistanceLines2
 
 
 class MACross(Strategy):
@@ -9,13 +9,14 @@ class MACross(Strategy):
         super().__init__(*args, **kwargs)
         if params is None:
             params = {}
+        self.name = 'MACross'
         self.short = params.get('MACROSS_short', short)
         self.long = params.get('MACROSS_long', long)
 
     def add_indicators(self, df):
         ind_short = SMA(self.short)
         ind_long = SMA(self.long)
-        ind_sr = SupportResistanceLines()
+        ind_sr = SupportResistanceLines2()
         df = df.join(ind_short.calc(df))
         df = df.join(ind_long.calc(df))
         df = df.join(ind_sr.calc(df))
@@ -38,3 +39,10 @@ class MACross(Strategy):
                     'buy_price': buy_price,
                     'sell_price_win_stop': sell_price_win_stop,
                     'sell_price_lose_stop': sell_price_lose_stop}
+
+    def __repr__(self):
+        props = vars(self)
+        return str({k: props[k] for k in props if not k.startswith('_')})
+
+    def __str__(self):
+        return self.name

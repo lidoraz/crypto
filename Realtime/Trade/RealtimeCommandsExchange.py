@@ -1,7 +1,7 @@
 from Realtime.Trade.utils.RealtimeTrade import RealtimeTrade
 from Realtime.realtime_utils import handle_args
 from Data import CryptoData
-from Backtesting.Strategies import RSIBB, BB, MACross
+from Backtesting.Strategies import RSIBB, BB, MACross, SMAStochRSI
 from Realtime.realtime_utils import get_latest_buy_sell
 from Utils.notify import TelegramBot
 from Utils.utils import WaitToMinEveryHour
@@ -96,23 +96,25 @@ def realtime_exchange():
     trader.exchange.checkRequiredCredentials()  # raises AuthenticationError
     tb_notify = TelegramBot(prod=prod, verbose=0)
     print('Checking Keys.. All OK')
-    # generated 340% profit after 1.5 month.
-    # strategy_params = dict(RSIBB_n_rsi_soon=7,
-    #                        RSIBB_rsi_ahead=16,  # RSI over 10 becomes less sesitive but its not linear, like expo.
-    #                        RSIBB_bb_ahead=12,
-    #                        RSIBB_rsi_low=30,
-    #                        RSIBB_rsi_high=70,
-    #                        RSIBB_bb_std=2.16)
+    # generated 227% profit after 2.5 month., starting form 250$.
+    # 1H,True,4,7,20,30,70,2.1
+    strategy_params = dict(RSIBB_n_rsi_soon=4,
+                           RSIBB_rsi_ahead=7,  # RSI over 10 becomes less sesitive but its not linear, like expo.
+                           RSIBB_bb_ahead=20,
+                           RSIBB_rsi_low=30,
+                           RSIBB_rsi_high=70,
+                           RSIBB_bb_std=2.1)
 
-    # strategy = RSIBB(strategy_params)
-    strategy = BB({'BB_ind_ahead': 20, 'BB_std': 2.0, 'BB_stop_lookahead': 70})
+    strategy = RSIBB(strategy_params)
+    # strategy = BB({'BB_ind_ahead': 20, 'BB_std': 2.0, 'BB_stop_lookahead': 70})
+    # strategy = SMAStochRSI({'RSISTO_rsi_ahead': 14,
+    #                         'RSISTO_sma_ahead': 14})
     # strategy = MACross() # Will throw a lot of buy sells.
+    print(f'-----> Strategy {strategy}, Trading every {timeframe}, at {trigger_minutes} min every hour')
+    print(repr(strategy))
     if prod:
-        print(
-            f'----------------> $$$$ Strategy {strategy}, Trading every {timeframe}, at {trigger_minutes} min every hour')
+        print('-----> WARNING: $$$$ *PRODUCTION* - SLEEPING FOR 1 MIN')
         sleep_before()
-    else:
-        print(f'-----> TEST Strategy {strategy}, Trading every {timeframe}, at {trigger_minutes} min every hour')
 
     data_wrapper = CryptoData.get_wrapper(live=True,
                                           start_date='2022-05-01',
