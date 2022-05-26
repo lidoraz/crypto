@@ -21,7 +21,7 @@ def handle_buys_sells(buy_lst, sell_lst, trader: RealtimeTrade):
     for buy_details in buy_lst:
         coin = buy_details['coin']
         if coins_in_stable_count and coin in coins_in_stable_count:
-            print(f'{coin} is listed to buy, but already holding it. code(-11)')
+            print(f'{coin} is listed to buy, but already owning it. code(-11)')
             continue
         code = trader.handle_buy(buy_details)
         print(f"Trader:: handle_buy - {buy_details['coin']} {code}")
