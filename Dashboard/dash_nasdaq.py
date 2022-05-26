@@ -39,7 +39,7 @@ random_stock_idx = random.randint(0, len(stock_names))
 coin_html = html.Div(children=[
     dcc.Dropdown(stock_names, stock_names[random_stock_idx], id='coin-type', clearable=False,
                  style=dict(width='120pt')),
-    dcc.Input(id='coin-type-free', type='text', placeholder='custom stock', value="")
+    dcc.Input(id='coin-type-free', type='text', placeholder='custom (try S.NY)', value="")
 ], style=dict(display='flex'))
 # live_update_html = html.Div(id='live-update-text', style={'margin': 'auto'}, children="")  # 'width': '20%',
 interval_selector_html = dcc.RadioItems(options=interval_radio_options, value=interval_values[4], id='interval-type',
@@ -51,12 +51,19 @@ interval_selector_html = dcc.RadioItems(options=interval_radio_options, value=in
 #                                         id="live-update-button", switch=True)
 
 right_portion_html = html.Div(id='right-portion',
-                              children=[html.Div(interval_selector_html),
-                                        # html.Div(id='live-switch-update-container',
-                                        #          children=live_update_switch_html,
-                                        #          style={'padding-left': '3%'})
-                                        ],
-                              # style={'display': 'flex', 'width': '40%'}
+                              children=[
+                                  html.Div(interval_selector_html),
+                                  html.Div(id='live-update-text', children="", style={"margin-left": "auto"}),
+                                  dbc.Alert(
+                                      "Warning! selected data could not be fetched",
+                                      id="alert-problem",
+                                      is_open=False,
+                                      duration=3000,
+                                      color="warning",
+                                      style=dict(position='fixed', padding=0)
+                                  )
+                              ],
+                              style={'display': 'flex', 'width': '40%'}
                               )
 
 app.layout = html.Div([
@@ -128,6 +135,8 @@ def _adjust_input_lookahead(input_lookahead):
 
 
 @app.callback(Output('live-update-graph', 'figure'),
+              Output('live-update-text', 'children'),
+              Output('alert-problem', 'is_open'),
               Input('coin-type', 'value'),
               Input('coin-type-free', 'value'),
               Input('interval-type', 'value'),
@@ -136,18 +145,25 @@ def update_graph_live(symbol, symbol_free, tf, input_lookahead):
     print(symbol, symbol_free, tf, input_lookahead)
     if symbol_free:
         symbol = symbol_free
-    df_ohlcv = get_from_yfinance_now(symbol, tf, tz='Israel')
+    try:
+        df_ohlcv = get_from_yfinance_now(symbol, tf, tz='Israel')
+        if not len(df_ohlcv):
+            raise ValueError('df empty')
+    except Exception as e:
+        print('Could not get from yfianance', e, repr(e), )
+        # raise dash.exceptions.PreventUpdate # raising PreventUpdate will prevent any update,
+        # dash.no_update just does not update this part if not needed
+        return dash.no_update, dash.no_update, True
     tf_name = interval_names[interval_values.index(tf)]
 
-    if len(df_ohlcv):
-        if pd.to_timedelta(tf).days > 1:
-            interval_set = '1' + tf_name
-            df_ohlcv = resample_ohlcv_higher_1d(df_ohlcv, interval_set)
-            print('resampled to:', interval_set)
-        # df_ohlcv = get_data_nasdaq(NASDAQ_PREPATH + coin + '_10y.csv', int(interval), filter_ts=True)
-        fig = get_updated_fig(df_ohlcv, lookahead=14, xy_limit=False)
-        return fig
-    return {'data': None}
+    if pd.to_timedelta(tf).days > 1:
+        interval_set = '1' + tf_name
+        df_ohlcv = resample_ohlcv_higher_1d(df_ohlcv, interval_set)
+        print('resampled to:', interval_set)
+    fig = get_updated_fig(df_ohlcv, lookahead=14, xy_limit=False)
+
+    text = [html.Span('{}'.format(df_ohlcv.attrs['company_name']))]  # {0:.2f} #
+    return fig, text, False
 
 
 if __name__ == '__main__':

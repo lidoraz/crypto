@@ -3,7 +3,8 @@ from .plot_utils import *
 from Indicators import *
 
 
-def get_updated_fig(df_ohlcv, lookahead=14, support_lookback_ratio=None, support_index=-1, xy_limit=True):
+def get_updated_fig(df_ohlcv, lookahead=14, support_lookback_ratio=None, support_index=-1, xy_limit=True,
+                    show_legend=True):
     interval = df_ohlcv.attrs['interval']
     coin = df_ohlcv.attrs['symbol']
     ind_candle = CandleStick(interval, ohlc=df_ohlcv, plot_loc=1)
@@ -49,8 +50,10 @@ def get_updated_fig(df_ohlcv, lookahead=14, support_lookback_ratio=None, support
     fig_update_layout_combined_view(fig)
     if xy_limit:
         fig_update_xylimits(fig, df_ohlcv, interval)
+        fig.update_layout(showlegend=show_legend)
+        # Don't change location when interval triggers:
+        # does not work well when interval fires when zoomed in
         fig.update_layout(uirevision=f'{coin}{interval}')
-
     return fig
 
 # https://plotly.com/python/time-series/

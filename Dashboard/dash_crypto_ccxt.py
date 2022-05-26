@@ -130,11 +130,10 @@ def update_graph_live(n, coin, resample, show_legend, input_lookahead):
     start_ts = int((datetime.utcnow() - INTERVAL_CANDLE_LOOKBACK_TABLE[resample]).timestamp())
     df_ohlcv = get_candles_from_db(db, coin, resample, start_ts=start_ts)
     # df_ohlcv = get_candles_from_ccxt(coin, '1D')
-    fig = get_updated_fig(df_ohlcv, lookahead=input_lookahead, xy_limit=True)
+    fig = get_updated_fig(df_ohlcv, lookahead=input_lookahead, xy_limit=True, show_legend=show_legend)
     t1 = (datetime.now() - t0).total_seconds()
     print(f'ready at:{round(t1, 2)}sec')
     text = create_text(coin, df_ohlcv)
-    fig.update_layout(showlegend=show_legend)
     return fig, text
 
 
@@ -151,3 +150,23 @@ if __name__ == '__main__':
     # https://stackoverflow.com/questions/63876187/plotly-dash-how-to-show-the-same-selected-area-of-a-figure-between-callbacks
 
     # app.run_server(debug=True, port=80, host='0.0.0.0' )
+# Used in dash to update dashboard, too complicated and does not work well, keep here until i removed this.
+# my_state = {}
+# def no_update_using_state(coin, resample, show_legend, input_lookahead, state_txt):
+#     t0 = datetime.now()
+#     if 3 < t0.second < 8 and len(my_state) > 0 and len(state_txt) > 0:
+#         # print('is going to sleep?')
+#         curr_state = dict(coin=coin, resample=resample, show_legend=show_legend, input_lookahead=input_lookahead)
+#         print(curr_state, my_state)
+#         if curr_state.items() == my_state.items():
+#             print('Yes')
+#             return True
+#     my_state['coin'] = coin
+#     my_state['resample'] = resample
+#     my_state['show_legend'] = show_legend
+#     my_state['input_lookahead'] = input_lookahead
+#     print('Updating...')
+#     return False
+
+# if no_update_using_state(coin, resample, show_legend, input_lookahead, state_txt):
+#     return dash.no_update, dash.no_update

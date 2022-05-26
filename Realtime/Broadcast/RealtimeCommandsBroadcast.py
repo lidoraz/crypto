@@ -5,8 +5,35 @@ from datetime import datetime
 from Utils.notify import TelegramBot
 import pandas as pd
 from dateutil import tz
-from Realtime.realtime_utils import get_latest_buy_sell, handle_buy_sell, handle_args
+from Realtime.realtime_utils import get_latest_buy_sell, handle_args
 
+
+def handle_buy_sell(title_strategy, buy_lst, sell_lst, tb_notify, prod=False):
+    def extract_to_txt_buy(lst):
+        return [f"{x['coin']}: {x['buy_price']} ({x['sell_price_win_stop']:.2f}, {x['sell_price_lose_stop']:.2f})" for x
+                in lst]
+
+    def extract_to_txt_sell(lst):
+        return [f"{x['coin']}: {x['sell_price']} ({x['ts'].strftime('%H:%M')})" for x in lst]
+
+    buy_txt = ''
+    txt = ''
+    if len(buy_lst):
+        str_lst = extract_to_txt_buy(buy_lst)
+        buy_txt = '\n'.join(str_lst)
+        txt += f'<b>Buy:</b> BuyPrice (StopProfit, stopLoss)\n{buy_txt}'
+    if len(sell_lst):
+        txt += '\n' if len(buy_txt) else ''  # add newline if has buy
+        str_lst = extract_to_txt_sell(sell_lst)
+        sell_txt = '\n'.join(str_lst)
+        txt += f'<b>Sell:</b> SellPrice (ts)\n{sell_txt}'
+
+    if len(txt):
+        # dt = datetime.now().strftime(TIME_CONV)
+        txt = f'{title_strategy}:\n' + txt
+        print(txt)
+        if prod:
+            tb_notify.send(txt)
 
 def run_broadcast():
     parsed_args = handle_args()

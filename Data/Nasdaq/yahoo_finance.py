@@ -56,25 +56,33 @@ def get_from_yfinance_now(symbol, tf: str, tz='Israel'):
         tf = '1d'
     else:
         raise ValueError('tf not supported')
-    start_date = datetime.utcnow() - pd.to_timedelta(limit, unit='D')
-    print(start_date, tf)
+    start_date = (datetime.utcnow() - pd.to_timedelta(limit, unit='D')).date()
+    import time
+    t0 = time.time()
+    print('fetching from yfinance')
     df = get_from_yfinance(symbol, start_date, tf, tz)
-    df.attrs['interval'] = tf
-    df.attrs['symbol'] = symbol
+    t1 = time.time()
+    print('Done in: ', int(t1 - t0), 'sec')
+
     return df
 
 
-def get_from_yfinance(ticker, start, tf, tz='Israel'):
+def get_from_yfinance(symbol, start, tf, tz='Israel'):
     # usage: ticker='BTC-USD', start=pd.to_datetime('2022-04-20T12:00:00'), tf='15min'
     yf_tf = convert_to_yf_interval(tf)
-    print(f'getting from yfinance: {ticker, start, tf}')
-    data = yf.download(tickers=ticker, start=start, interval=yf_tf,
-                       # prepost=True
-                       )
-    data.columns = [c.lower() for c in data.columns]
+    print(f'getting from yfinance: {symbol, start, tf}')
+    # data = yf.download(tickers=symbol, start=start, interval=yf_tf, progress=False,
+    #                    prepost=True)
+    ticker = yf.Ticker(symbol)
+    company_name = ticker.info['longName']  # really slow as it fetches from # https://finance.yahoo.com/quote/{symbol}
+    df = ticker.history(interval=yf_tf, start=start, end=None)
+    df.columns = [c.lower() for c in df.columns]
+    df.index = pd.to_datetime(df.index, utc=True).tz_convert(tz)
 
-    data.index = pd.to_datetime(data.index, utc=True).tz_convert(tz)
-    return data
+    df.attrs['interval'] = tf
+    df.attrs['symbol'] = symbol
+    df.attrs['company_name'] = company_name
+    return df
 
 
 # # Saved to CSV

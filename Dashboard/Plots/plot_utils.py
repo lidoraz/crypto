@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 TIME_CONV = "%Y-%m-%dT%H:%M:%S"  # strftime
-INTERVAL_UPDATE_SECONDS = 30
+INTERVAL_UPDATE_SECONDS = 30  # 5
 # 1 -> not limit , 0.5 -> display half data
 INTERVAL_CANDLE_LOOKBACK_DISPLAY_DIVIDED = 0.4  # start display from this relative value (pct)
 # loading multiplier
@@ -68,6 +68,3 @@ def fig_update_layout_combined_view(fig):
                         spikethickness=0.5)
     fig.update_xaxes(**spike_params)  # rangeslider_visible=False, showticklabels=False, showgrid=True, zeroline=False,
     fig.update_yaxes(**spike_params)  # fixedrange=True,
-
-    # Don't change location when interval triggers: # zoom in is a bit fucked up with this on ( not really something else is bugged)
-    # fig.update_layout(uirevision='foo')  # does not work well when interval fires when zoomed in

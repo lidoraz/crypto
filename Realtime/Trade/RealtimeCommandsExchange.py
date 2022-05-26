@@ -17,10 +17,11 @@ import time
 
 def handle_buys_sells(buy_lst, sell_lst, trader: RealtimeTrade):
     res = {'buy': [], 'sell': []}
-    coins_in_stable_count = trader.get_assets_holding()
+    coins_in_stable = trader.get_assets_holding(filter_min_trade=True)
     for buy_details in buy_lst:
         coin = buy_details['coin']
-        if coins_in_stable_count and coin in coins_in_stable_count:
+        # double check as might be null
+        if coins_in_stable and coin in coins_in_stable:
             print(f'{coin} is listed to buy, but already owning it. code(-11)')
             continue
         code = trader.handle_buy(buy_details)
@@ -30,8 +31,7 @@ def handle_buys_sells(buy_lst, sell_lst, trader: RealtimeTrade):
 
     for sell_details in sell_lst:
         coin = sell_details['coin']
-        # double check as might be null
-        if coins_in_stable_count and coin not in coins_in_stable_count:
+        if coins_in_stable and coin not in coins_in_stable:
             print(f'{coin} is listed to sell, but holding less than min trade amount. code(-3)')
             continue
         code = trader.handle_sell(sell_details)

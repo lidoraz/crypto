@@ -88,12 +88,11 @@ class RealtimeTrade:
         except Exception as e:
             print(self.exchange_name, f'load_markets failed:', type(e).__name__, str(e))
 
-    def get_assets_holding(self, convert_to_usd=True, filter_out_val=10):
+    def get_assets_holding(self, filter_min_trade=True):
         """
         Gets all holding assets holding, by default it will convert to Stable coin.
          And filters out those that have under 10 USD valuation
-        :param convert_to_usd:
-        :param filter_out_val:
+        :param filter_min_trade:
         :return: sorted dict by highest valuation if convert to usd is true, otherwise by coin's amount desc
         """
         try:
@@ -104,7 +103,7 @@ class RealtimeTrade:
             coin_balances_sorted = {k: v for k, v in
                                     sorted(coin_balances.items(), key=lambda item: item[1], reverse=True)}
 
-            if convert_to_usd:
+            if filter_min_trade:
                 owned_assets_beside_stable = [f'{c}/{self.stable_coin_name}' for c in coin_balances]
                 tickers_owned = self.exchange.fetch_tickers(
                     owned_assets_beside_stable)  # fetches all tickers, a bit expensive
@@ -114,7 +113,7 @@ class RealtimeTrade:
                 coin_balances_usd[self.stable_coin_name] = coin_balances[self.stable_coin_name]  # insert stable coin
                 coin_balances_usd = {k: v for k, v in
                                      sorted(coin_balances_usd.items(), key=lambda item: item[1], reverse=True)}
-                coin_balances_usd = {k: v for k, v in coin_balances_usd.items() if v > filter_out_val}
+                coin_balances_usd = {k: v for k, v in coin_balances_usd.items() if v > self.stable_coin_min_amount}
                 return coin_balances_usd
             return coin_balances_sorted
         except Exception as e:
