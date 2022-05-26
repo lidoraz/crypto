@@ -98,12 +98,14 @@ def realtime_exchange():
     print('Checking Keys.. All OK')
     # generated 227% profit after 2.5 month., starting form 250$.
     # 1H,True,4,7,20,30,70,2.1
-    strategy_params = dict(RSIBB_n_rsi_soon=4,
-                           RSIBB_rsi_ahead=7,  # RSI over 10 becomes less sesitive but its not linear, like expo.
-                           RSIBB_bb_ahead=20,
-                           RSIBB_rsi_low=30,
-                           RSIBB_rsi_high=70,
-                           RSIBB_bb_std=2.1)
+    strategy_params = dict(
+        RSIBB_aggressive=True,
+        RSIBB_n_rsi_soon=4,
+        RSIBB_rsi_ahead=7,  # RSI over 10 becomes less sesitive but its not linear, like expo.
+        RSIBB_bb_ahead=20,
+        RSIBB_rsi_low=30,
+        RSIBB_rsi_high=70,
+        RSIBB_bb_std=2.1)
 
     strategy = RSIBB(strategy_params)
     # strategy = BB({'BB_ind_ahead': 20, 'BB_std': 2.0, 'BB_stop_lookahead': 70})
