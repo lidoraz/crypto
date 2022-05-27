@@ -20,10 +20,10 @@ class RSIBB(Strategy):
         self.aggressive = params.get('RSIBB_aggressive', False)
         self.rsi_ahead = params.get('RSIBB_rsi_ahead', 14)
         self.rsi_low = params.get('RSIBB_rsi_low', 30)
+        self.n_rsi_soon = params.get('RSIBB_n_rsi_soon', 10)
         self.rsi_high = params.get('RSIBB_rsi_high', 70)
         self.bb_ahead = params.get('RSIBB_bb_ahead', 20)
         self.bb_std = params.get('RSIBB_bb_std', 2)
-        self.n_rsi_soon = params.get('RSIBB_n_rsi_soon', 10)
 
         self._ind_rsi = RSI(self.rsi_ahead)
         self._ind_bb = BollingerBands(self.bb_ahead, self.bb_std)
@@ -42,26 +42,20 @@ class RSIBB(Strategy):
         df['OVER_BB'] = df[f'BBTOP_{self.bb_ahead}'] < df['close']
         df['BELOW_BB'] = df[f'BBBOT_{self.bb_ahead}'] > df['close']
 
+        # buy & sale pre-condition
+        df[f'RSI_BELOW_30_ROWS{self.n_rsi_soon}'] = df['RSI_30'].rolling(self.n_rsi_soon).sum() > 0
+        df[f'RSI_OVER_70_ROWS{self.n_rsi_soon}'] = df['RSI_70'].rolling(self.n_rsi_soon).sum() > 0
+        # aggressive
+        df['OVER_LOW_BB'] = df['close'] > df[f'BBBOT_{self.bb_ahead}'] * (1 - self.tolerance_close)
+        df[f'BELOW_HIGH_BB'] = df['close'] < df[f'SMA_{self.bb_ahead}'] * (1 + self.tolerance_close)
+        # solid
+        df['OVER_MID_BB'] = df['close'] > df[f'SMA_{self.bb_ahead}'] * (1 - self.tolerance_close)
+        df[f'BELOW_MID_BB'] = df['close'] < df[f'SMA_{self.bb_ahead}'] * (1 + self.tolerance_close)
+
         if self.aggressive:
-            df[f'RSI_BELOW_30_ROWS{self.n_rsi_soon}'] = df['RSI_30'].rolling(self.n_rsi_soon).sum() > 0
-            df['OVER_LOW_BB'] = df['close'] > df[f'BBBOT_{self.bb_ahead}'] * (1 - self.tolerance_close)
-
-            # sell condition
-            df[f'RSI_OVER_70_ROWS{self.n_rsi_soon}'] = df['RSI_70'].rolling(self.n_rsi_soon).sum() > 0
-            df[f'BELOW_HIGH_BB'] = df['close'] < df[f'SMA_{self.bb_ahead}'] * (1 + self.tolerance_close)
-
             df['BUY_ALGO'] = df[f'RSI_BELOW_30_ROWS{self.n_rsi_soon}'] & df['OVER_LOW_BB']
             df['SELL_ALGO'] = df[f'RSI_OVER_70_ROWS{self.n_rsi_soon}'] & df['BELOW_HIGH_BB']
-
         else:
-            # buy condition
-            df[f'RSI_BELOW_30_ROWS{self.n_rsi_soon}'] = df['RSI_30'].rolling(self.n_rsi_soon).sum() > 0
-            df['OVER_MID_BB'] = df['close'] > df[f'SMA_{self.bb_ahead}'] * (1 - self.tolerance_close)
-
-            # sell condition
-            df[f'RSI_OVER_70_ROWS{self.n_rsi_soon}'] = df['RSI_70'].rolling(self.n_rsi_soon).sum() > 0
-            df[f'BELOW_MID_BB'] = df['close'] < df[f'SMA_{self.bb_ahead}'] * (1 + self.tolerance_close)
-
             df['BUY_ALGO'] = df[f'RSI_BELOW_30_ROWS{self.n_rsi_soon}'] & df['OVER_MID_BB']
             df['SELL_ALGO'] = df[f'RSI_OVER_70_ROWS{self.n_rsi_soon}'] & df['BELOW_MID_BB']
 
@@ -74,12 +68,8 @@ class RSIBB(Strategy):
             buy_idx = idx
             buy_price = row['close']
             # add stop-loss
-            if self.aggressive:
-                sell_price_win_stop = row[f'BBTOP_{self.bb_ahead}'] * 1.05
-                sell_price_lose_stop = row[f'BBBOT_{self.bb_ahead}']
-            else:
-                sell_price_win_stop = row[f'BBTOP_{self.bb_ahead}'] * 1.05
-                sell_price_lose_stop = row[f'BBBOT_{self.bb_ahead}']
+            sell_price_win_stop = row[f'BBTOP_{self.bb_ahead}'] * 1.05
+            sell_price_lose_stop = row[f'BBBOT_{self.bb_ahead}']
             return {'buy_idx': buy_idx,
                     'buy_price': buy_price,
                     'sell_price_win_stop': sell_price_win_stop,

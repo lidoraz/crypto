@@ -19,10 +19,11 @@ class SMAStochRSI(Strategy):
         self.n_rsi_soon = 5
         self.sma_ahead = params.get('RSISTO_sma_ahead', 10)
         self.support_ahead = params.get('RSISTO_support_ahead', 70)
-        self.tolerance_close = 0.03
+
         self._ind_rsi = StochRSI(self.rsi_ahead, self.rsi_smooth)
         self._ind_sma = SMA(self.sma_ahead)
         self._ind_lines = SupportResistanceLines2(self.support_ahead)
+        self.tolerance_close = 0.03
 
     def add_indicators(self, df):
         # n_rsi_soon: when RSI has alert, how forward to notify that alert

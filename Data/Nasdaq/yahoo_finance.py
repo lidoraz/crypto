@@ -2,20 +2,10 @@
 import yfinance as yf
 import pandas as pd
 from datetime import datetime
-
+import time
 
 # db_path='small.db'
 # db = Persistence(db_path)
-
-
-def use_schdule():
-    import schedule
-    def thing_you_wanna_do():
-        pass
-
-    schedule.every().hour.do(thing_you_wanna_do)
-    while True:
-        schedule.run_pending()
 
 
 def convert_to_yf_interval(tf):
@@ -57,25 +47,24 @@ def get_from_yfinance_now(symbol, tf: str, tz='Israel'):
     else:
         raise ValueError('tf not supported')
     start_date = (datetime.utcnow() - pd.to_timedelta(limit, unit='D')).date()
-    import time
-    t0 = time.time()
-    print('fetching from yfinance')
     df = get_from_yfinance(symbol, start_date, tf, tz)
-    t1 = time.time()
-    print('Done in: ', int(t1 - t0), 'sec')
-
     return df
 
 
 def get_from_yfinance(symbol, start, tf, tz='Israel'):
     # usage: ticker='BTC-USD', start=pd.to_datetime('2022-04-20T12:00:00'), tf='15min'
+    t0 = time.time()
     yf_tf = convert_to_yf_interval(tf)
     print(f'getting from yfinance: {symbol, start, tf}')
     # data = yf.download(tickers=symbol, start=start, interval=yf_tf, progress=False,
     #                    prepost=True)
     ticker = yf.Ticker(symbol)
-    company_name = ticker.info['longName']  # really slow as it fetches from # https://finance.yahoo.com/quote/{symbol}
     df = ticker.history(interval=yf_tf, start=start, end=None)
+    if not len(df):
+        raise ValueError(f'could not fetch data for: {symbol}')
+    company_name = ticker.info['longName']  # really slow as it fetches from # https://finance.yahoo.com/quote/{symbol}
+    t1 = time.time()
+    print('Done in: ', int(t1 - t0), 'sec')
     df.columns = [c.lower() for c in df.columns]
     df.index = pd.to_datetime(df.index, utc=True).tz_convert(tz)
 

@@ -172,7 +172,7 @@ class RealtimeTrade:
                 f'Not enough {self.stable_coin_name} to buy {coin} at: (curr_price={curr_price}, amount_stable={self.stable_coin_trade_amount}, use_locked={use_locked})')
         return curr_price, use_locked
 
-    def _create_market_buy(self, coin, buy_price, stop_loss_price, stop_win_price):
+    def _create_market_buy(self, coin, req_price, stop_loss_price, stop_win_price):
         symbol = f'{coin}/{self.stable_coin_name}'
         try:
             # TODO: these lines can be removed and are controlled in the exchange
@@ -181,11 +181,11 @@ class RealtimeTrade:
                 print(f'Owning {coin} - amount={amount} , amount_stable= {amount_stable}')
                 return -11  # already own the symbol
             curr_price, use_locked = self._check_buy_and_price(coin)
-            self._compare_algo_price(symbol, buy_price, curr_price)
+            self._compare_algo_price(symbol, req_price, curr_price)
             amount = self.stable_coin_trade_amount / curr_price
             f_curr_price = self.exchange.price_to_precision(symbol, curr_price)
             f_amount = self.exchange.amount_to_precision(symbol, amount)
-            print(f'Market Buy: {symbol} - price(ticker)={f_curr_price}, amount={f_amount},'
+            print(f'Market Buy: {symbol} - price(ticker)={f_curr_price}, req_price={req_price}, amount={f_amount},'
                   f' value={self.stable_coin_trade_amount} {self.stable_coin_name}($)')
             if self.is_production:
                 order_details = self.exchange.create_order(symbol, 'MARKET', 'BUY',
@@ -261,23 +261,23 @@ class RealtimeTrade:
             fix_order_type(order_details)
             self._add_order_to_db(symbol, order_details)
 
-    def _create_market_sell(self, coin, sell_price):
+    def _create_market_sell(self, coin, req_price):
         """
         # BEFORE WE ARE ABLE TO SELL, need to cancel stoploss request, and check there is enough amount.
         # Will attempt to sell all amount of holding from coin
         :param coin:
-        :param sell_price:
+        :param req_price:
         :return:
         """
         symbol = f'{coin}/{self.stable_coin_name}'
         try:
             curr_price, amount_holding, amount_stable, use_locked = self._check_sell_and_price(coin, just_check=False)
-            self._compare_algo_price(symbol, sell_price, curr_price)
+            self._compare_algo_price(symbol, req_price, curr_price)
             if use_locked:
                 self._unlock_symbol(symbol)
             f_amount = self.exchange.amount_to_precision(symbol, amount_holding)
             f_sell_price = self.exchange.price_to_precision(symbol, curr_price)
-            print(f'Market Sell: {symbol} - price(curr)={f_sell_price}, amount={f_amount},'
+            print(f'Market Sell: {symbol} - price(curr)={f_sell_price}, req_price={req_price}, amount={f_amount},'
                   f' trade_value={amount_stable:.5} {self.stable_coin_name}($)')
             if self.is_production:
                 order_details = self.exchange.create_order(symbol, 'MARKET', 'SELL', amount=f_amount)

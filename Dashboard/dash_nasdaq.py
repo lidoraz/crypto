@@ -39,7 +39,7 @@ random_stock_idx = random.randint(0, len(stock_names))
 coin_html = html.Div(children=[
     dcc.Dropdown(stock_names, stock_names[random_stock_idx], id='coin-type', clearable=False,
                  style=dict(width='120pt')),
-    dcc.Input(id='coin-type-free', type='text', placeholder='custom (try S.NY)', value="")
+    dcc.Input(id='coin-type-free', type='text', placeholder='custom (try S.NY)', value="", debounce=True),
 ], style=dict(display='flex'))
 # live_update_html = html.Div(id='live-update-text', style={'margin': 'auto'}, children="")  # 'width': '20%',
 interval_selector_html = dcc.RadioItems(options=interval_radio_options, value=interval_values[4], id='interval-type',

@@ -86,7 +86,7 @@ def run_optimizer():
     # data.pop('start_date')
     # data.pop('mp')
     tf = '1H'  # 15min'
-    start_date = '2022-03-01'
+    start_date = '2022-04-01'
 
     n_jobs = 8  # os.cpu_count()
     data_wrapper = CryptoData.get_wrapper(live=False, start_date=start_date,
