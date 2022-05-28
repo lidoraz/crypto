@@ -2,6 +2,7 @@ from plotly import graph_objects as go
 import pandas as pd
 import numpy as np
 
+from .SMA import SMA
 from .Indicator import Indicator
 
 
@@ -27,9 +28,19 @@ def calc_rsi(prices, n):
 
 
 class RSI(Indicator):
+    """
+    RSI measures price change in relation to recent price highs and lows.
+    RSI Gives More Reliable Trading Signals In Non-Trending Markets than MACD
+    The 2014 study conducted by Business Perspective also suggests that the RSI Indicator
+     is more reliable than the MACD Indicator, when used during the non-trending periods.
+
+    """
+
     def __init__(self, lookahead, plot_loc=None, color='white'):
+        self.name = "RSI"
         self.lookahead = lookahead
         self.ra = None
+        self.ra_sma = None
         self.plot_loc = (plot_loc, 1 if plot_loc else None)
         self.color = color
 
@@ -37,16 +48,19 @@ class RSI(Indicator):
         prices = ohlc['close']
         self.ra = calc_rsi(prices, self.lookahead)
         self.ra.name = f"RSI_{self.lookahead}"
+        # self.ra_sma = SMA(self.lookahead).calc(self.ra)
         return self.ra.to_frame()
 
     def plot(self, fig):
         ra = self.ra
-        trace = go.Scatter(x=ra.index, y=ra, name=f'RSI({self.lookahead})', line_color=self.color, line_width=1.2)
+        trace_rsi = go.Scatter(x=ra.index, y=ra, name=f'RSI({self.lookahead})', line_color=self.color, line_width=1.2)
+        # trace_smi = go.Scatter(x=ra.index, y=self.ra_sma, name=f'RSI_SMA({self.lookahead})', line_color="yellow", line_width=0.8)
         loc = dict(row=self.plot_loc[0], col=self.plot_loc[1])
-        fig.add_trace(trace, **loc)
+        fig.add_trace(trace_rsi, **loc)
+        # fig.add_trace(trace_smi, **loc)
         # fig.add_hline(y=80, **loc, line_width=0.8, opacity=0.0)
         # fig.add_hline(y=20, **loc, line_width=0.8, opacity=0.0)
 
-        fig.add_hline(y=70, **loc, line_width=0.8, line_color='red')
-        fig.add_hline(y=30, **loc, line_width=0.8, line_color='green')
+        fig.add_hline(y=70, **loc, line_width=0.5, line_color='red')
+        fig.add_hline(y=30, **loc, line_width=0.5, line_color='green')
         return fig

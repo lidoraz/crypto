@@ -1,7 +1,11 @@
 from abc import abstractmethod, ABC
+import json
 
 
 class Strategy(ABC):
+    def __init__(self, name):
+        self.name = name
+
     @abstractmethod
     def add_indicators(self, df):
         pass
@@ -10,10 +14,10 @@ class Strategy(ABC):
     def act_buy(self, idx, row):
         pass
 
-    @abstractmethod
     def __repr__(self):
-        pass
+        props = vars(self)
+        props = {k: props[k] for k in props if not k.startswith('_')}
+        return json.dumps(props)
 
-    @abstractmethod
     def __str__(self):
-        pass
+        return self.name

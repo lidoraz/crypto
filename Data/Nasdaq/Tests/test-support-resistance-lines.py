@@ -1,5 +1,5 @@
 import plotly.graph_objects as go
-from Indicators import SupportResistanceLines
+from Indicators import SupportResistanceLines2
 from tqdm import tqdm
 import pandas as pd
 from Nasdaq.symbols import NASDAQ_PREPATH
@@ -34,7 +34,7 @@ def run_on_nasdaq_support_lines():
         df.columns = [c.lower() for c in df.columns]
 
         fig = get_candle(df)
-        ind = SupportResistanceLines()
+        ind = SupportResistanceLines2()
         ind.calc(df)
 
         ind.plot(fig)

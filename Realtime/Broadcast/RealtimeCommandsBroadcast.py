@@ -45,14 +45,16 @@ def run_broadcast():
     data_wrapper = CryptoData.get_wrapper(live=True, start_date='2022-05-01')
     symbols = data_wrapper.get_symbols()
     # strategy = BB()
-    strategy_params = dict(RSIBB_n_rsi_soon=7,
-                           RSIBB_rsi_ahead=16,
-                           RSIBB_bb_ahead=12,
-                           RSIBB_rsi_low=30,
-                           RSIBB_rsi_high=70,
-                           RSIBB_bb_std=2.16)
-    # strategy = RSIBB(strategy_params)
-    strategy = BB()
+    strategy_params = dict(
+        RSIBB_aggressive=True,
+        RSIBB_n_rsi_soon=4,
+        RSIBB_rsi_ahead=7,  # RSI over 10 becomes less sesitive but its not linear, like expo.
+        RSIBB_bb_ahead=20,
+        RSIBB_rsi_low=30,
+        RSIBB_rsi_high=70,
+        RSIBB_bb_std=2.1)
+
+    strategy = RSIBB(strategy_params)
 
     tb_notify = TelegramBot(prod=prod)
     buy_change = set()

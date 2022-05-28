@@ -1,6 +1,6 @@
 from plotly import graph_objects as go
 
-# from . import SMA
+from . import EMA
 from .Indicator import Indicator, get_marker_color_candle
 
 
@@ -8,15 +8,16 @@ from .Indicator import Indicator, get_marker_color_candle
 
 class Volume(Indicator):
     def __init__(self, plot_loc=None):
+        self.name = "VOLUME"
         self.plot_loc = (plot_loc, 1 if plot_loc else None)
         self.vol = None
         self.marker_color = None
 
-        # self.sma = SMA(7)
+        self.smooth = EMA(7)
 
     def calc(self, ohlcv):
         self.vol = ohlcv['volume']
-        # self.sma_calc = self.sma.calc(self.vol)
+        self.smooth_calc = self.smooth.calc(self.vol)
         self.marker_color = get_marker_color_candle(ohlcv)
         return self.vol
 
@@ -26,6 +27,6 @@ class Volume(Indicator):
                        marker_color=self.marker_color)
         fig.add_trace(trace, row=self.plot_loc[0], col=self.plot_loc[1])
 
-        # trace = go.Scatter(x=self.sma_calc.index, y=self.sma_calc)
-        # fig.add_trace(trace, row=self.plot_loc[0], col=self.plot_loc[1])
+        trace = go.Scatter(x=self.smooth_calc.index, y=self.smooth_calc, name="VolEMA", line_color='white', opacity=0.4)
+        fig.add_trace(trace, row=self.plot_loc[0], col=self.plot_loc[1])
         return fig

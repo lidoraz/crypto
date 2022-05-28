@@ -112,7 +112,7 @@ def create_text(coin, df_ohlcv):
     db_dt = pd.to_datetime(df_ohlcv.attrs['curr_ts_db'], unit='s', utc=True).tz_convert('Israel')
     db_dt = db_dt + pd.to_timedelta('1min')
     last_value = df_ohlcv.iloc[-1]['close']
-    time_conv = "%b %d , %H:%M"  # .strftime
+    time_conv = "%b %d, %H:%M"  # .strftime
     text = [html.Span('{} | {}  {}'.format(db_dt.strftime(time_conv), coin, last_value))]  # {0:.2f}
     return text
 
@@ -122,15 +122,16 @@ def create_text(coin, df_ohlcv):
               Input('interval-component', 'n_intervals'),
               Input('coin-type', 'value'),
               Input('resample-type', 'value'),
-              Input('show-legend', 'value'),
-              Input('input-lookahead', 'value'))
-def update_graph_live(n, coin, resample, show_legend, input_lookahead):
+              Input('input-lookahead', 'value'),
+              Input('show-legend', 'value'), )
+def update_graph_live(n, coin, resample, input_lookahead, show_legend):
     t0 = datetime.now()
     print(n, coin, resample, input_lookahead)
     start_ts = int((datetime.utcnow() - INTERVAL_CANDLE_LOOKBACK_TABLE[resample]).timestamp())
     df_ohlcv = get_candles_from_db(db, coin, resample, start_ts=start_ts)
     # df_ohlcv = get_candles_from_ccxt(coin, '1D')
-    fig = get_updated_fig(df_ohlcv, lookahead=input_lookahead, xy_limit=True, show_legend=show_legend)
+    fig = get_updated_fig(df_ohlcv, xy_limit=True, show_legend=show_legend)
+
     t1 = (datetime.now() - t0).total_seconds()
     print(f'ready at:{round(t1, 2)}sec')
     text = create_text(coin, df_ohlcv)

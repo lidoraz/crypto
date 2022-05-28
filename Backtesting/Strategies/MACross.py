@@ -5,13 +5,13 @@ from Indicators import SMA, SupportResistanceLines2
 
 
 class MACross(Strategy):
-    def __init__(self, params=None, short=25, long=100, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, params=None, short=25, long=100):
+        super().__init__('MACross')
         if params is None:
             params = {}
         self.name = 'MACross'
-        self.short = params.get('MACROSS_short', short)
-        self.long = params.get('MACROSS_long', long)
+        self.short = params.get('short', short)
+        self.long = params.get('long', long)
 
     def add_indicators(self, df):
         ind_short = SMA(self.short)
@@ -40,9 +40,3 @@ class MACross(Strategy):
                     'sell_price_win_stop': sell_price_win_stop,
                     'sell_price_lose_stop': sell_price_lose_stop}
 
-    def __repr__(self):
-        props = vars(self)
-        return str({k: props[k] for k in props if not k.startswith('_')})
-
-    def __str__(self):
-        return self.name

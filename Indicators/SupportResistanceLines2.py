@@ -67,13 +67,14 @@ def fix_support_resistance_to_close_price(res, close, pct_win=1.15, pct_lose=.90
 
 
 class SupportResistanceLines2(Indicator):
-    def __init__(self, lookahead_index=None, lookback_ratio=None, fix_if_too_close=True, plot_index=-1, plot_loc=None):
-        if lookahead_index and lookback_ratio:
-            raise ValueError('cant have both lookahead_index, lookback_ratio')
-        if lookback_ratio is not None:
-            assert 0 < lookback_ratio <= 1, lookback_ratio
-        self.lookahead_index = lookahead_index
-        self.lookback_ratio = lookback_ratio
+    """
+    generate supports and resistance lines, used for stoploss and takeprofit
+    lookahead_length
+    """
+
+    def __init__(self, lookback_length=None, fix_if_too_close=True, plot_index=-1, plot_loc=None):
+        self.name = "SUPPORT_RESISTANCE"
+        self.lookback_length = lookback_length
         self.plot_index = plot_index
         self.n_lookahead_points = 7
         self.plot_ts = None
@@ -91,18 +92,13 @@ class SupportResistanceLines2(Indicator):
         idx = len(ohlc) + self.plot_index
         self.plot_ts = ohlc.index[idx]
         # start with multiple lookaheads, but combine them later.
-        if self.lookahead_index:  # TODO: remove loockahead index, reduandant
-            lookaheads = [self.lookahead_index]
+        if self.lookback_length:
+            lookaheads = [self.lookback_length]
         else:
-            if self.lookback_ratio:
-                lookahead = int(len(ohlc) * self.lookback_ratio)
-                lookaheads = [lookahead]
-                self.lookahead_index = lookahead
-            else:
-                first_lookup = int(len(ohlc) * 0.05)
-                max_lookup = len(ohlc)
-                lookaheads = np.linspace(first_lookup, max_lookup, self.n_lookahead_points).astype(int)
-                self.lookahead_index = lookaheads[0]  # just return something so dashboard wont fall
+            first_lookup = max(int(len(ohlc) * 0.05), 10)
+            max_lookup = len(ohlc)
+            lookaheads = np.linspace(first_lookup, max_lookup, self.n_lookahead_points).astype(int)
+            self.lookback_length = lookaheads[0]  # just return something so dashboard wont fall
 
         # for each point in data, we will have n_lookaheads of support and resistance.
         self.ohlcv = ohlc
@@ -111,8 +107,8 @@ class SupportResistanceLines2(Indicator):
         self.lookaheads = lookaheads
         res = pd.concat([self.resistances_value[0], self.supports_value[0]], axis=1)
         res = res.rename(
-            columns={f'high_{self.lookahead_index}': 'resistance',
-                     f'low_{self.lookahead_index}': 'support'})
+            columns={f'high_{self.lookback_length}': 'resistance',
+                     f'low_{self.lookback_length}': 'support'})
         if self.fix_if_too_close:
             res = fix_support_resistance_to_close_price(res, ohlc.close)
         return res
@@ -130,20 +126,17 @@ class SupportResistanceLines2(Indicator):
     def plot(self, fig):
         ohlc = self.ohlcv
         lookaheads = self.lookaheads
-        idx = len(ohlc) + self.plot_index
         resistances_ts = [calc_roll(ohlc, lk, is_idx=True, is_max=True) for lk in lookaheads]
         supports_ts = [calc_roll(ohlc, lk, is_idx=True, is_max=False) for lk in lookaheads]
         # combine all into one dataframe, each support resistance will have #number of lookaheads
         all_combined = pd.concat(self.resistances_value + resistances_ts + self.supports_value + supports_ts, axis=1)
         # TODO: limit res to one major line.
+        idx = len(ohlc) + self.plot_index
         # used for plot, combines ts and its support / resistance level into ts/value series
         supports, resistances = combine_value_ts_supports_by_index(ohlc.index, all_combined, idx=idx)
-        self.ohlcv_index = ohlc.index
-        self.v_lines_min = supports
-        self.v_lines_max = resistances
-        for min_ts, min_v in self.v_lines_min.items():
+        for min_ts, min_v in supports.items():
             fig = self._plot(fig, min_ts, min_v, False)
-        for max_ts, max_v in self.v_lines_max.items():
+        for max_ts, max_v in supports.items():
             fig = self._plot(fig, max_ts, max_v, True)
 
         return fig

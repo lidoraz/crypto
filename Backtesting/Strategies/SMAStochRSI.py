@@ -7,18 +7,17 @@ class SMAStochRSI(Strategy):
 
     """
 
-    def __init__(self, params=None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, params=None):
+        super().__init__('RSISTO')
         if params is None:
             params = {}
-        self.name = 'RSISTO'
-        self.rsi_ahead = params.get('RSISTO_rsi_ahead', 14)
+        self.rsi_ahead = params.get('rsi_ahead', 14)
         self.rsi_smooth = 5
         self.rsi_high = 80
         self.rsi_low = 20
         self.n_rsi_soon = 5
-        self.sma_ahead = params.get('RSISTO_sma_ahead', 10)
-        self.support_ahead = params.get('RSISTO_support_ahead', 70)
+        self.sma_ahead = params.get('sma_ahead', 10)
+        self.support_ahead = params.get('support_ahead', 70)
 
         self._ind_rsi = StochRSI(self.rsi_ahead, self.rsi_smooth)
         self._ind_sma = SMA(self.sma_ahead)
@@ -62,9 +61,3 @@ class SMAStochRSI(Strategy):
                     'sell_price_win_stop': sell_price_win_stop,
                     'sell_price_lose_stop': sell_price_lose_stop}
 
-    def __repr__(self):
-        props = vars(self)
-        return str({k: props[k] for k in props if not k.startswith('_')})
-
-    def __str__(self):
-        return self.name

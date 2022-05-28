@@ -215,8 +215,8 @@ def find_optimal_strategy(provider: ProviderData, start_date, strategy: str, opt
     print('---> env_params =', env_params)
     time_start = datetime.now()
     # filter out not relevant params:
-    keys_to_remove = [k for k in optimized_params if not k.startswith(strategy) and k not in ['tf']]
-    optimized_params = {k: optimized_params[k] for k in optimized_params if k not in keys_to_remove}
+    # keys_to_remove = [k for k in optimized_params if not k.startswith(strategy) and k not in ['tf']]
+    # optimized_params = {k: optimized_params[k] for k in optimized_params if k not in keys_to_remove}
     print(f'Finding optimal strategies with these params:', optimized_params.keys())
     # iterate permutation with dicts: https://stackoverflow.com/questions/38721847/how-to-generate-all-combination-from-values-in-dict-of-lists-in-python
     keys, values = zip(*optimized_params.items())
@@ -260,12 +260,11 @@ def find_optimal_strategy(provider: ProviderData, start_date, strategy: str, opt
     # [print(sym,([v[k] for k in v if k.startswith('n_')])) for sym,v in _dict.items()] print n_Buys #todo
     # get win strategy:
     win_idx = df.index[0]
-    win_portfolio_balance = df[metric].iloc[0]
     win_trades = l_trades_str[win_idx]
+    win_row = df.iloc[0]
     print('Index:', win_idx)
-    print('Params:', df.iloc[0].to_dict())
-    print(f'Total Portfoio Balance: PROFIT: {win_portfolio_balance - budget:0.2f},'
-          f' pct: {(win_portfolio_balance / budget) - 1 :.2%}')
+    print(f'Total Portfoio Balance: PROFIT: {win_row["profit"]:0.2f},'
+          f' pct: {win_row["profit_pct"]:.2%}')
 
     # if n_jobs > 1:
     #     for trade in win_trades:

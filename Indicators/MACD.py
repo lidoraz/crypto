@@ -16,36 +16,64 @@ from .Indicator import Indicator
 
 
 class MACD(Indicator):
-    def __init__(self, lookahead_short=12, lookahead_long=26, lookahead_sma=9, plot_loc=None):
+    """
+    Momentum indicator, used to detect momentum
+    MACD measures the relationship between two EMAs
+    """
+
+    def __init__(self, lookahead_short=12, lookahead_long=26, lookahead_signal=9, plot_loc=None):
+        self.name = "MACD"
         self.lookahead_short = lookahead_short
         self.lookahead_long = lookahead_long
-        self.lookahead_sma = lookahead_sma
+        self.lookahead_signal = lookahead_signal
         self.plot_loc = (plot_loc, 1 if plot_loc else None)
         #
-        self.ema_short = EMA(lookahead_short)
-        self.ema_long = EMA(lookahead_long)
-        self.sma = SMA(lookahead_sma)
+        self._fast = EMA(lookahead_short)  # fast
+        self._slow = EMA(lookahead_long)  # slow
+        self._signal = EMA(lookahead_signal)  # smooth
+        self.plot_c = dict(macd="#2962FF",
+                           signal='#FF6D00',
+                           grow_above='#26A69A',
+                           fall_above='#B2DFDB',
+                           grow_below='#FFCDD2',
+                           fall_below='#FF5252')
+        self._marker_color = None
 
     def calc(self, ohlc) -> pd.DataFrame:
-        macd = self.ema_short.calc(ohlc) - self.ema_long.calc(ohlc)
-        sma = self.sma.calc(macd)
-        hist = macd - sma
-        self.name = f"MACD({self.lookahead_short},{self.lookahead_long},{self.lookahead_sma})"
-        cols = ['MCADEMA', 'MCADSMA', 'MCADHIST']
-        self.macd = pd.DataFrame(dict(zip(cols, [macd, sma, hist])))
+        macd = self._fast.calc(ohlc) - self._slow.calc(ohlc)
+        signal = self._signal.calc(macd)
+        hist = macd - signal
+        self.name = f"MACD({self.lookahead_short},{self.lookahead_long},{self.lookahead_signal})"
+        cols = ['MCAD', 'MCAD_SIGNAL', 'MCAD_HIST']
+        self.macd = pd.DataFrame(dict(zip(cols, [macd, signal, hist])))
+
+        def paint_hist(x, y):
+            if x >= 0:
+                return self.plot_c['grow_above'] if x > y else self.plot_c['fall_above']  # green, light-green
+            else:
+                return self.plot_c['grow_below'] if x > y else self.plot_c['fall_below']  # light-red, red
+
+        self._marker_color = self.macd.apply(lambda x: paint_hist(x['MCAD_HIST'], x['MCAD_SIGNAL']), axis=1)
         return self.macd
 
     def plot(self, fig):
-        kwrags = dict(legendgroup=self.name, line_width=1, name=self.name)
-        t_mcad = go.Scatter(x=self.macd['MCADEMA'].index, y=self.macd['MCADEMA'], line_color='blue',
-                            **kwrags)
-        trace_sma = go.Scatter(x=self.macd['MCADSMA'].index, y=self.macd['MCADSMA'], line_color='red',
-                               **kwrags)
-        t_hist = go.Scatter(x=self.macd['MCADHIST'].index, y=self.macd['MCADHIST'], line_color='white',
-                            fill='tozeroy',
-                            **kwrags)
+        t_mcad = go.Scatter(x=self.macd['MCAD'].index, y=self.macd['MCAD'],
+                            line_color=self.plot_c['macd'],
+                            line_width=1, legendgroup=self.name, name="MACD")
+
+        trace_sma = go.Scatter(x=self.macd['MCAD_SIGNAL'].index, y=self.macd['MCAD_SIGNAL'],
+                               line_color=self.plot_c['signal'],
+                               line_width=1, legendgroup=self.name, name="Signal")
+
+        t_hist = go.Bar(x=self.macd['MCAD_HIST'].index, y=self.macd['MCAD_HIST'],  # line_color='white', line_width=0.1,
+                        marker_color=self._marker_color, legendgroup=self.name, name=self.name)
+        # fill='tozeroy',
+
+        # plot(hist, title="Histogram", style=plot.style_columns,
+        # plot(macd, title="MACD", color=col_macd)
+        # plot(signal, title="Signal", color=col_signal)
+        fig.add_trace(t_hist, row=self.plot_loc[0], col=self.plot_loc[1])
         fig.add_trace(t_mcad, row=self.plot_loc[0], col=self.plot_loc[1])
         fig.add_trace(trace_sma, row=self.plot_loc[0], col=self.plot_loc[1])
-        fig.add_trace(t_hist, row=self.plot_loc[0], col=self.plot_loc[1])
-        fig.add_hline(y=0, row=self.plot_loc[0], col=self.plot_loc[1], line_width=0.5, line_color='Red')
+        # fig.add_hline(y=0, row=self.plot_loc[0], col=self.plot_loc[1], line_width=0.5, line_color='black')
         return fig

@@ -7,6 +7,7 @@ import json
 
 
 def run_MACross(data_wrapper, tf, start_date, n_jobs):
+    s = 'MACROSS'
     params = {
         'tf': [tf],
         'MACROSS_short': [50],
@@ -15,27 +16,29 @@ def run_MACross(data_wrapper, tf, start_date, n_jobs):
         # 'MACROSS_long': range(50, 101, 10)
     }
 
-    return find_optimal_strategy(data_wrapper, start_date, strategy='MACROSS', optimized_params=params, n_jobs=n_jobs)
+    return find_optimal_strategy(data_wrapper, start_date, strategy=s, optimized_params=params, n_jobs=n_jobs)
 
 
 def run_SMAStochRSI(data_wrapper, tf, start_date, n_jobs):
+    s = 'RSISTO'
     params = {
         'tf': [tf],
-        'RSISTO_rsi_ahead': [10, 14],
-        'RSISTO_sma_ahead': [10, 14, 20],
-        'RSISTO_support_ahead': [40, 70, 120, 200]
+        'rsi_ahead': [10, 14],
+        'sma_ahead': [10, 14, 20],
+        'support_ahead': [40, 70, 120, 200]
     }
-    return find_optimal_strategy(data_wrapper, start_date, strategy='RSISTO', optimized_params=params, n_jobs=n_jobs)
+    return find_optimal_strategy(data_wrapper, start_date, strategy=s, optimized_params=params, n_jobs=n_jobs)
 
 
 def run_BB(data_wrapper, tf, start_date, n_jobs):
+    strategy = 'BB'
     # {'tf': '1H', 'BB_ind_ahead': 20, 'BB_std': 2.0, 'BB_stop_lookahead': 70,
     # 'total_balance': 338.338, 'n_trades': 0, 'n_open_trades': 28}
     params = {
         'tf': [tf],
-        'BB_ind_ahead': [20],
-        'BB_std': [2.0],
-        'BB_stop_lookahead': [70, 120, 150]
+        'ind_ahead': [20],
+        'std': [2.0],
+        'stop_lookahead': [70, 120, 150]
         # 'tf': ['1H'],
         # 'BB_ind_ahead': range(10, 22, 4),
         # 'BB_std': [1.8, 2, 2.5],
@@ -43,21 +46,22 @@ def run_BB(data_wrapper, tf, start_date, n_jobs):
         # 'BB_win_pct': np.linspace(0.1, 0.5, 5),  # np.linspace(0, 0.5, 5),  # range(10)
         # 'BB_lose_pct': np.linspace(0.1, 0.5, 5)  #
     }
-    return find_optimal_strategy(data_wrapper, start_date, strategy='BB', optimized_params=params, n_jobs=n_jobs)
+    return find_optimal_strategy(data_wrapper, start_date, strategy=strategy, optimized_params=params, n_jobs=n_jobs)
 
 
 # # from testing it seems that under 1H granularity it can't generate profit.
 # sell_pct is not good for RSIBB, really need to keep it on 0.
 def run_RSIBB(data_wrapper, tf, start_date, n_jobs):
+    strategy = 'RSIBB'
     params = {  # 1h,9,14,15,26.0,68.0,1.9,324.30691727745153
         'tf': [tf],  # ['1H'] # '15min',
-        'RSIBB_aggressive': [False, True],  # True,
-        'RSIBB_n_rsi_soon': [4, 7],
-        'RSIBB_rsi_ahead': [14, 7],
-        'RSIBB_bb_ahead': [15, 20],
-        'RSIBB_rsi_low': [30],
-        'RSIBB_rsi_high': [70],
-        'RSIBB_bb_std': [2.1, 2.5, 3]
+        'aggressive': [False, True],  # True,
+        'n_rsi_soon': [4, 7],
+        'rsi_ahead': [14, 7],
+        'bb_ahead': [15, 20],
+        'rsi_low': [30],
+        'rsi_high': [70],
+        'bb_std': [2.1, 2.5, 3]
         # 'tf': ['15min'],  # ['1H'] # '15min',
         # 'RSIBB_aggressive': [False],  # True,
         # 'RSIBB_n_rsi_soon': [5, 9],
@@ -74,7 +78,23 @@ def run_RSIBB(data_wrapper, tf, start_date, n_jobs):
         # 'RSIBB_rsi_high': np.linspace(68, 74, 3),
         # 'RSIBB_bb_std': [1.9, 2.1, 2.5]
     }
-    return find_optimal_strategy(data_wrapper, start_date, strategy='RSIBB', optimized_params=params, n_jobs=n_jobs)
+    return find_optimal_strategy(data_wrapper, start_date, strategy=strategy, optimized_params=params, n_jobs=n_jobs)
+
+
+def run_SMAMACD(data_wrapper, tf, start_date, n_jobs):
+    strategy = "SMAMACD"
+    params = {  # 1h,9,14,15,26.0,68.0,1.9,324.30691727745153
+        'tf': [tf],  # ['1H'] # '15min',
+        # 'RSIBB_aggressive': [False, True],  # True,
+        # 'RSIBB_n_rsi_soon': [4, 7],
+        # 'RSIBB_rsi_ahead': [14, 7],
+        # 'RSIBB_bb_ahead': [15, 20],
+        # 'RSIBB_rsi_low': [30],
+        # 'RSIBB_rsi_high': [70],
+        # 'RSIBB_bb_std': [2.1, 2.5, 3]
+        # # 'tf': ['15min'],  # ['1H'] # '15min',
+    }
+    return find_optimal_strategy(data_wrapper, start_date, strategy=strategy, optimized_params=params, n_jobs=n_jobs)
 
 
 def run_optimizer():
@@ -86,17 +106,20 @@ def run_optimizer():
     # data.pop('start_date')
     # data.pop('mp')
     tf = '1H'  # 15min'
-    start_date = '2022-04-01'
+    start_date = '2022-05-01'
 
-    n_jobs = 8  # os.cpu_count()
+    n_jobs = 1
+    # n_jobs = os.cpu_count()
     data_wrapper = CryptoData.get_wrapper(live=False, start_date=start_date,
                                           only_exchange='binance')  # start_date='2022-04-25'
+    params = (data_wrapper, tf, start_date, n_jobs)
     # [268.067, 174.936, 210.714]
     jobs = [
-        # run_MACross(data_wrapper, tf, start_date, n_jobs),
-        run_RSIBB(data_wrapper, tf, start_date, n_jobs),
-        run_BB(data_wrapper, tf, start_date, n_jobs),
-        run_SMAStochRSI(data_wrapper, tf, start_date, n_jobs)
+        # run_MACross(*params),
+        # run_RSIBB(*params),
+        # run_BB(*params),
+        # run_SMAStochRSI(*params)
+        run_SMAMACD(*params)
     ]
     print(f'Test result for multiple strategies: starting={start_date}')
     for job in jobs:

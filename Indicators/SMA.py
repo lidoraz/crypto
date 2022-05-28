@@ -2,8 +2,14 @@ from plotly import graph_objects as go
 from .Indicator import Indicator
 import pandas as pd
 
+
 class SMA(Indicator):
+    """
+    Long SMA is used to detect long term trend (99)
+    """
+
     def __init__(self, lookahead, plot_loc=None, color='Orange'):
+        self.name = "SMA"
         self.lookahead = lookahead
         self.ra = None
         self.plot_loc = (plot_loc, 1 if plot_loc else None)
@@ -14,7 +20,7 @@ class SMA(Indicator):
             prices = ohlc['close']
         else:
             prices = ohlc
-        self.ra = prices.rolling(self.lookahead).mean()
+        self.ra = prices.rolling(self.lookahead, min_periods=1).mean()
         self.ra.name = f'SMA_{self.lookahead}'
         return self.ra
 

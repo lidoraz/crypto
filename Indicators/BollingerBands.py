@@ -5,6 +5,7 @@ import pandas as pd
 
 class BollingerBands(Indicator):
     def __init__(self, lookahead=25, std_m=2, plot_loc=None, visible=True):
+        self.name = "BB"
         self.lookahead = lookahead
         self.std_m = std_m
         self.plot_loc = (plot_loc, 1 if plot_loc else None)

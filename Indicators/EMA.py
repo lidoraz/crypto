@@ -1,16 +1,21 @@
+import pandas as pd
 from plotly import graph_objects as go
 from .Indicator import Indicator
 
 
 class EMA(Indicator):
     def __init__(self, lookahead, plot_loc=None, color='Brown'):
+        self.name = "EMA"
         self.lookahead = lookahead
         self.plot_loc = (plot_loc, 1 if plot_loc else None)
         self.ra = None
         self.color = color
 
     def calc(self, ohlc, to_frame=False):
-        prices = ohlc['close']
+        if isinstance(ohlc, pd.DataFrame):
+            prices = ohlc['close']
+        else:
+            prices = ohlc
         # https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.ewm.html
         self.ra = prices.ewm(span=self.lookahead).mean()  # closed to the right!!
         self.ra.name = f'EWM_{self.lookahead}'

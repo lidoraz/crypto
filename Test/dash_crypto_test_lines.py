@@ -1,13 +1,20 @@
+import os
+
+root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+os.chdir(root)
+print(root)
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
 from datetime import datetime
-import json
+import sys
+
+from Dashboard.Plots.plot_utils import INTERVAL_CANDLE_LOOKBACK_TABLE
 from Data.Crypto.ccxt_utils import get_candles_from_db
 from Data.Crypto.symbols import exchange_symbol_pairs, DB_PATH
-from Plots.plotly_fig import get_updated_fig
-from Plots.plot_utils import *
+from Dashboard.Plots.plotly_fig import get_updated_fig
+from Dashboard.Plots.plot_utils import *
 from Utils import Persistence
 
 coins = sorted([c[1].split('/')[0] for c in exchange_symbol_pairs])
@@ -19,36 +26,45 @@ resample_radio_options = dict(
 db_path = DB_PATH
 db = Persistence(db_path, check_same_thread=False)
 
-title = 'Crypto Test Strategy'
+live_update = False
+print(f'live_update = {live_update}')
+title = 'Crypto Live Feed'
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.CYBORG],
                 meta_tags=[{'name': 'viewport', 'content': 'width=device-width, initial-scale=1'}])
 server = app.server  # needed for deployment
 app.title = title
 
-title_html = html.Div(title, style={'padding-right': '5%', 'margin-left': '2%'})
+title_html = html.H4(title, style={'padding-right': '5%', 'margin-left': '2%'})
 coin_html = dcc.Dropdown(coins, 'BTC', id='coin-type', clearable=False, style=dict(width='60pt'))
 live_update_html = html.Div(id='live-update-text', style={'margin': 'auto'}, children="")  # 'width': '20%',
 resample_selector_html = dcc.RadioItems(options=resample_radio_options, value=resample_keywords[2], id='resample-type',
                                         inline=True)
+# https://dash-bootstrap-components.opensource.faculty.ai/docs/components/input/ # RadioItems and Checklist
+live_update_switch_html = dbc.Switch(id="live-update-button", label="Live Update", value=live_update)
+
 right_portion_html = html.Div(id='right-portion',
-                              children=[html.Div(resample_selector_html)],
-                              style={'width': '30%'})
+                              children=[html.Div(resample_selector_html),
+                                        dcc.Slider(0.00, 0.5, step=0.01, marks={'0': 'ts-line(current)', '0.5': 'half'},
+                                                   id='ts-slider', value=0.00),
+                                        dcc.Slider(10, 200, step=10,
+                                                   marks={'10': 'lookback(10)', '100': '100', '200': 'lookback(200)'},
+                                                   id='ts-slider-lookahead', value=100)],
+                              style={'width': '30%'}
+                              )
 app.layout = html.Div([
     html.Div(children=[
         title_html,
         html.Div([coin_html,
-                  dcc.Input(id='start-date', placeholder='start_date', value="", debounce=True,
-                            )],
-                 style={'display': 'flex'}),
-        dcc.Input(
-            id="strategy-params",
-            value="",
-            # wrap='wrap',
-            placeholder="strategy_params",
-            style={'width': '90%', 'height': '100px', 'text-size': '4px'},
-        ),
-        # html.Button('Submit', id='json-button', n_clicks=0),
+                  dcc.Input(
+                      id="input_lookahead",
+                      type="number",
+                      value=14,
+                      placeholder="lookahead",
+                      style=dict(width='30pt')),
+                  dcc.Input(id='start-date', placeholder='start_date', value="", debounce=True)],
+                 style={'display': 'flex'}
+                 ),
 
         live_update_html,
         right_portion_html],
@@ -91,68 +107,17 @@ def _adjust_input_lookahead(input_lookahead):
     return max(min(input_lookahead, 100), 3)
 
 
-def get_indicators(strategy_params):
-    print('strategy_params', strategy_params)
-    from Indicators import Volume
-    from Backtesting.Strategies import SMAMACD, RSIBB, BB, All_STRATEGIES
-    strategy = RSIBB()
-    if strategy_params:
-        try:
-            strategy = All_STRATEGIES[strategy_params['name']](strategy_params)
-            print('chosen strategy', strategy)
-        except Exception as e:
-            print(e)
-
-    main_plot_indicators_names = ('BB', 'SUPPORT_RESISTANCE', 'SMA', 'EMA')
-    # strategy = SMAMACD()
-    # strategy_params = dict(
-    #     RSIBB_aggressive=False,
-    #     RSIBB_n_rsi_soon=4,
-    #     RSIBB_rsi_ahead=14,  # RSI over 10 becomes less sesitive but its not linear, like expo.
-    #     RSIBB_bb_ahead=20,
-    #     RSIBB_rsi_low=30,
-    #     RSIBB_rsi_high=70,
-    #     RSIBB_bb_std=2.1)
-
-    # strategy = BB()
-
-    strategy_indicators = [vars(strategy)[v] for v in vars(strategy) if v.startswith('_ind_')]
-    main_plot_indicators = [ind for ind in strategy_indicators if ind.name in main_plot_indicators_names]
-    sub_plots = [ind for ind in strategy_indicators if ind not in main_plot_indicators]
-    if len(sub_plots) == 0:
-        sub_plots.append(Volume())
-    return strategy, main_plot_indicators, sub_plots
-
-
-def add_buy_sell_to_fig(df_ohlcv, strategy, fig):
-    df_ohlcv = strategy.add_indicators(df_ohlcv)
-    buy_locations = df_ohlcv['BUY_ALGO'][df_ohlcv['BUY_ALGO']].index
-    sell_locations = df_ohlcv['SELL_ALGO'][df_ohlcv['SELL_ALGO']].index
-    for buy_loc in buy_locations:
-        fig.add_vline(buy_loc, row=1, col=1, line_color='green', opacity=0.4)
-    for sell_loc in sell_locations:
-        fig.add_vline(sell_loc, row=1, col=1, line_color='red', opacity=0.4)
-    return fig
-
-
 @app.callback(Output('live-update-graph', 'figure'),
               Output('live-update-text', 'children'),
-              # Input('json-button', 'value'),
               Input('start-date', 'value'),
               Input('coin-type', 'value'),
               Input('resample-type', 'value'),
-              Input('strategy-params', 'value'))
-def update_graph_live(start_date, coin, resample, strategy_params_text):
-    strategy_params = None
-    try:
-        if len(strategy_params_text) > 0:
-            strategy_params = json.loads(strategy_params_text)
-    except Exception as e:
-        print('JSONDecoder failed..')
-        return dash.no_update, dash.no_update
+              Input('ts-slider-lookahead', 'value'),
+              Input('ts-slider', 'value'))
+def update_graph_live(start_date, coin, resample, lookback_length, ts_pct):
     t0 = datetime.now()
     end_date = None
-    print(start_date, coin, resample)
+    print(start_date, coin, resample, lookback_length)
     if len(start_date):
         start_ts = int(pd.to_datetime(start_date).timestamp())
         end_date = pd.to_datetime(start_date) + INTERVAL_CANDLE_LOOKBACK_TABLE[resample]
@@ -161,19 +126,38 @@ def update_graph_live(start_date, coin, resample, strategy_params_text):
     df_ohlcv = get_candles_from_db(db, coin, resample, start_ts=start_ts)
     if end_date:
         df_ohlcv = df_ohlcv[df_ohlcv.index <= pd.to_datetime(end_date, utc=True).tz_convert('Israel')]
+    # latest_ts = pd.to_datetime(df_ohlcv.attrs['curr_ts_db'], unit='s', utc=True).tz_convert('Israel')
+    # line_lookahead_val = int(line_lookahead * len(df_ohlcv))
+    ts_val = -int(ts_pct * len(df_ohlcv)) - 1
+    # df_ohlcv = get_candles_from_ccxt(coin, '1D')
 
-    strategy, main_plot_indicators, sub_plots = get_indicators(strategy_params)
+    from Indicators import SupportResistanceLines2, Volume, RSI, SMA
+    main_plot_indicators = [SMA(7, color='orange'), SMA(25, color='purple'), SMA(100, color='cyan'),
+                            SupportResistanceLines2(lookback_length=lookback_length, plot_index=ts_val)]
+    sub_plots = [Volume(), RSI(14)]
     fig = get_updated_fig(df_ohlcv, main_plot_indicators, sub_plots, xy_limit=False)
-    fig = add_buy_sell_to_fig(df_ohlcv, strategy, fig)
 
-    time_conv = "%b %d, %H:%M"  # .strftime
     t1 = (datetime.now() - t0).total_seconds()
     print(f'ready at:{t1:0.2f}sec')
     t1_str = f'{t1:0.2f}'
-    text = [html.Div(f'({df_ohlcv.index[0].strftime(time_conv)} => {df_ohlcv.index[-1].strftime(time_conv)})'
-                     f'| {coin}, rows= {len(df_ohlcv)}, loadedIn={t1_str}s'),
-            html.Div(f'strategy={repr(strategy)}')]
+    text = [
+        html.Span(
+            f'{t1_str}s, {df_ohlcv.index[ts_val]} | {len(df_ohlcv)}, {coin}, lk={lookback_length}, sup_relative={ts_val}')]
     return fig, text
+
+
+# @app.callback(Output('interval-component', 'n_intervals'),
+#               Input('live-update-button', 'value'),
+#               Input('clock-component', 'n_intervals'),
+#               Input('interval-component', 'n_intervals'))
+# def clock_update(live_button, clock, interval):
+#     if not live_button:
+#         return interval
+#     time_sec = datetime.now().second
+#     print('clock_update', clock, time_sec, interval)
+#     if time_sec in [10, 20, 30, 40, 50]:  # 10:  #
+#         return interval + 1
+#     return interval
 
 
 import sys
