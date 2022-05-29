@@ -18,26 +18,33 @@ import time
 def handle_buys_sells(buy_lst, sell_lst, trader: RealtimeTrade):
     res = {'buy': [], 'sell': []}
     coins_in_stable = trader.get_assets_holding(filter_min_trade=True)
+    skip_coins = []
     for buy_details in buy_lst:
         coin = buy_details['coin']
         # double check as might be null
         if coins_in_stable and coin in coins_in_stable:
-            print(f'{coin} is listed to buy, but already owning it. code(-11)')
+            skip_coins.append(coin)
             continue
         code = trader.handle_buy(buy_details)
         print(f"Trader:: handle_buy - {buy_details['coin']} {code}")
         buy_details['trade_code'] = code
         res['buy'].append(buy_details)
+    if len(skip_coins):
+        print(f'These coins are listed to BUY, but already owning them. code(-11)\n{",".join(skip_coins)}')
 
+    skip_coins = []
     for sell_details in sell_lst:
         coin = sell_details['coin']
         if coins_in_stable and coin not in coins_in_stable:
-            print(f'{coin} is listed to sell, but holding less than min trade amount. code(-3)')
+            skip_coins.append(coin)
             continue
         code = trader.handle_sell(sell_details)
         print(f"Trader:: handle_sell - {coin} {code}")
         sell_details['trade_code'] = code
         res['sell'].append(sell_details)
+    if len(skip_coins):
+        print(
+            f'These coins are listed to SELL, but holding less than min trade amount. code(-3)\n{",".join(skip_coins)}')
 
     return res
 
@@ -98,6 +105,7 @@ def realtime_exchange():
     print('Checking Keys.. All OK')
     # generated 227% profit after 2.5 month., starting form 250$.
     # 1H,True,4,7,20,30,70,2.1
+    # {"name": "RSIBB", "aggressive": true, "rsi_ahead": 10, "rsi_low": 30, "rsi_high": 70, "n_rsi_soon": 4, "bb_ahead": 20, "bb_std": 2.1, "bb_tolerance_close": 0.01, "lines_lk": 100}
     strategy_params = dict(
         RSIBB_aggressive=True,
         RSIBB_n_rsi_soon=4,

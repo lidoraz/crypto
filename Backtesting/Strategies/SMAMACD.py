@@ -20,8 +20,8 @@ class SMAMACD(Strategy):
         # self.rsi_ahead = params.get('RSIBB_rsi_ahead', 14)
         # self.rsi_low = params.get('RSIBB_rsi_low', 30)
         # self.rsi_high = params.get('RSIBB_rsi_high', 70)
-        self.n_macd_soon = params.get('n_macd_soon', 10)
-        self.macd_quantile = params.get('macd_quantile', 0.95)
+        self.n_macd_soon = params.get('n_macd_soon', 5)
+        # self.macd_quantile = params.get('macd_quantile', 0.15)
         self.lk_short = params.get('short', 20)
         self.lk_long = 99
 
@@ -41,12 +41,16 @@ class SMAMACD(Strategy):
         df = df.join(self._ind_long.calc(df))
         # df = df.dropna()
 
-        macd_threshold = df['MCAD_HIST'].abs().quantile(self.macd_quantile)  # over 95%
-        # if macd_threshold.any():
-        #     print('have')
-        df['MACD_UPTREND'] = df['MCAD_HIST'] >= macd_threshold  # has passed RSI 70
-        df['MACD_DOWNTREND'] = df['MCAD_HIST'] < -macd_threshold  # has passed RSI 30
-
+        # cant use this as need to be calculated on rolling.
+        # macd_threshold_low = df['MCAD_HIST'].abs().quantile(self.macd_quantile)  # over 05%
+        # macd_threshold_high = df['MCAD_HIST'].abs().quantile(self.macd_quantile + 0.05)
+        # # if macd_threshold.any():
+        # #     print('have')
+        # df['MACD_UPTREND'] = (df['MCAD_HIST'] >= macd_threshold_low) & (df['MCAD_HIST'] < macd_threshold_high)   # has passed RSI 70
+        # df['MACD_DOWNTREND'] = (df['MCAD_HIST'] < -macd_threshold_low) & (df['MCAD_HIST'] > -macd_threshold_high)  # has passed RSI 30
+        # TODO: Still not very good, but i think this is the way.
+        df['MACD_UPTREND'] = (df['MCAD_HIST'] > 0) & (df['MCAD_HIST'].pct_change(periods=2) > 7.0)
+        df['MACD_DOWNTREND'] = (df['MCAD_HIST'] < 0) & (df['MCAD_HIST'].pct_change(periods=2) < -7.0)
         # # buy condition
         df[f'MACD_UPTREND_BEFORE'] = df['MACD_UPTREND'].rolling(self.n_macd_soon).sum() > 0
         # # sell condition
@@ -61,6 +65,8 @@ class SMAMACD(Strategy):
             buy_idx = idx
             buy_price = row['close']
             # add stop-loss
+            # sell_price_win_stop = buy_price * 1.15
+            # sell_price_lose_stop = buy_price * .90
             sell_price_win_stop = row[f'resistance']  # * 1.05
             sell_price_lose_stop = row[f'support']
             return {'buy_idx': buy_idx,

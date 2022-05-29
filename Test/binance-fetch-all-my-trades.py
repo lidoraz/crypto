@@ -30,27 +30,33 @@ def get_from_exchange():
     all_trades = []
     for symbol in symbols:
         trades = exchange.fetch_my_trades(symbol, start_time, None)
+        trades_info = exchange.fetch_orders(symbol, start_time, None)
         if not len(trades):
             continue
         print(symbol, len(trades))
         for i, trade in enumerate(trades):
+            trade_info = pd.DataFrame(trades_info).set_index('id').loc[trade['order']]
+            trade['type'] = trade_info['type']
             all_trades.append(trade)
-            print(i, symbol, trade['datetime'], trade['side'], trade['takerOrMaker'], trade['price'], trade['amount'],
+            print(i, symbol, trade['datetime'], trade['side'], trade['type'], trade['takerOrMaker'], trade['price'],
+                  trade['amount'],
                   trade['cost'])
     print('data)')
     df = pd.DataFrame(all_trades).drop(columns=['info'])
-    df.to_csv(f'all_trades_{start_date}_{dt_now}.csv', index=False)
+    df.to_csv(f'all_trades/binance_{start_date}.csv', index=False)
 
 
-def analyize():
-    df = pd.read_csv('all_trades_2022-05-25.csv')  # 27
+def calc_trade_pct():
+    start_date = '2022-05-25'
+    df = pd.read_csv(f'all_trades/binance_{start_date}.csv')  # 27
     buys = df[df['side'] == 'buy']
     sells = df[df['side'] == 'sell']
-    # trade can be split
-    sells = sells.groupby(['timestamp', 'datetime', 'symbol']).agg({'cost': 'sum', 'amount': 'sum'}).reset_index()
-    # ------------------------
-    #     ---------sell----------
-    print('-symbol-\tprofit\t--pct--\t---------sell----------\t---------buy----------')
+    sells = sells.groupby(['timestamp', 'datetime', 'symbol', 'price']).agg(
+        {'cost': 'sum', 'amount': 'sum'}).reset_index()
+    res = []
+    # columns = ['symbol', 'profit', 'pct', 'sell_p', 'buy_p', 'sell_ts', 'buy_ts']
+    columns = ['symbol', 'sell_buy_prls'
+                         'side', 'sell_p', 'buy_p', 'sell_ts', 'buy_ts']
     for i, sell in sells.sort_values('timestamp', ascending=False).iterrows():
         symbol = sell['symbol']
         buy_df = buys[(buys['symbol'] == symbol) & (buys['timestamp'] < sell['timestamp'])].sort_values('timestamp',
@@ -59,18 +65,79 @@ def analyize():
             print(f'Buy for {symbol} not found')
             continue
         l_buy = buy_df.iloc[0]
+        buy_price = l_buy['price']
         buy_cost = l_buy['cost']
         buy_dt = l_buy['datetime']
+        sell_price = sell['price']
         sell_cost = sell['cost']
         sell_dt = sell['datetime']
+
+        sell_buy_price = (sell_price / buy_price) - 1
         profit = sell_cost - buy_cost
+        res.append([symbol, sell_buy_price, sell_price, buy_price, sell_dt, buy_dt])
+        # res.append([symbol, profit, pct, sell_price, buy_price, sell_dt, buy_dt])
+    df_trades = pd.DataFrame(res, columns=columns)
+    print(df_trades)
+    # filter
+    start_date_trade = '2022-05-27T00:00:00Z'
+    df_trades = df_trades[pd.to_datetime(df_trades['buy_ts']) > pd.to_datetime(start_date_trade, utc=True)]
+
+    print(df_trades)
+    # df_trades.sort_values('profit')
+    print('TOTAL SELL/BUY %:', df_trades['sell_buy_price'].sum())
+
+
+def calc_trade_profit():
+    # TODO: not accurate as amount bought and sold can be quite differnet if a coin has been bought multiple twice, but sold once.
+    start_date = '2022-05-25'
+    df = pd.read_csv(f'all_trades/binance_{start_date}.csv')  # 27
+    buys = df[df['side'] == 'buy']
+    sells = df[df['side'] == 'sell']
+    # buys['cost'].sum() - sells['cost'].sum()
+    # trade can be split
+    sells = sells.groupby(['timestamp', 'datetime', 'symbol', 'price']).agg(
+        {'cost': 'sum', 'amount': 'sum'}).reset_index()
+    res = []
+    columns = ['symbol', 'profit', 'pct', 'sell_p', 'buy_p', 'sell_ts', 'buy_ts']
+    print('-symbol-\tprofit\t--pct--\t--sell_p--\t--buy_p--\t---------sell----------\t---------buy----------')
+    for i, sell in sells.sort_values('timestamp', ascending=False).iterrows():
+        symbol = sell['symbol']
+        buy_df = buys[(buys['symbol'] == symbol) & (buys['timestamp'] < sell['timestamp'])].sort_values('timestamp',
+                                                                                                        ascending=False)
+        if not len(buy_df):
+            print(f'Buy for {symbol} not found')
+            continue
+        l_buy = buy_df.iloc[0]
+        if sell['amount'] != l_buy['amount']:
+            print('sell does not have a proper buy trade, skipping...')
+            continue
+        buy_price = l_buy['price']
+        buy_cost = l_buy['cost']
+        buy_dt = l_buy['datetime']
+        sell_price = sell['price']
+        sell_cost = sell['cost']
+        sell_dt = sell['datetime']
+
+        profit = sell_cost - buy_cost
+        if profit < -5:
+            print('WHAT!')
         pct = (sell_cost / buy_cost) - 1
-        print(f'{symbol}\t{profit:0.2f}\t{pct:0.2%}\t{sell_dt}\t{buy_dt}')
+        print(f'{symbol}\t{profit:0.2f}\t{pct:0.2%}\t{sell_price}\t{buy_price}\t{sell_dt}\t{buy_dt}')
+        res.append([symbol, profit, pct, sell_price, buy_price, sell_dt, buy_dt])
+    df_trades = pd.DataFrame(res, columns=columns)
+    print(df_trades)
+    # filter
+    start_date_trade = '2022-05-26T00:00:00Z'
+    df_trades = df_trades[pd.to_datetime(df_trades['buy_ts']) > pd.to_datetime(start_date_trade, utc=True)]
+    print(df_trades)
+    df_trades.sort_values('profit')
+    print('TOTAL PROFIT:', df_trades['profit'].sum())
 
 
 if __name__ == '__main__':
-    get_from_exchange()
-    analyize()
+    # get_from_exchange()
+    calc_trade_pct()
+    calc_trade_profit()
 
 # while start_time < now:
 #     print('------------------------------------------------------------------')

@@ -24,7 +24,7 @@ class RSIBB(Strategy):
 
         self.bb_ahead = params.get('bb_ahead', 20)
         self.bb_std = params.get('bb_std', 2)
-        self.tolerance_close = 0  # 0.03
+        self.tolerance_close = params.get('bb_tolerance_close', 0.03)  # 0.03
         self.lines_lk = params.get('lines_lk', 100)
 
         self._ind_rsi = RSI(self.rsi_ahead)

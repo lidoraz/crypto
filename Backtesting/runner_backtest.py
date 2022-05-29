@@ -122,10 +122,13 @@ def run_optimizer():
         run_SMAMACD(*params)
     ]
     print(f'Test result for multiple strategies: starting={start_date}')
-    for job in jobs:
-        strategy, metrics = job
-        metrics['profit_pct'] = f"{metrics['profit_pct']:0.2%}"
-        print(strategy, metrics)
+    from optimize import TIME_CONV
+    with open(f"strategy_output/{TIME_CONV}_Crypto_summed_results", 'w') as fp:
+        for job in jobs:
+            strategy, metrics = job
+            metrics['profit_pct'] = f"{metrics['profit_pct']:0.2%}"
+            print(strategy, metrics)
+            print((strategy, metrics), file=fp)
 
     # strategy = strategy.upper()
     # if strategy == 'RSIBB':

@@ -35,6 +35,7 @@ def handle_buy_sell(title_strategy, buy_lst, sell_lst, tb_notify, prod=False):
         if prod:
             tb_notify.send(txt)
 
+
 def run_broadcast():
     parsed_args = handle_args()
     timeframe = parsed_args['timeframe']
@@ -94,6 +95,7 @@ def run_broadcast():
         handle_buy_sell(title_strategy, buy_notify, sell_notify, tb_notify, prod)
         if not prod:
             break
+
 
 # Test validity of this algorithm, and how to use it.
 # looks on the bright side that the async code works well and did not crash during weekend.

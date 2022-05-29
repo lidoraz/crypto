@@ -44,9 +44,10 @@ app.layout = html.Div([
         dcc.Input(
             id="strategy-params",
             value="",
+            debounce=True,
             # wrap='wrap',
             placeholder="strategy_params",
-            style={'width': '90%', 'height': '80px', 'text-size': '4px'},
+            style={'width': '90%', 'height': '50px', 'text-size': '4px'},
         ),
         # html.Button('Submit', id='json-button', n_clicks=0),
 
@@ -96,13 +97,14 @@ def get_indicators(strategy_params):
     from Indicators import Volume
     from Backtesting.Strategies import SMAMACD, RSIBB, BB, All_STRATEGIES
     params = dict(
-        RSIBB_aggressive=True,
-        RSIBB_n_rsi_soon=4,
-        RSIBB_rsi_ahead=7,  # RSI over 10 becomes less sesitive but its not linear, like expo.
-        RSIBB_bb_ahead=20,
-        RSIBB_rsi_low=30,
-        RSIBB_rsi_high=70,
-        RSIBB_bb_std=2.1)
+        aggressive=True,
+        n_rsi_soon=4,
+        rsi_ahead=7,  # RSI over 10 becomes less sesitive but its not linear, like expo.
+        bb_ahead=20,
+        rsi_low=30,
+        rsi_high=70,
+        bb_std=2.1,
+        bb_tolerance_close=0.03)
     strategy = RSIBB(params)
     if strategy_params:
         try:
@@ -137,23 +139,22 @@ def add_buy_sell_to_fig(df_ohlcv, strategy, fig):
     buy_locations = df_ohlcv['BUY_ALGO'][df_ohlcv['BUY_ALGO']].index
     sell_locations = df_ohlcv['SELL_ALGO'][df_ohlcv['SELL_ALGO']].index
     print_cols = ['resistance', 'support']
-
+    print(f'Total buy_locations={len(buy_locations)}, sell_locations={len(sell_locations)}')
     for buy_loc in buy_locations:
-        support_res_lines = df_ohlcv.loc[buy_loc][print_cols]
-        support_res_pct = support_res_lines / df_ohlcv.loc[buy_loc]['close']
-        print('BUY:', buy_loc, support_res_pct.to_dict(), support_res_lines.to_dict())
+        # support_res_lines = df_ohlcv.loc[buy_loc][print_cols]
+        # support_res_pct = support_res_lines / df_ohlcv.loc[buy_loc]['close']
+        # print('BUY:', buy_loc, support_res_pct.to_dict(), support_res_lines.to_dict())
         fig.add_vline(buy_loc, row=1, col=1, line_color='green', opacity=0.4)
     for sell_loc in sell_locations:
-        support_res_lines = df_ohlcv.loc[sell_loc][print_cols]
-        support_res_pct = support_res_lines / df_ohlcv.loc[sell_loc]['close']
-        print('SELL:', sell_loc, support_res_pct.to_dict(), support_res_lines.to_dict())
+        # support_res_lines = df_ohlcv.loc[sell_loc][print_cols]
+        # support_res_pct = support_res_lines / df_ohlcv.loc[sell_loc]['close']
+        # print('SELL:', sell_loc, support_res_pct.to_dict(), support_res_lines.to_dict())
         fig.add_vline(sell_loc, row=1, col=1, line_color='red', opacity=0.4)
     return fig
 
 
 @app.callback(Output('live-update-graph', 'figure'),
               Output('live-update-text', 'children'),
-              # Input('json-button', 'value'),
               Input('start-date', 'value'),
               Input('coin-type', 'value'),
               Input('resample-type', 'value'),
@@ -184,8 +185,8 @@ def update_graph_live(start_date, coin, resample, strategy_params_text):
 
     time_conv = "%b %d, %H:%M"  # .strftime
     t1 = f'{(datetime.now() - t0).total_seconds():0.2f}'
-    text = [html.Div(f'({df_ohlcv.index[0].strftime(time_conv)} => {df_ohlcv.index[-1].strftime(time_conv)})'
-                     f'| {coin}, rows= {len(df_ohlcv)}, loadedIn={t1}s'),
+    text = [html.Div(f'({df_ohlcv.index[0].strftime(time_conv)} => {df_ohlcv.index[-1].strftime(time_conv)}), {t1}s'
+                     f'\n{coin}, rows={len(df_ohlcv)}'),
             html.Div(f'strategy={repr(strategy)}')]
     print(f'ready at:{t1}sec')
     return fig, text
