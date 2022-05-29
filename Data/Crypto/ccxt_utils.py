@@ -37,7 +37,7 @@ def get_latest_ts_db(db, coin):
     return db.get_latest_ts(db_symbol, '1m')
 
 
-def get_candles_from_db(db, coin, tf, start_ts=None, start_date=None):
+def get_candles_from_db(db, coin, tf, start_ts=None, start_date=None, localize='Israel'):
     if start_date and start_ts:
         raise ValueError('Only one start can be set.')
     if start_ts and not isinstance(start_ts, int):
@@ -47,8 +47,10 @@ def get_candles_from_db(db, coin, tf, start_ts=None, start_date=None):
     exchange_name, symbol = get_exchange_symbol_by_coin(coin)
     # TODO: BASE COIN NEED TO BE SOME KIND ELSE not HARD CODED HERE. Maybe take from exchange_symbol_pairs
     symbol_str = f'{coin}/USDT'
-
-    return _get_candles_from_db(db, exchange_name, symbol_str, tf, start_ts=start_ts, start_date=start_date)
+    df = _get_candles_from_db(db, exchange_name, symbol_str, tf, start_ts=start_ts, start_date=start_date)
+    if localize:
+        df = df.tz_convert(localize)
+    return df
 
 
 def _get_candles_from_db(db, exchange_name, symbol, tf, start_ts=None, start_date=None):

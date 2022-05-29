@@ -46,7 +46,7 @@ app.layout = html.Div([
             value="",
             # wrap='wrap',
             placeholder="strategy_params",
-            style={'width': '90%', 'height': '100px', 'text-size': '4px'},
+            style={'width': '90%', 'height': '80px', 'text-size': '4px'},
         ),
         # html.Button('Submit', id='json-button', n_clicks=0),
 
@@ -95,7 +95,15 @@ def get_indicators(strategy_params):
     print('strategy_params', strategy_params)
     from Indicators import Volume
     from Backtesting.Strategies import SMAMACD, RSIBB, BB, All_STRATEGIES
-    strategy = RSIBB()
+    params = dict(
+        RSIBB_aggressive=True,
+        RSIBB_n_rsi_soon=4,
+        RSIBB_rsi_ahead=7,  # RSI over 10 becomes less sesitive but its not linear, like expo.
+        RSIBB_bb_ahead=20,
+        RSIBB_rsi_low=30,
+        RSIBB_rsi_high=70,
+        RSIBB_bb_std=2.1)
+    strategy = RSIBB(params)
     if strategy_params:
         try:
             strategy = All_STRATEGIES[strategy_params['name']](strategy_params)
@@ -128,9 +136,17 @@ def add_buy_sell_to_fig(df_ohlcv, strategy, fig):
     df_ohlcv = strategy.add_indicators(df_ohlcv)
     buy_locations = df_ohlcv['BUY_ALGO'][df_ohlcv['BUY_ALGO']].index
     sell_locations = df_ohlcv['SELL_ALGO'][df_ohlcv['SELL_ALGO']].index
+    print_cols = ['resistance', 'support']
+
     for buy_loc in buy_locations:
+        support_res_lines = df_ohlcv.loc[buy_loc][print_cols]
+        support_res_pct = support_res_lines / df_ohlcv.loc[buy_loc]['close']
+        print('BUY:', buy_loc, support_res_pct.to_dict(), support_res_lines.to_dict())
         fig.add_vline(buy_loc, row=1, col=1, line_color='green', opacity=0.4)
     for sell_loc in sell_locations:
+        support_res_lines = df_ohlcv.loc[sell_loc][print_cols]
+        support_res_pct = support_res_lines / df_ohlcv.loc[sell_loc]['close']
+        print('SELL:', sell_loc, support_res_pct.to_dict(), support_res_lines.to_dict())
         fig.add_vline(sell_loc, row=1, col=1, line_color='red', opacity=0.4)
     return fig
 
@@ -144,15 +160,15 @@ def add_buy_sell_to_fig(df_ohlcv, strategy, fig):
               Input('strategy-params', 'value'))
 def update_graph_live(start_date, coin, resample, strategy_params_text):
     strategy_params = None
+    end_date = None
+    print(start_date, coin, resample)
+    t0 = datetime.now()
     try:
         if len(strategy_params_text) > 0:
             strategy_params = json.loads(strategy_params_text)
     except Exception as e:
         print('JSONDecoder failed..')
         return dash.no_update, dash.no_update
-    t0 = datetime.now()
-    end_date = None
-    print(start_date, coin, resample)
     if len(start_date):
         start_ts = int(pd.to_datetime(start_date).timestamp())
         end_date = pd.to_datetime(start_date) + INTERVAL_CANDLE_LOOKBACK_TABLE[resample]
@@ -167,12 +183,11 @@ def update_graph_live(start_date, coin, resample, strategy_params_text):
     fig = add_buy_sell_to_fig(df_ohlcv, strategy, fig)
 
     time_conv = "%b %d, %H:%M"  # .strftime
-    t1 = (datetime.now() - t0).total_seconds()
-    print(f'ready at:{t1:0.2f}sec')
-    t1_str = f'{t1:0.2f}'
+    t1 = f'{(datetime.now() - t0).total_seconds():0.2f}'
     text = [html.Div(f'({df_ohlcv.index[0].strftime(time_conv)} => {df_ohlcv.index[-1].strftime(time_conv)})'
-                     f'| {coin}, rows= {len(df_ohlcv)}, loadedIn={t1_str}s'),
+                     f'| {coin}, rows= {len(df_ohlcv)}, loadedIn={t1}s'),
             html.Div(f'strategy={repr(strategy)}')]
+    print(f'ready at:{t1}sec')
     return fig, text
 
 

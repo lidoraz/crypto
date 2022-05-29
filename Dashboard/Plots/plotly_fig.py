@@ -24,7 +24,7 @@ def get_generic_plots(lookahead=14, lookback_length=None, plot_index=-1):
     return main_plot_indicators, sub_plots
 
 
-def get_updated_fig(df_ohlcv, main_plot_ind=(), sub_plots=(), xy_limit=True, show_legend=True):
+def get_updated_fig(df_ohlcv, main_plot_ind=(), sub_plots=(), xy_limit=True, show_legend=True, with_data=False):
     if not len(main_plot_ind) and not len(sub_plots):
         main_plot_ind, sub_plots = get_generic_plots()
 
@@ -45,12 +45,12 @@ def get_updated_fig(df_ohlcv, main_plot_ind=(), sub_plots=(), xy_limit=True, sho
                         shared_xaxes=True)
     ind_candle.plot(fig)
 
-    for ind in main_plot_ind:
-        _ = ind.calc(df_ohlcv)
-        ind.plot(fig)
-    for sub_plot in sub_plots:
-        _ = sub_plot.calc(df_ohlcv)
-        fig = sub_plot.plot(fig)
+    for main_ind in main_plot_ind:
+        df_ohlcv = df_ohlcv.join(main_ind.calc(df_ohlcv))
+        main_ind.plot(fig)
+    for sub_ind in sub_plots:
+        df_ohlcv = df_ohlcv.join(sub_ind.calc(df_ohlcv))
+        fig = sub_ind.plot(fig)
 
     fig_update_layout_combined_view(fig)
     if xy_limit:
@@ -59,7 +59,11 @@ def get_updated_fig(df_ohlcv, main_plot_ind=(), sub_plots=(), xy_limit=True, sho
         # Don't change location when interval triggers:
         # does not work well when interval fires when zoomed in
         fig.update_layout(uirevision=f'{coin}{interval}')
-    return fig
+
+    if with_data:
+        return fig, df_ohlcv
+    else:
+        return fig
 
 # https://plotly.com/python/time-series/
 # https://stackoverflow.com/questions/67459925/plotly-set-showgrid-false-for-all-subplots

@@ -58,11 +58,18 @@ def combine_value_ts_supports_by_index(ohlc_index, res, idx=None):
     return supports, resistances
 
 
-def fix_support_resistance_to_close_price(res, close, pct_win=1.15, pct_lose=.90):
+# TODO: still check this # Trader can fix this margins, but still need to think how to optimize this.
+def fix_support_resistance_to_close_price(res, close, pct_win=1.05, pct_lose=.97):
+    # Most resistances and supports are not more than 3% of the close price value.
     win_val = close * pct_win
     lose_val = close * pct_lose
     res['resistance'] = np.maximum(res['resistance'], win_val)
     res['support'] = np.minimum(res['support'], lose_val)
+    # # at least 95% but no more than 90%
+    # res['resistance'] = np.maximum(np.minimum(res['resistance'], win_val_105), win_val_115)
+    # res['support'] = np.maximum(np.minimum(res['support'], lose_val_95), lose_val_90)
+    # pd.concat([close, res['resistance'], win_val_105, np.maximum(res['resistance'], win_val_105)], axis=1)
+    # pd.concat([close, res['support'], lose_val_90, np.minimum(res['support'], lose_val_90)], axis=1)
     return res
 
 

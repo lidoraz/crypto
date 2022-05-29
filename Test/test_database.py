@@ -1,3 +1,4 @@
+from Data.Crypto.symbols import DB_PATH
 from Utils import Persistence
 import pandas as pd
 import numpy as np
@@ -11,6 +12,8 @@ os.chdir(root)
 def test_db_latest_record(db, allowed_sec=300):
     print('test_db_latest_record')
     tables = db.get_all_tables()
+    assert len(tables) > 0, 'no tables found!'
+    print('tables:', tables)
     sql = """
     SELECT ts from {table} order by ts desc limit 1
     """
@@ -47,10 +50,13 @@ def test_db_ts_diff(db, start_date):
             print(t, len(df), df.ts_diff.mean(), np.percentile(df.ts_diff, percentiles).astype(int))
 
 
-if __name__ == '__main__':
-    db = Persistence('ccxt_1m.db')
-
+def test_database():
+    db = Persistence(DB_PATH)
     # KUCOIN_RMRK_USDT_1M
     start_date = '2022-05-01'
     test_db_latest_record(db)
     test_db_ts_diff(db, start_date)
+
+
+if __name__ == '__main__':
+    test_database()

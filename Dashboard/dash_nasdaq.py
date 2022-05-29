@@ -160,7 +160,7 @@ def update_graph_live(symbol, symbol_free, tf, input_lookahead):
         interval_set = '1' + tf_name
         df_ohlcv = resample_ohlcv_higher_1d(df_ohlcv, interval_set)
         print('resampled to:', interval_set)
-    fig = get_updated_fig(df_ohlcv, xy_limit=False)
+    fig = get_updated_fig(df_ohlcv, xy_limit=True)
 
     text = [html.Span('{}'.format(df_ohlcv.attrs['company_name']))]  # {0:.2f} #
     return fig, text, False

@@ -24,6 +24,7 @@ def generate_cupnhandle(cupnhandle_length=100, small_cup_ratio=0.25, small_cup_l
         cupnhandle = np.r_[cupnhandle, [cupnhandle[-1]]]
     return cupnhandle
 
+
 # best used in daily nasdaq data
 def detect_cupnhandle(coin, data: pd.Series, cupnhandle_treshold=0.05):
     # TODO: Add different cupnhandle tresholds to match coressponding window size.

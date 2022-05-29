@@ -13,6 +13,7 @@ import time
 #  'order_dt': '2022-05-20T15:22:13.408Z', 'exchange': 'BINANCE'}
 
 test_order = {'ts': 1653061189, 'id': 28994335, 'symbol': 'CRV/USDT', 'type': 'LIMIT_MAKER', 'side': 'SELL',
+              'req_price': 0.46,
               'price': 0.45, 'amount_req': 30.8, 'amount_filled': 0, 'valuation': 0, 'stopPrice': 0.0, 'status': 'NEW',
               'order_dt': None, 'exchange': 'BINANCE'}
 
@@ -21,6 +22,7 @@ cols_orders = [('ts', 'number'),
                ('symbol', 'varchar'),
                ('type', 'varchar'),
                ('side', 'varchar'),
+               ('req_price', 'number'),
                ('price', 'number'),
                ('amount_req', 'number'),
                ('amount_filled', 'number'),
@@ -46,11 +48,13 @@ def treat_val_insert(val):
 class PersistenceOrders:
     def __init__(self, db_path):
         self.con = sqlite3.connect(db_path)
+        self.tbl_name = 'orders_v2'
         self._create_orders(cols_orders)
+
 
     def _create_orders(self, cols):
         create_table_history = f"""
-        CREATE TABLE IF NOT EXISTS orders ({cols_str(cols)})
+        CREATE TABLE IF NOT EXISTS {self.tbl_name} ({cols_str(cols)})
         """
         cur = self.con.cursor()
         cur.execute(create_table_history)
@@ -61,14 +65,14 @@ class PersistenceOrders:
         res_vals = [treat_val_insert(v) for v in res_vals]
         res_vals = ', '.join(res_vals)
         q_add = f"""
-        INSERT INTO orders VALUES ({res_vals})
+        INSERT INTO {self.tbl_name} VALUES ({res_vals})
         """
         cur = self.con.cursor()
         cur.execute(q_add)
         self.con.commit()
 
     def fetch_all(self):
-        df = pd.read_sql_query("SELECT * FROM orders order by ts desc", self.con)
+        df = pd.read_sql_query(f"SELECT * FROM {self.tbl_name} order by ts desc", self.con)
         return df
 
     def close(self):
@@ -91,14 +95,16 @@ def row_values_to_str(row: pd.Series):
     return ', '.join([str(v) for v in row.values])
 
 
-if __name__ == '__main__':
+def test():
     # Unit test
-    db_path = 'test_trades.db'
-    db = PersistenceOrders(db_path)
+    db = PersistenceOrders('test_trades.db')
     db.add_order(test_order)
-
     print(db.fetch_all())
     db.close()
+
+
+if __name__ == '__main__':
+    test()
     import os
 
     # print('deleted db')

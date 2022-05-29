@@ -46,6 +46,8 @@ def parse_oco_response(response):
 class RealtimeTrade:
     """
     # Codes: 0 success / buy , sell
+    #        -11 already own the coin (rebuy_coin)
+    #        (-4 price diff too large) not implemented
     #        -1 failed buy / sell
     #        -2 failed to set stop loss, buy worked
     #        -3 not enough funds. Buy / Sell
@@ -65,8 +67,8 @@ class RealtimeTrade:
         self.stable_coin_min_amount = 10  # must be at least 10USD to
         self.trade_commission = 0.001
         self.price_diff_pct = 0.02
-        self.sell_price_from_stop_pct = 0.99
-        self.rebuy_coin = False  # don't buy again if own at least min amount for sell. easier for backtesting. TODO: organize.
+        self.sell_price_from_stop_pct = 0.995
+        self.rebuy_coin = False  # don't buy again if own at least min amount for sell. easier for backtesting.
         self._check_init()
         exchange = ccxt.binance({
             'apiKey': os.environ.get('BINANCE_API'),
@@ -146,14 +148,13 @@ class RealtimeTrade:
         else:
             valuation = 0
         order_dt = res.get('datetime', None)
+        req_price = res.get('req_price', None)
         res = dict(ts=timestamp, id=trade_id, symbol=symbol, type=res['type'], side=res['side'],
-                   price=res['price'], amount_req=res['amount'], amount_filled=res['filled'],
+                   req_price=req_price, price=res['price'], amount_req=res['amount'], amount_filled=res['filled'],
                    valuation=valuation, stopPrice=res['stopPrice'],
                    status=res['status'], order_dt=order_dt, exchange=self.exchange_name)
         print(f'Adding to DB:\n {res}')
         if self.is_production:
-            # with open('order_history.txt', 'a') as fp:
-            #     print(res, file=fp)
             self.db.add_order(res)
 
     def _check_buy_and_price(self, coin):
@@ -175,13 +176,15 @@ class RealtimeTrade:
     def _create_market_buy(self, coin, req_price, stop_loss_price, stop_win_price):
         symbol = f'{coin}/{self.stable_coin_name}'
         try:
-            # TODO: these lines can be removed and are controlled in the exchange
+            # these lines can be removed and are controlled in handle_buy_sell in realtime_exchange
             _, amount, amount_stable, _ = self._check_sell_and_price(coin, just_check=True)
             if not self.rebuy_coin and amount_stable > self.stable_coin_min_amount:
                 print(f'Owning {coin} - amount={amount} , amount_stable= {amount_stable}')
                 return -11  # already own the symbol
+            ##
             curr_price, use_locked = self._check_buy_and_price(coin)
-            self._compare_algo_price(symbol, req_price, curr_price)
+            diff = self._compare_algo_price(symbol, req_price,
+                                            curr_price)  # TODO: implement return if diff < 0 (algo_p < curr_p)
             amount = self.stable_coin_trade_amount / curr_price
             f_curr_price = self.exchange.price_to_precision(symbol, curr_price)
             f_amount = self.exchange.amount_to_precision(symbol, amount)
@@ -192,10 +195,10 @@ class RealtimeTrade:
                                                            amount=f_amount)  # price=f_curr_price
             else:
                 order_details = mock_binance_market_buy()
+            order_details['req_price'] = req_price
             self._add_order_to_db(symbol, order_details)
-            # time.sleep(1)  # TODO see if this is needed sleep few seconds to allow register #
-            amount, _ = self._get_asset_holding_amount(coin)  # TODO get real amount instead
-            print(f'Before: _create_binance_sell_oco_order -> coin={coin} amount holding:', amount_stable)
+            # get filled amount after fee
+            amount, _ = self._get_asset_holding_amount(coin)
             code = self._create_binance_sell_oco_order(coin, stop_loss_price, stop_win_price, amount,
                                                        retry=True)
             # self._create_stop_loss_request(coin, stop_loss_price, order_details['filled'])
@@ -233,14 +236,16 @@ class RealtimeTrade:
         return curr_price, amount, amount_stable, use_locked
 
     def _compare_algo_price(self, symbol, req_price, curr_price):
-        # curr_price = self.get_curr_price(symbol)
         diff_pct = (req_price / curr_price) - 1
         if diff_pct > self.price_diff_pct:  # 0.09 > 0.05
             print(f'Warning: {symbol} algo price *LARGER* than {int(self.price_diff_pct * 100)}%'
                   f' (sell_price={req_price}, curr_price={curr_price}, diff={diff_pct:.2%})')
+            return 1
         elif diff_pct < -self.price_diff_pct:  # -0.09 < -0.05
             print(f'Warning: {symbol} algo price **LOWER** than {int(self.price_diff_pct * 100)}%'
                   f' (sell_price={req_price}, curr_price={curr_price}, diff={diff_pct:.2%})')
+            return -1
+        return 0
 
     def _unlock_symbol(self, symbol):
 
@@ -283,6 +288,7 @@ class RealtimeTrade:
                 order_details = self.exchange.create_order(symbol, 'MARKET', 'SELL', amount=f_amount)
             else:
                 order_details = mock_binance_market_sell()
+            order_details['req_price'] = req_price
             self._add_order_to_db(symbol, order_details)
             return 0
         except Exception as e:
@@ -329,7 +335,10 @@ class RealtimeTrade:
                       type(e).__name__, str(e),
                       f'(f_win_price={f_win_price},f_stop_price={f_stop_price},'
                       f' f_lose_price={f_lose_price}, f_amount={f_amount}')
-                time.sleep(3)
+                print('=> Lowering the stop price and increasing win price by 2%')
+                win_price = win_price * 1.02
+                stop_price = stop_price * 0.98
+                time.sleep(1)
         print(self.exchange_name, symbol, f'Failed create STOP_LOSS_SELL order, max tries over.')
         return -2
 
@@ -407,11 +416,35 @@ def test_buy_stop_sell_fails(trader):
     trader.handle_sell(sell_details)
 
 
+def test_buy_stop_sell_fails_then_ok(trader, coin):
+    """
+    on given coin, test will get curr price and set stoploss above that price, and win price below that price
+    stop loss setting should fail but until few tries it should work.
+    :param trader:
+    :return:
+    """
+    symbol = f'{coin}/USDT'
+    coin = symbol.split('/')[0]
+    curr_price = trader.get_curr_price(symbol)
+    buy_details = {'buy_idx': 0, 'buy_price': curr_price, 'sell_price_win_stop': curr_price * .99,
+                   'sell_price_lose_stop': curr_price * 1.01,
+                   'coin': coin}
+    print(buy_details)
+    trader.handle_buy(buy_details)
+    time.sleep(5)
+    sell_details = {'sell_idx': 0, 'sell_price': curr_price, 'coin': coin}
+    print(sell_details)
+    trader.handle_sell(sell_details)
+
+
 def run_trade(prod):
     print('@@@@ ----------->> prod', prod)
+    print('Sleeping for 5 sec')
+    time.sleep(5)
     trader = RealtimeTrade(prod=prod)
     show_portfolio_value(trader)
-    test_buy_stop_sell_works(trader)
+    # test_buy_stop_sell_fails_then_ok(trader, 'CRV')
+    # test_buy_stop_sell_works(trader)
     # test_buy_stop_sell_fails(trader)
     # trader.refresh_markets()
 

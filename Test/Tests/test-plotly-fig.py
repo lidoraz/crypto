@@ -1,4 +1,9 @@
 # from Crypto.DataProcessing.data_consts import COINS, HOURLY_COLS, START_DATA_DATE
+import os
+
+root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+os.chdir(root)
+print(root)
 from Utils import Persistence
 from Data.Crypto.symbols import exchange_symbol_pairs, DB_PATH
 from Data.Crypto.ccxt_utils import _resample_from_ohlcv

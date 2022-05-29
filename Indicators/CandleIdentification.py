@@ -107,6 +107,9 @@ class CandleIdentification(Indicator):
 
     def calc(self, ohlc: pd.DataFrame) -> pd.DataFrame:
         self.res = recognize_candles(ohlc)
+
+        # important candles:
+
         self.ohlc = ohlc
         return self.res
 

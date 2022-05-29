@@ -1,8 +1,8 @@
 import os
-
-root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.chdir(root)
 print(root)
+
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
@@ -138,6 +138,8 @@ def update_graph_live(start_date, coin, resample, lookback_length, ts_pct):
     fig = get_updated_fig(df_ohlcv, main_plot_indicators, sub_plots, xy_limit=False)
 
     t1 = (datetime.now() - t0).total_seconds()
+    plot_index_ts = df_ohlcv.index[ts_val]
+    fig.add_vline(plot_index_ts, line_color='white')
     print(f'ready at:{t1:0.2f}sec')
     t1_str = f'{t1:0.2f}'
     text = [

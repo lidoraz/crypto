@@ -124,7 +124,7 @@ class Persistence:
         self.con.commit()
 
     # select datetime(ts, 'unixepoch', 'localtime') from BINANCE_APE_USDT_1M where ts  > 1651352820 order by ts  desc
-    def get_df(self, symbol, tf, start_ts=None, start_date=None, to_datetime=True, localize='Israel'):
+    def get_df(self, symbol, tf, start_ts=None, start_date=None, to_datetime=True):
         tbl_name = _treat_name(symbol, tf)
         if not self.is_exists(tbl_name):
             raise ValueError(f'Table {tbl_name} not exists')
@@ -141,7 +141,7 @@ class Persistence:
             return None
         df.attrs['curr_ts_db'] = df.index[-1]
         if to_datetime:
-            df.index = pd.to_datetime(df.index, unit='s', utc=True).tz_convert(localize)
+            df.index = pd.to_datetime(df.index, unit='s', utc=True)
         return df
 
     def get_latest_ts(self, symbol=None, tf=None):

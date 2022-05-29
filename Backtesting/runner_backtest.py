@@ -57,7 +57,7 @@ def run_RSIBB(data_wrapper, tf, start_date, n_jobs):
         'tf': [tf],  # ['1H'] # '15min',
         'aggressive': [False, True],  # True,
         'n_rsi_soon': [4, 7],
-        'rsi_ahead': [14, 7],
+        'rsi_ahead': [7, 14],
         'bb_ahead': [15, 20],
         'rsi_low': [30],
         'rsi_high': [70],
@@ -106,9 +106,9 @@ def run_optimizer():
     # data.pop('start_date')
     # data.pop('mp')
     tf = '1H'  # 15min'
-    start_date = '2022-05-01'
+    start_date = '2022-03-01'
 
-    n_jobs = 1
+    n_jobs = 8
     # n_jobs = os.cpu_count()
     data_wrapper = CryptoData.get_wrapper(live=False, start_date=start_date,
                                           only_exchange='binance')  # start_date='2022-04-25'
@@ -116,9 +116,9 @@ def run_optimizer():
     # [268.067, 174.936, 210.714]
     jobs = [
         # run_MACross(*params),
-        # run_RSIBB(*params),
-        # run_BB(*params),
-        # run_SMAStochRSI(*params)
+        run_RSIBB(*params),
+        run_BB(*params),
+        run_SMAStochRSI(*params),
         run_SMAMACD(*params)
     ]
     print(f'Test result for multiple strategies: starting={start_date}')

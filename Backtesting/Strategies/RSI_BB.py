@@ -20,22 +20,22 @@ class RSIBB(Strategy):
         self.rsi_ahead = params.get('rsi_ahead', 14)
         self.rsi_low = params.get('rsi_low', 30)
         self.rsi_high = params.get('rsi_high', 70)
-        self.n_rsi_soon = params.get('n_rsi_soon', 10)
+        self.n_rsi_soon = params.get('n_rsi_soon', 5)
 
         self.bb_ahead = params.get('bb_ahead', 20)
         self.bb_std = params.get('bb_std', 2)
         self.tolerance_close = 0  # 0.03
+        self.lines_lk = params.get('lines_lk', 100)
 
         self._ind_rsi = RSI(self.rsi_ahead)
         self._ind_bb = BollingerBands(self.bb_ahead, self.bb_std)
-        self._ind_lines = SupportResistanceLines2(lookback_length=100)
+        self._ind_lines = SupportResistanceLines2(lookback_length=self.lines_lk)
 
     def add_indicators(self, df):
         # n_rsi_soon: when RSI has alert, how forward to notify that alert
         df = df.join(self._ind_rsi.calc(df))
         df = df.join(self._ind_bb.calc(df))
         df = df.join(self._ind_lines.calc(df))
-        # df = df.dropna()
 
         rsi_col = f"RSI_{self.rsi_ahead}"
         df['RSI_70'] = df[rsi_col] > self.rsi_high  # has passed RSI 70
@@ -79,7 +79,7 @@ class RSIBB(Strategy):
                 sell_price_win_stop = row[f'resistance']
                 sell_price_lose_stop = row[f'support']
             else:
-                sell_price_win_stop = row[f'BBTOP_{self.bb_ahead}']  # * 1.05
+                sell_price_win_stop = row[f'BBTOP_{self.bb_ahead}']
                 sell_price_lose_stop = row[f'BBBOT_{self.bb_ahead}']
             return {'buy_idx': buy_idx,
                     'buy_price': buy_price,
