@@ -65,7 +65,7 @@ class SMAMACD(Strategy):
             buy_idx = idx
             buy_price = row['close']
             # add stop-loss
-            # sell_price_win_stop = buy_price * 1.15
+            # sell_price_win_stop = buy_price * 1.15#
             # sell_price_lose_stop = buy_price * .90
             sell_price_win_stop = row[f'resistance']  # * 1.05
             sell_price_lose_stop = row[f'support']
