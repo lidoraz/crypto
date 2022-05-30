@@ -187,7 +187,7 @@ def update_graph_live(start_date, coin, resample, strategy_params_text):
     t1 = f'{(datetime.now() - t0).total_seconds():0.2f}'
     text = [html.Div(f'({df_ohlcv.index[0].strftime(time_conv)} => {df_ohlcv.index[-1].strftime(time_conv)}), {t1}s'
                      f'\n{coin}, rows={len(df_ohlcv)}'),
-            html.Div(f'strategy={repr(strategy)}')]
+            html.Div(f'{repr(strategy)}')]
     print(f'ready at:{t1}sec')
     return fig, text
 

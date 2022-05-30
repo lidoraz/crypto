@@ -6,10 +6,7 @@ import pandas as pd
 import ccxt  # noqa: E402
 from Data.Crypto.symbols import exchange_symbol_pairs
 
-
 def get_from_exchange():
-    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    sys.path.append(root + '/python')
 
     exchange = ccxt.binance({
         'apiKey': os.environ.get('BINANCE_API'),
@@ -43,20 +40,21 @@ def get_from_exchange():
                   trade['cost'])
     print('data)')
     df = pd.DataFrame(all_trades).drop(columns=['info'])
-    df.to_csv(f'all_trades/binance_{start_date}.csv', index=False)
+    df.to_csv(f'resources/binance_{start_date}.csv', index=False)
 
 
 def calc_trade_pct():
     start_date = '2022-05-25'
-    df = pd.read_csv(f'all_trades/binance_{start_date}.csv')  # 27
+    df = pd.read_csv(f'resources/binance_{start_date}.csv')  # 27
     buys = df[df['side'] == 'buy']
     sells = df[df['side'] == 'sell']
-    sells = sells.groupby(['timestamp', 'datetime', 'symbol', 'price']).agg(
+    # [symbol, sell_buy_price, profit,  sell_price, buy_price, sell_cost, buy_cost, sell_type, sell_dt, buy_dt])
+    sells = sells.groupby(['order', 'timestamp', 'datetime', 'symbol', 'type', 'price']).agg(
         {'cost': 'sum', 'amount': 'sum'}).reset_index()
     res = []
     # columns = ['symbol', 'profit', 'pct', 'sell_p', 'buy_p', 'sell_ts', 'buy_ts']
-    columns = ['symbol', 'sell_buy_prls'
-                         'side', 'sell_p', 'buy_p', 'sell_ts', 'buy_ts']
+    columns = ['symbol', 'sell_buy_price', 'profit',
+                          'sell_p', 'buy_p', 'sell_cost', 'buy_cost', 'sell_type', 'sell_ts', 'buy_ts', ]
     for i, sell in sells.sort_values('timestamp', ascending=False).iterrows():
         symbol = sell['symbol']
         buy_df = buys[(buys['symbol'] == symbol) & (buys['timestamp'] < sell['timestamp'])].sort_values('timestamp',
@@ -71,18 +69,21 @@ def calc_trade_pct():
         sell_price = sell['price']
         sell_cost = sell['cost']
         sell_dt = sell['datetime']
+        sell_type = sell['type']
+        profit = sell_cost - buy_cost
 
         sell_buy_price = (sell_price / buy_price) - 1
         profit = sell_cost - buy_cost
-        res.append([symbol, sell_buy_price, sell_price, buy_price, sell_dt, buy_dt])
+        res.append([symbol, sell_buy_price, profit,  sell_price, buy_price, sell_cost, buy_cost, sell_type, sell_dt, buy_dt])
         # res.append([symbol, profit, pct, sell_price, buy_price, sell_dt, buy_dt])
     df_trades = pd.DataFrame(res, columns=columns)
-    print(df_trades)
+    # print(df_trades)
     # filter
-    start_date_trade = '2022-05-27T00:00:00Z'
-    df_trades = df_trades[pd.to_datetime(df_trades['buy_ts']) > pd.to_datetime(start_date_trade, utc=True)]
+    # start_date_trade = '2022-05-25T00:00:00Z'
+    # df_trades = df_trades[pd.to_datetime(df_trades['buy_ts']) > pd.to_datetime(start_date_trade, utc=True)]
 
-    print(df_trades)
+    # print(df_trades)
+    df_trades.to_csv(f'resources/trades_from_{start_date}.csv')
     # df_trades.sort_values('profit')
     print('TOTAL SELL/BUY %:', df_trades['sell_buy_price'].sum())
 
@@ -135,9 +136,16 @@ def calc_trade_profit():
 
 
 if __name__ == '__main__':
+    # things to do
+    # 1. add option to check only on one coin
+    # 2. Save trades from exchange into a db or csv (tricky because this is needed to do it every day.
+
     # get_from_exchange()
     calc_trade_pct()
-    calc_trade_profit()
+    # calc_trade_profit()
+
+
+
 
 # while start_time < now:
 #     print('------------------------------------------------------------------')
