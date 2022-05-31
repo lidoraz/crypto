@@ -6,7 +6,6 @@ from .BollingerBands import BollingerBands
 from .MACD import MACD
 from .CandleIdentification import CandleIdentification
 from .SupportResistanceLines2 import SupportResistanceLines2
-from .WinLossStoploss import WinLossStoploss
 from .CandleStick import CandleStick
 from .Volume import Volume
 from .StochRSI import StochRSI

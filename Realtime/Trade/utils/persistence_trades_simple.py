@@ -46,11 +46,10 @@ def treat_val_insert(val):
 
 # TODO: Rework this class, it needs to be aligned with the write to db function in RealtimeTrade
 class PersistenceOrders:
-    def __init__(self, db_path):
+    def __init__(self, db_path, tbl_name='orders_v2'):
         self.con = sqlite3.connect(db_path)
-        self.tbl_name = 'orders_v2'
+        self.tbl_name = tbl_name
         self._create_orders(cols_orders)
-
 
     def _create_orders(self, cols):
         create_table_history = f"""

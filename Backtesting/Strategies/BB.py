@@ -1,4 +1,4 @@
-from Indicators import BollingerBands, WinLossStoploss, SupportResistanceLines2
+from Indicators import BollingerBands, SupportResistanceLines2
 from .Strategy import Strategy
 
 
