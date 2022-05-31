@@ -59,7 +59,7 @@ def combine_value_ts_supports_by_index(ohlc_index, res, idx=None):
 
 
 # TODO: still check this # Trader can fix this margins, but still need to think how to optimize this.
-def fix_support_resistance_to_close_price(res, close, pct_win=1.05, pct_lose=.97):
+def fix_support_resistance_to_close_price(res, close, pct_win=1.1, pct_lose=.95):
     # Most resistances and supports are not more than 3% of the close price value.
     win_val = close * pct_win
     lose_val = close * pct_lose
