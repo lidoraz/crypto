@@ -47,20 +47,20 @@ def get_candles_from_db(db, coin, tf, start_ts=None, start_date=None, localize='
     exchange_name, symbol = get_exchange_symbol_by_coin(coin)
     # TODO: BASE COIN NEED TO BE SOME KIND ELSE not HARD CODED HERE. Maybe take from exchange_symbol_pairs
     symbol_str = f'{coin}/USDT'
-    df = _get_candles_from_db(db, exchange_name, symbol_str, tf, start_ts=start_ts, start_date=start_date)
-    if localize:
-        df = df.tz_convert(localize)
+    df = _get_candles_from_db(db, exchange_name, symbol_str, tf, start_ts=start_ts, start_date=start_date, localize=localize)
     return df
 
 
-def _get_candles_from_db(db, exchange_name, symbol, tf, start_ts=None, start_date=None):
+def _get_candles_from_db(db, exchange_name, symbol, tf, start_ts=None, start_date=None, localize=None):
     db_symbol = f'{exchange_name}_{symbol}'.upper()
     df = db.get_df(db_symbol, '1m', start_ts, start_date)
     if df is None:
         print(f'Warning: {exchange_name}_{db_symbol} does not exists!')
         return None
-    df_ohlcv = _resample_from_ohlcv(df, symbol, tf)
-    return df_ohlcv
+    df = _resample_from_ohlcv(df, symbol, tf)
+    if localize:
+        df = df.tz_convert(localize)
+    return df
 
 
 def get_exchange_symbol_by_coin(coin):

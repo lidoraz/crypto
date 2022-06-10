@@ -1,6 +1,25 @@
 from datetime import datetime
-import pandas as pd
 import time
+import math
+
+
+def format_num(n, precision=3):
+    if n > 99:
+        return f'{n:.1f}'
+    elif n > 9:
+        return f'{n:.2f}'
+    elif n > 1:
+        return f'{n:.3f}'
+    idx_first_digit_decimal = int(math.log10(abs(n))) * -1
+    # add precision after first digit not zero
+    out_str = str(f'{n:.{idx_first_digit_decimal + precision}f}')
+    last_digit_not_zero = len(out_str) - 1
+    for i in reversed(range(len(out_str))):
+        if out_str[i] != '0':
+            last_digit_not_zero = i + 1  # inclusive
+            break
+    out_str = out_str[:last_digit_not_zero]
+    return out_str
 
 
 def wait_until(end_datetime):

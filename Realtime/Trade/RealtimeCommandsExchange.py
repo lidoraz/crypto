@@ -4,7 +4,7 @@ from Data import CryptoData
 from Backtesting.Strategies import RSIBB, BB, MACross, SMAStochRSI
 from Realtime.realtime_utils import get_latest_buy_sell
 from Utils.notify import TelegramBot
-from Utils.utils import WaitToMinEveryHour
+from Utils.utils import WaitToMinEveryHour, format_num
 from tqdm import tqdm
 import time
 
@@ -52,7 +52,7 @@ def get_broadcast_buy_sell(result, strategy):
     buys_txt = ""
     buy_str = f"🟢<b>Buy Status:</b> ({len(result['buy'])})\n"
     for res in result['buy']:
-        buys_txt += f"{res['coin']} p={res['buy_price']:.3f}, ({res['sell_price_lose_stop']:.3f}, {res['sell_price_win_stop']:.3f}), code({res['trade_code']})\n"
+        buys_txt += f"{res['coin']} {format_num(res['buy_price'])}, ({format_num(res['sell_price_lose_stop'])}, {format_num(res['sell_price_win_stop'])}) ({res['trade_code']})\n"
     nl = ""
     if len(buys_txt):
         buys_txt = buy_str + buys_txt[:-1]
@@ -60,7 +60,7 @@ def get_broadcast_buy_sell(result, strategy):
     sells_txt = ""
     sell_str = f"{nl}🔴<b>Sell Status:</b>({len(result['sell'])})\n"
     for res in result['sell']:
-        sells_txt += f"{res['coin']} p={res['sell_price']:.3f}, code({res['trade_code']})\n"
+        sells_txt += f"{res['coin']} {format_num(res['sell_price'])} ({res['trade_code']})\n"
     if len(sells_txt):
         sells_txt = sell_str + sells_txt[:-1]
     broadcast_text = buys_txt + sells_txt
@@ -97,6 +97,7 @@ def realtime_exchange():
     prod = parsed_args['prod']
     show_start_msg = parsed_args['show_start_msg']
     print('Checking Keys..')
+    use_closed = True
     trader = RealtimeTrade(prod)
     trader.exchange.checkRequiredCredentials()  # raises AuthenticationError
     tb_notify = TelegramBot(prod=prod, verbose=0)
@@ -115,8 +116,8 @@ def realtime_exchange():
 
     strategy = RSIBB(strategy_params)
     # strategy = BB({'BB_ind_ahead': 20, 'BB_std': 2.0, 'BB_stop_lookahead': 70})
-    # strategy = SMAStochRSI({'RSISTO_rsi_ahead': 14,
-    #                         'RSISTO_sma_ahead': 14})
+    strategy = SMAStochRSI({'RSISTO_rsi_ahead': 14,
+                            'RSISTO_sma_ahead': 14})
     # strategy = MACross() # Will throw a lot of buy sells.
     print(f'-----> Strategy {strategy}, Trading every {timeframe}, at {trigger_minutes} min every hour')
     print(repr(strategy))
@@ -139,7 +140,7 @@ def realtime_exchange():
             wait.wait()
         # trader.refresh_markets()
         buy_details_lst, sell_details_lst = get_latest_buy_sell(data_wrapper, symbols,
-                                                                strategy, tf=timeframe)
+                                                                strategy, tf=timeframe, use_closed=use_closed)
         res = handle_buys_sells(buy_details_lst, sell_details_lst, trader)
         broadcast_text = get_broadcast_buy_sell(res, strategy)
         if broadcast_text:
