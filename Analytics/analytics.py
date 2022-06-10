@@ -55,6 +55,39 @@ os.chdir(root)
 #             'chg_price': (df['close'][-1] / df['close'][-compare_to_day]) - 1,
 #             'chg_volume': (df['volume'][-1] / df['volume'].values[-compare_to_day]) - 1})
 #     return pd.DataFrame(res).set_index('coin')
+def output_timeseries():
+    tf = '5T'
+    coin = 'BTC'
+    provider, symbols = _get_provider(tf, days_before=300)
+    ohlcv = provider.get_data(coin, tf)
+    ohlcv.index = ohlcv.index.tz_localize(None)
+    # ohlcv['volume_scaled'] = ohlcv.close * ohlcv.volume
+    # ohlcv[['volume', 'volume_scaled']].to_csv('btc_vol.csv')
+    ohlcv.to_csv(f'ohlcv_{coin}_{tf}.csv')
+
+
+def correlation():
+    import pandas as pd
+    pd.set_option('display.max_rows', 500)
+    pd.set_option('display.max_columns', 500)
+    tf = '1H'
+    data = {}
+    selected = ['BTC', 'ETH', 'APE', 'MKR', 'LTC', 'CAKE', 'ACA']
+    for tf in ['15T']:  # '5T', '15T', '1H', '4H', '1D'
+        print(tf)
+        provider, symbols = _get_provider(tf, days_before=300)
+        for symbol in selected:
+            close = provider.get_data(symbol, tf)['close']
+            # if symbol == 'BTC':
+            #     close = close.shift(5)
+            data[symbol] = close
+        df = pd.DataFrame(data)
+        corr_mat = df.corr('spearman')
+        print(corr_mat)
+        # break
+    print()
+
+
 
 def compare_volume_monthly():
     # TODO: good graph
@@ -68,7 +101,7 @@ def compare_volume_monthly():
     days_before = 90
     scaled = False
     in_usdt = True
-    tf = '1D'
+    tf = '1W'
     title_text = f'Daily Crypto volume {days_before}d, to last midnight utm,' \
                  f' scaled?={scaled},' \
                  f' in_usdt?={in_usdt}'
@@ -88,7 +121,7 @@ def compare_volume_monthly():
         vol = volume.values
         if scaled:
             vol = MinMaxScaler().fit_transform(vol.reshape(-1, 1)).reshape(-1)
-        fig.add_trace(go.Scatter(name=coin, x=vol_idx, y=vol))
+        fig.add_trace(go.Scatter(name=coin, x=vol_idx, y=vol, mode='lines+markers'))
         # fig = px.scatter(df, x=df.index, y='volume', name=coin, # color=coin
         #                  )
     fig.update_layout(title_text=title_text)
@@ -154,6 +187,8 @@ def generate_report():
 
 
 if __name__ == '__main__':
-    compare_volume_monthly()
+    # compare_volume_monthly()
+    # correlation()
+    output_timeseries()
     # generate_report()
     # get_most_changing_coins_in_tf()

@@ -1,6 +1,6 @@
 from Indicators import RSI, BollingerBands, SupportResistanceLines2
+from Indicators import SMA
 from .Strategy import Strategy
-
 
 class RSIBB(Strategy):
     """
@@ -24,11 +24,13 @@ class RSIBB(Strategy):
 
         self.bb_ahead = params.get('bb_ahead', 20)
         self.bb_std = params.get('bb_std', 2)
-        self.tolerance_close = params.get('bb_tolerance_close', 0.03)  # 0.03
+        self.bb_tolerance_close = params.get('bb_tolerance_close', 0.005)  # 0.03
+        # self.sma_buy_lk = 7
         self.lines_lk = params.get('lines_lk', 100)
 
         self._ind_rsi = RSI(self.rsi_ahead)
         self._ind_bb = BollingerBands(self.bb_ahead, self.bb_std)
+        # self._ind_sma = SMA(self.sma_buy_lk)
         self._ind_lines = SupportResistanceLines2(lookback_length=self.lines_lk)
 
     def add_indicators(self, df):
@@ -36,6 +38,8 @@ class RSIBB(Strategy):
         df = df.join(self._ind_rsi.calc(df))
         df = df.join(self._ind_bb.calc(df))
         df = df.join(self._ind_lines.calc(df))
+
+        # df = df.join(self._ind_sma.calc(df))  # Added sma too
 
         rsi_col = f"RSI_{self.rsi_ahead}"
         df['RSI_70'] = df[rsi_col] > self.rsi_high  # has passed RSI 70
@@ -45,23 +49,23 @@ class RSIBB(Strategy):
 
         if self.aggressive:
             df[f'RSI_BELOW_30_ROWS{self.n_rsi_soon}'] = df['RSI_30'].rolling(self.n_rsi_soon).sum() > 0
-            df['OVER_LOW_BB'] = df['close'] > df[f'BBBOT_{self.bb_ahead}'] * (1 - self.tolerance_close)
+            df['OVER_LOW_BB'] = df['close'] > df[f'BBBOT_{self.bb_ahead}'] * (1 - self.bb_tolerance_close)
 
             # sell condition
             df[f'RSI_OVER_70_ROWS{self.n_rsi_soon}'] = df['RSI_70'].rolling(self.n_rsi_soon).sum() > 0
-            df[f'BELOW_HIGH_BB'] = df['close'] < df[f'SMA_{self.bb_ahead}'] * (1 + self.tolerance_close)
+            df[f'BELOW_HIGH_BB'] = df['close'] < df[f'SMA_{self.bb_ahead}'] * (1 + self.bb_tolerance_close)
 
-            df['BUY_ALGO'] = df[f'RSI_BELOW_30_ROWS{self.n_rsi_soon}'] & df['OVER_LOW_BB']
+            df['BUY_ALGO'] = df[f'RSI_BELOW_30_ROWS{self.n_rsi_soon}'] & df['OVER_LOW_BB'] #& (df['close'] > df['SMA_7'])  # TODO: Added sma too
             df['SELL_ALGO'] = df[f'RSI_OVER_70_ROWS{self.n_rsi_soon}'] & df['BELOW_HIGH_BB']
 
         else:
             # buy condition
             df[f'RSI_BELOW_30_ROWS{self.n_rsi_soon}'] = df['RSI_30'].rolling(self.n_rsi_soon).sum() > 0
-            df['OVER_MID_BB'] = df['close'] > df[f'SMA_{self.bb_ahead}'] * (1 - self.tolerance_close)
+            df['OVER_MID_BB'] = df['close'] > df[f'SMA_{self.bb_ahead}'] * (1 - self.bb_tolerance_close)
 
             # sell condition
             df[f'RSI_OVER_70_ROWS{self.n_rsi_soon}'] = df['RSI_70'].rolling(self.n_rsi_soon).sum() > 0
-            df[f'BELOW_MID_BB'] = df['close'] < df[f'SMA_{self.bb_ahead}'] * (1 + self.tolerance_close)
+            df[f'BELOW_MID_BB'] = df['close'] < df[f'SMA_{self.bb_ahead}'] * (1 + self.bb_tolerance_close)
 
             df['BUY_ALGO'] = df[f'RSI_BELOW_30_ROWS{self.n_rsi_soon}'] & df['OVER_MID_BB']
             df['SELL_ALGO'] = df[f'RSI_OVER_70_ROWS{self.n_rsi_soon}'] & df['BELOW_MID_BB']

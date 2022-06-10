@@ -4,6 +4,8 @@ from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
 from datetime import datetime
 import json
+
+from Backtesting.Strategies import All_STRATEGIES
 from Data.Crypto.ccxt_utils import get_candles_from_db
 from Data.Crypto.symbols import exchange_symbol_pairs, DB_PATH
 from Plots.plotly_fig import get_updated_fig
@@ -34,6 +36,14 @@ resample_selector_html = dcc.RadioItems(options=resample_radio_options, value=re
 right_portion_html = html.Div(id='right-portion',
                               children=[html.Div(resample_selector_html)],
                               style={'width': '30%'})
+alert_html = dbc.Alert(
+    "Warning! selected data could not be fetched",
+    id="alert-problem",
+    is_open=False,
+    duration=3000,
+    color="warning",
+    style=dict(position='fixed', padding=20)
+)
 app.layout = html.Div([
     html.Div(children=[
         title_html,
@@ -50,7 +60,7 @@ app.layout = html.Div([
             style={'width': '90%', 'height': '50px', 'text-size': '4px'},
         ),
         # html.Button('Submit', id='json-button', n_clicks=0),
-
+        alert_html,
         live_update_html,
         right_portion_html],
         style={'display': 'flex', 'align-items': 'center'},
@@ -92,10 +102,9 @@ def _adjust_input_lookahead(input_lookahead):
     return max(min(input_lookahead, 100), 3)
 
 
-def get_indicators(strategy_params):
-    print('strategy_params', strategy_params)
+def get_indicators(strategy=None):
     from Indicators import Volume
-    from Backtesting.Strategies import SMAMACD, RSIBB, BB, All_STRATEGIES
+    from Backtesting.Strategies import SMAMACD, RSIBB, BB
     params = dict(
         aggressive=True,
         n_rsi_soon=4,
@@ -104,29 +113,12 @@ def get_indicators(strategy_params):
         rsi_low=30,
         rsi_high=70,
         bb_std=2.1,
-        bb_tolerance_close=0.03)
-    strategy = RSIBB(params)
-    if strategy_params:
-        try:
-            strategy = All_STRATEGIES[strategy_params['name']](strategy_params)
-            print('chosen strategy', strategy)
-        except Exception as e:
-            print(e)
-
-    main_plot_indicators_names = ('BB', 'SUPPORT_RESISTANCE', 'SMA', 'EMA')
-    # strategy = SMAMACD()
-    # strategy_params = dict(
-    #     RSIBB_aggressive=False,
-    #     RSIBB_n_rsi_soon=4,
-    #     RSIBB_rsi_ahead=14,  # RSI over 10 becomes less sesitive but its not linear, like expo.
-    #     RSIBB_bb_ahead=20,
-    #     RSIBB_rsi_low=30,
-    #     RSIBB_rsi_high=70,
-    #     RSIBB_bb_std=2.1)
-
-    # strategy = BB()
+        bb_tolerance_close=0.005)
+    if not strategy:
+        strategy = RSIBB(params)
 
     strategy_indicators = [vars(strategy)[v] for v in vars(strategy) if v.startswith('_ind_')]
+    main_plot_indicators_names = ('BB', 'SUPPORT_RESISTANCE', 'SMA', 'EMA')
     main_plot_indicators = [ind for ind in strategy_indicators if ind.name in main_plot_indicators_names]
     sub_plots = [ind for ind in strategy_indicators if ind not in main_plot_indicators]
     if len(sub_plots) == 0:
@@ -134,42 +126,48 @@ def get_indicators(strategy_params):
     return strategy, main_plot_indicators, sub_plots
 
 
-def add_buy_sell_to_fig(df_ohlcv, strategy, fig):
+def add_buy_sell_to_fig(df_ohlcv, strategy, fig, show_res=False):
     df_ohlcv = strategy.add_indicators(df_ohlcv)
     buy_locations = df_ohlcv['BUY_ALGO'][df_ohlcv['BUY_ALGO']].index
     sell_locations = df_ohlcv['SELL_ALGO'][df_ohlcv['SELL_ALGO']].index
     print_cols = ['resistance', 'support']
     print(f'Total buy_locations={len(buy_locations)}, sell_locations={len(sell_locations)}')
     for buy_loc in buy_locations:
-        # support_res_lines = df_ohlcv.loc[buy_loc][print_cols]
-        # support_res_pct = support_res_lines / df_ohlcv.loc[buy_loc]['close']
-        # print('BUY:', buy_loc, support_res_pct.to_dict(), support_res_lines.to_dict())
+        if show_res:
+            support_res_lines = df_ohlcv.loc[buy_loc][print_cols]
+            support_res_pct = support_res_lines / df_ohlcv.loc[buy_loc]['close']
+            print('BUY:', buy_loc, support_res_pct.to_dict(), support_res_lines.to_dict())
         fig.add_vline(buy_loc, row=1, col=1, line_color='green', opacity=0.4)
     for sell_loc in sell_locations:
-        # support_res_lines = df_ohlcv.loc[sell_loc][print_cols]
-        # support_res_pct = support_res_lines / df_ohlcv.loc[sell_loc]['close']
-        # print('SELL:', sell_loc, support_res_pct.to_dict(), support_res_lines.to_dict())
+        if show_res:
+            support_res_lines = df_ohlcv.loc[sell_loc][print_cols]
+            support_res_pct = support_res_lines / df_ohlcv.loc[sell_loc]['close']
+            print('SELL:', sell_loc, support_res_pct.to_dict(), support_res_lines.to_dict())
         fig.add_vline(sell_loc, row=1, col=1, line_color='red', opacity=0.4)
     return fig
 
 
 @app.callback(Output('live-update-graph', 'figure'),
               Output('live-update-text', 'children'),
+              Output('alert-problem', 'children'),
+              Output('alert-problem', 'is_open'),
               Input('start-date', 'value'),
               Input('coin-type', 'value'),
               Input('resample-type', 'value'),
               Input('strategy-params', 'value'))
 def update_graph_live(start_date, coin, resample, strategy_params_text):
-    strategy_params = None
+    strategy = None
     end_date = None
     print(start_date, coin, resample)
     t0 = datetime.now()
     try:
         if len(strategy_params_text) > 0:
             strategy_params = json.loads(strategy_params_text)
+            strategy = All_STRATEGIES[strategy_params['name']](strategy_params)
+            print('chosen strategy', strategy)
     except Exception as e:
         print('JSONDecoder failed..')
-        return dash.no_update, dash.no_update
+        return dash.no_update, dash.no_update, str(repr(e)), True
     if len(start_date):
         start_ts = int(pd.to_datetime(start_date).timestamp())
         end_date = pd.to_datetime(start_date) + INTERVAL_CANDLE_LOOKBACK_TABLE[resample]
@@ -179,7 +177,7 @@ def update_graph_live(start_date, coin, resample, strategy_params_text):
     if end_date:
         df_ohlcv = df_ohlcv[df_ohlcv.index <= pd.to_datetime(end_date, utc=True).tz_convert('Israel')]
 
-    strategy, main_plot_indicators, sub_plots = get_indicators(strategy_params)
+    strategy, main_plot_indicators, sub_plots = get_indicators(strategy)
     fig = get_updated_fig(df_ohlcv, main_plot_indicators, sub_plots, xy_limit=False)
     fig = add_buy_sell_to_fig(df_ohlcv, strategy, fig)
 
@@ -189,7 +187,7 @@ def update_graph_live(start_date, coin, resample, strategy_params_text):
                      f'\n{coin}, rows={len(df_ohlcv)}'),
             html.Div(f'{repr(strategy)}')]
     print(f'ready at:{t1}sec')
-    return fig, text
+    return fig, text, None, False
 
 
 import sys

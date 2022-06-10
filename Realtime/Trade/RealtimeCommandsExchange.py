@@ -9,7 +9,6 @@ from tqdm import tqdm
 import time
 
 
-# TODO:
 #  Working only with biannace at the momenet, take all the coins from the symbols, and filter only binance.
 #  run only on those coins.
 #  Use telegram to broadcast buy / sell commands, stright from the trader.
@@ -18,6 +17,20 @@ import time
 def handle_buys_sells(buy_lst, sell_lst, trader: RealtimeTrade):
     res = {'buy': [], 'sell': []}
     coins_in_stable = trader.get_assets_holding(filter_min_trade=True)
+    skip_coins = []
+    for sell_details in sell_lst:
+        coin = sell_details['coin']
+        # TODO: check buy price from DB and skip if sell p lower than buy p.
+        if coins_in_stable and coin not in coins_in_stable:
+            skip_coins.append(coin)
+            continue
+        code = trader.handle_sell(sell_details)
+        print(f"Trader:: handle_sell - {coin} {code}")
+        sell_details['trade_code'] = code
+        res['sell'].append(sell_details)
+    if len(skip_coins):
+        print(f'Listed to SELL, holding less than min trade amount. code(-3)({",".join(skip_coins)})')
+
     skip_coins = []
     for buy_details in buy_lst:
         coin = buy_details['coin']
@@ -30,39 +43,24 @@ def handle_buys_sells(buy_lst, sell_lst, trader: RealtimeTrade):
         buy_details['trade_code'] = code
         res['buy'].append(buy_details)
     if len(skip_coins):
-        print(f'These coins are listed to BUY, but already owning them. code(-11)\n{",".join(skip_coins)}')
-
-    skip_coins = []
-    for sell_details in sell_lst:
-        coin = sell_details['coin']
-        if coins_in_stable and coin not in coins_in_stable:
-            skip_coins.append(coin)
-            continue
-        code = trader.handle_sell(sell_details)
-        print(f"Trader:: handle_sell - {coin} {code}")
-        sell_details['trade_code'] = code
-        res['sell'].append(sell_details)
-    if len(skip_coins):
-        print(
-            f'These coins are listed to SELL, but holding less than min trade amount. code(-3)\n{",".join(skip_coins)}')
+        print(f'Listed to BUY, already owning them. code(-11)({",".join(skip_coins)})')
 
     return res
 
 
 def get_broadcast_buy_sell(result, strategy):
-    # res = {'buy': [], 'sell': []}
     buys_txt = ""
-    buy_str = "🟢<b>Buy Status:</b>\n"
+    buy_str = f"🟢<b>Buy Status:</b> ({len(result['buy'])})\n"
     for res in result['buy']:
-        buys_txt += f"{res['coin']} p={res['buy_price']:.2f}, ({res['sell_price_lose_stop']:.2f}, {res['sell_price_win_stop']:.2f}), code({res['trade_code']})\n"
+        buys_txt += f"{res['coin']} p={res['buy_price']:.3f}, ({res['sell_price_lose_stop']:.3f}, {res['sell_price_win_stop']:.3f}), code({res['trade_code']})\n"
     nl = ""
     if len(buys_txt):
         buys_txt = buy_str + buys_txt[:-1]
         nl = "\n"
     sells_txt = ""
-    sell_str = f"{nl}🔴<b>Sell Status:</b>\n"
+    sell_str = f"{nl}🔴<b>Sell Status:</b>({len(result['sell'])})\n"
     for res in result['sell']:
-        sells_txt += f"{res['coin']} p={res['sell_price']:.2f}, code({res['trade_code']})\n"
+        sells_txt += f"{res['coin']} p={res['sell_price']:.3f}, code({res['trade_code']})\n"
     if len(sells_txt):
         sells_txt = sell_str + sells_txt[:-1]
     broadcast_text = buys_txt + sells_txt
@@ -75,7 +73,7 @@ def get_broadcast_buy_sell(result, strategy):
 def get_start_msg(symbols, timeframe, strategy):
     title_strategy = f'{strategy}({timeframe})'
     str_symbols = ", ".join(symbols)
-    start_msg = f'{title_strategy}\nFollowing: {str_symbols}'
+    start_msg = f'{title_strategy}\n{repr(strategy)}\nFollowing: {str_symbols}'
     return start_msg
 
 
@@ -107,13 +105,13 @@ def realtime_exchange():
     # 1H,True,4,7,20,30,70,2.1
     # {"name": "RSIBB", "aggressive": true, "rsi_ahead": 10, "rsi_low": 30, "rsi_high": 70, "n_rsi_soon": 4, "bb_ahead": 20, "bb_std": 2.1, "bb_tolerance_close": 0.01, "lines_lk": 100}
     strategy_params = dict(
-        RSIBB_aggressive=True,
-        RSIBB_n_rsi_soon=4,
-        RSIBB_rsi_ahead=7,  # RSI over 10 becomes less sesitive but its not linear, like expo.
-        RSIBB_bb_ahead=20,
-        RSIBB_rsi_low=30,
-        RSIBB_rsi_high=70,
-        RSIBB_bb_std=2.1)
+        aggressive=True,
+        n_rsi_soon=4,
+        rsi_ahead=10,  # RSI over 10 becomes less sesitive but its not linear, like expo.
+        bb_ahead=20,
+        rsi_low=30,
+        rsi_high=70,
+        bb_std=2.1)
 
     strategy = RSIBB(strategy_params)
     # strategy = BB({'BB_ind_ahead': 20, 'BB_std': 2.0, 'BB_stop_lookahead': 70})
