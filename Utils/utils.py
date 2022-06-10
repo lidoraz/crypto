@@ -16,16 +16,18 @@ def _pretty_remainder(n, precision):
 
 
 def format_num(n):
-    remainder = n - round(n)
-    rounded = str(round(n))
-    if remainder == 0:
-        return n
+    fraction = n - math.floor(n)
+    whole = str(math.floor(n))
+    if fraction == 0:
+        return round(n)
+    elif n > 999:
+        return f'{whole}'
     elif n > 99:
-        return f'{rounded}.{_pretty_remainder(remainder, 1)}'
+        return f'{whole}.{_pretty_remainder(fraction, 1)}'
     elif n > 9:
-        return f'{rounded}.{_pretty_remainder(remainder, 2)}'
+        return f'{whole}.{_pretty_remainder(fraction, 2)}'
     else:
-        return f'{rounded}.{_pretty_remainder(remainder, 3)}'
+        return f'{whole}.{_pretty_remainder(fraction, 3)}'
 
 
 def wait_until(end_datetime):
