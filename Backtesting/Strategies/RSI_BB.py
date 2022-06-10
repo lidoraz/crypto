@@ -80,10 +80,10 @@ class RSIBB(Strategy):
             buy_price = row['close']
             # add stop-loss
             if self.aggressive:
-                sell_price_win_stop = row[f'resistance']
-                sell_price_lose_stop = row[f'support']
+                sell_price_win_stop = buy_price * 1.15  # row[f'resistance']
+                sell_price_lose_stop = buy_price * 0.92  # row[f'support']
             else:
-                sell_price_win_stop = row[f'BBTOP_{self.bb_ahead}']
+                sell_price_win_stop = row[f'BBTOP_{self.bb_ahead}'] * 1.05
                 sell_price_lose_stop = row[f'BBBOT_{self.bb_ahead}']
             return {'buy_idx': buy_idx,
                     'buy_price': buy_price,
