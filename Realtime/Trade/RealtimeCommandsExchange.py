@@ -116,8 +116,8 @@ def realtime_exchange():
 
     strategy = RSIBB(strategy_params)
     # strategy = BB({'BB_ind_ahead': 20, 'BB_std': 2.0, 'BB_stop_lookahead': 70})
-    strategy = SMAStochRSI({'RSISTO_rsi_ahead': 14,
-                            'RSISTO_sma_ahead': 14})
+    # strategy = SMAStochRSI({'RSISTO_rsi_ahead': 14,
+    #                         'RSISTO_sma_ahead': 14})
     # strategy = MACross() # Will throw a lot of buy sells.
     print(f'-----> Strategy {strategy}, Trading every {timeframe}, at {trigger_minutes} min every hour')
     print(repr(strategy))
