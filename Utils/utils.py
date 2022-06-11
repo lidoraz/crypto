@@ -6,28 +6,37 @@ import math
 def _pretty_remainder(n, precision):
     idx_first_digit_decimal = int(math.log10(abs(n))) * -1
     # add precision after first digit not zero
-    out_str = str(f'{n:.{idx_first_digit_decimal + precision}f}')
+    out_str = str(f'{n:.{idx_first_digit_decimal + precision}f}')[2:]  # skip 0.
     last_digit_not_zero = len(out_str) - 1
     for i in reversed(range(len(out_str))):
         if out_str[i] != '0':
             last_digit_not_zero = i + 1  # inclusive
             break
-    return out_str[2:last_digit_not_zero]
-
-
-def format_num(n):
-    fraction = n - math.floor(n)
-    whole = str(math.floor(n))
-    if fraction == 0:
-        return round(n)
-    elif n > 999:
-        return f'{whole}'
-    elif n > 99:
-        return f'{whole}.{_pretty_remainder(fraction, 1)}'
-    elif n > 9:
-        return f'{whole}.{_pretty_remainder(fraction, 2)}'
+    out = out_str[:last_digit_not_zero]
+    if len(out):
+        return '.' + out
     else:
-        return f'{whole}.{_pretty_remainder(fraction, 3)}'
+        return ''
+
+
+def format_num(n, digits=0):
+    try:
+        fraction = n - math.floor(n)
+        whole = str(math.floor(n))
+        if fraction == 0:
+            return round(n)
+        elif n > 999:
+            return f'{whole}'
+        elif n > 99:
+            return f'{whole}{_pretty_remainder(fraction, digits)}'
+        elif n > 9:
+            return f'{whole}{_pretty_remainder(fraction, digits+1)}'
+        elif n > 1:
+            return f'{whole}{_pretty_remainder(fraction, digits+2)}'
+        else:
+            return f'{whole}{_pretty_remainder(fraction, digits+3)}'
+    except ValueError as e:
+        return 'nan'
 
 
 def wait_until(end_datetime):
