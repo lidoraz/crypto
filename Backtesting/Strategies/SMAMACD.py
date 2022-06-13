@@ -49,8 +49,8 @@ class SMAMACD(Strategy):
         # df['MACD_UPTREND'] = (df['MCAD_HIST'] >= macd_threshold_low) & (df['MCAD_HIST'] < macd_threshold_high)   # has passed RSI 70
         # df['MACD_DOWNTREND'] = (df['MCAD_HIST'] < -macd_threshold_low) & (df['MCAD_HIST'] > -macd_threshold_high)  # has passed RSI 30
         # TODO: Still not very good, but i think this is the way.
-        df['MACD_UPTREND'] = (df['MCAD_HIST'] > 0) & (df['MCAD_HIST'].pct(periods=2) > 7.0)
-        df['MACD_DOWNTREND'] = (df['MCAD_HIST'] < 0) & (df['MCAD_HIST'].pct(periods=2) < -7.0)
+        df['MACD_UPTREND'] = (df['MCAD_HIST'] > 0) & (df['MCAD_HIST'].pct_change(periods=2) > 7.0)
+        df['MACD_DOWNTREND'] = (df['MCAD_HIST'] < 0) & (df['MCAD_HIST'].pct_change(periods=2) < -7.0)
         # # buy condition
         df[f'MACD_UPTREND_BEFORE'] = df['MACD_UPTREND'].rolling(self.n_macd_soon).sum() > 0
         # # sell condition
