@@ -1,6 +1,7 @@
 from Data import CryptoData
 from datetime import datetime, timedelta
 import pandas as pd
+import plotly.graph_objects as go
 import os
 
 from Data.Crypto.ccxt_utils import get_exchange_symbol_by_coin
@@ -88,13 +89,89 @@ def correlation():
     print()
 
 
+def detect_changes():
+    """
+    Detects Green or Red long candles, maybe be useful for another confirmation / when the market volatile
+    """
+    # -------------------------------------------------------
+    # Low range
+    # tf = '2h'
+    # trehsold = 0.015  # 1.5% pct in 2 hours.
+    # -------------------------------------------------------
+    tf = '2h'
+    # pred_tf = '2h'
+    trehsold = 0.04
+    # --------------------------------------------
+    # TODO: Resample to 1T and then resample using origin
+    #  can be used after some work with real real time, which will run every 1 min.
+    days_before = 3
+    provider, symbols = _get_provider(tf, days_before=days_before)
+    df_all = pd.DataFrame()
+    for coin in symbols:
+        df = provider.get_data(coin, tf).copy()
+        # df.index = df.index.tz
+        # df.close.resample()
+        df = df[['close', 'volume']]
+        #  df.close.resample('2H', origin=pd.to_datetime(datetime.utcnow(),utc=True).tz_convert('Israel')).last()
+        df['pct'] = df['close'].pct_change()
+
+        df['weight'] = df['close'] * df['volume']
+        df['coin'] = coin
+        df_all = pd.concat([df_all, df.iloc[-1]], axis=1)
+    df_all = df_all.T
+    plus = df_all[df_all['pct'] > trehsold].sort_values('pct', ascending=False) #'pd.DataFrame({'c': plus_lst, 'w': plus_weight}).sort_values('w', ascending=False)['c'].to_list()
+    minus = df_all[df_all['pct'] < -trehsold].sort_values('pct', ascending=True)
+    print('Ordered by Volume * closed price')
+    coin = plus['coin'].values
+    pct = plus['pct'].apply(lambda x: f'{x:0.2%}').values
+    print('Positive', f'last: {tf} > {trehsold:.2%}', len(plus), list(zip(coin, pct)))
+    coin = minus['coin'].values
+    pct = minus['pct'].apply(lambda x: f'{x:0.2%}').values
+    print('Negative', f'last: {tf} < {trehsold:.2%}', len(minus), list(zip(coin, pct)))
+
+
+def generate_crypto_qqq():
+    from sklearn.preprocessing import MinMaxScaler
+
+    def _get_supply():
+        import requests
+        import json
+        res = requests.get('https://www.binance.com/exchange-api/v2/public/asset-service/product/get-products')
+        data = json.loads(res.content)['data']
+        data = [d for d in data if d['s'].endswith('USDT')]
+        return {v['b']: v['cs'] for v in data}
+
+    supply = _get_supply()
+    fig = go.Figure()
+    days_before = 90
+    tf = '1D'
+    title_text = f'Daily Crypto QQQ {days_before}d, to last midnight utm'
+    provider, symbols = _get_provider(tf, days_before=days_before)
+    # shib volume is insane, but that is because its supply is huge. scaler is must.
+    all = pd.DataFrame()
+    # for coin in sorted(symbols):
+    symbols = ['BTC', 'ETH', 'XRP', 'SOL']
+    for coin in symbols:
+        df = provider.get_data(coin, tf)[:-1]  # [:-1] will not be closed to the right
+        market_cup = df.close * supply[coin]
+        all[coin] = market_cup
+    # largest_coins = all.iloc[-1][:10].index
+    sum_every_day = all.sum(axis=1)
+    idx = sum_every_day.index
+    # all['weights'] = all.apply(lambda x: x/sum_every_day, axis=1)
+
+    fig.add_trace(go.Scatter(name='weights', x=idx, y=sum_every_day, mode='lines+markers'))
+    # fig = px.scatter(df, x=df.index, y='volume', name=coin, # color=coin
+    #                  )
+    fig.update_layout(title_text=title_text)
+    fig.show()
+
 
 def compare_volume_monthly():
     # TODO: good graph
     # db_path = DB_PATH
     # db = Persistence(db_path)
     # import plotly.express as px
-    import plotly.graph_objects as go
     from sklearn.preprocessing import MinMaxScaler
 
     fig = go.Figure()
@@ -187,8 +264,10 @@ def generate_report():
 
 
 if __name__ == '__main__':
+    detect_changes()
+    # generate_crypto_qqq()
     # compare_volume_monthly()
     # correlation()
-    output_timeseries()
+    # output_timeseries()
     # generate_report()
     # get_most_changing_coins_in_tf()

@@ -4,10 +4,12 @@ from .BB import BB
 from .MACross import MACross
 from .SMAStochRSI import SMAStochRSI
 from .SMAMACD import SMAMACD
+from .HighChange import HighChange
 from .Strategy import Strategy
 
 All_STRATEGIES = dict(RSIBB=RSIBB,
                       BB=BB,
                       MACROSS=MACross,
                       RSISTO=SMAStochRSI,
-                      SMAMACD=SMAMACD)
+                      SMAMACD=SMAMACD,
+                      HIGHCHANGE=HighChange)

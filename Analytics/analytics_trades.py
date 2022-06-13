@@ -6,7 +6,8 @@ def anaylize_trades():
     raw_trades = get_table()
     df = calc_trade_pct(raw_trades)
     dff = df[df['buy_dt'] > '2022-05-27']
-    dff.groupby('symbol')['sell_buy_price'].sum().sort_values(ascending=False)
+    most_changing = dff.groupby('symbol')['sell_buy_price'].sum().sort_values(ascending=False)
+    print(most_changing)
     # filter by 27 May, then group and sum by symbol over ROI, get best.
 
 
