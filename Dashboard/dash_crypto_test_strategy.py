@@ -5,7 +5,7 @@ import dash_bootstrap_components as dbc
 from datetime import datetime
 import json
 
-from Backtesting.Strategies import All_STRATEGIES
+from Backtesting.Strategies import All_STRATEGIES, HighChange
 from Data.Crypto.ccxt_utils import get_candles_from_db
 from Data.Crypto.symbols import exchange_symbol_pairs, DB_PATH
 from Plots.plotly_fig import get_updated_fig
@@ -104,18 +104,8 @@ def _adjust_input_lookahead(input_lookahead):
 
 def get_indicators(strategy=None):
     from Indicators import Volume
-    from Backtesting.Strategies import SMAMACD, RSIBB, BB
-    params = dict(
-        aggressive=True,
-        n_rsi_soon=4,
-        rsi_ahead=7,  # RSI over 10 becomes less sesitive but its not linear, like expo.
-        bb_ahead=20,
-        rsi_low=30,
-        rsi_high=70,
-        bb_std=2.1,
-        bb_tolerance_close=0.005)
     if not strategy:
-        strategy = RSIBB(params)
+        strategy = HighChange({"pct": 0.015, "vol_pct": 1.15})
 
     strategy_indicators = [vars(strategy)[v] for v in vars(strategy) if v.startswith('_ind_')]
     main_plot_indicators_names = ('BB', 'SUPPORT_RESISTANCE', 'SMA', 'EMA')

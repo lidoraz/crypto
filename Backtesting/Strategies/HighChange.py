@@ -11,12 +11,12 @@ class HighChange(Strategy):
             params = {}
         # 0.01 for 15min, 0.05 for 1H
         self.pct = params.get('pct', 0.01)
-        # self.smoo = params.get('long', long)
+        self.vol_pct = params.get('vol_pct', 1.1)
         self._vol = Volume()
 
     def add_indicators(self, df):
         df = df.join(self._vol.calc(df))
-        df['volume_over'] = df[f'volume_EMA{self._vol.smooth_factor}'] * 1.2 < df.volume
+        df['volume_over'] = df[f'volume_EMA{self._vol.smooth_factor}'] * self.vol_pct < df.volume
         df['pct_close'] = df.close.pct_change()
         # find high candle
         # df['high_low'] = df['high'] - df['low']

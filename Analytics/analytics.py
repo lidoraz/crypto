@@ -95,24 +95,26 @@ def detect_changes():
     """
     # -------------------------------------------------------
     # Low range
-    # tf = '2h'
-    # trehsold = 0.015  # 1.5% pct in 2 hours.
+    tf = '15T'
+    trehsold = 0.015 # 1.5% pct in 2 hours.
     # -------------------------------------------------------
-    tf = '2h'
-    # pred_tf = '2h'
-    trehsold = 0.04
+    # tf = '2h'
+    # trehsold = 0.04
     # --------------------------------------------
     # TODO: Resample to 1T and then resample using origin
     #  can be used after some work with real real time, which will run every 1 min.
-    days_before = 3
-    provider, symbols = _get_provider(tf, days_before=days_before)
+    days_before = 1
+    provider, symbols = _get_provider('1T', days_before=days_before)
     df_all = pd.DataFrame()
+    time_now = pd.to_datetime(datetime.utcnow(), utc=True).tz_convert('Israel')
     for coin in symbols:
-        df = provider.get_data(coin, tf).copy()
-        # df.index = df.index.tz
-        # df.close.resample()
+        df = provider.get_data(coin, '1T').copy()
+        df = pd.concat([df['close'].resample(tf, origin=time_now).last(),
+                        df['low'].resample(tf, origin=time_now).min(),
+                        df['high'].resample(tf, origin=time_now).max(),
+                        df['volume'].resample(tf, origin=time_now).sum()], axis=1)
+
         df = df[['close', 'volume']]
-        #  df.close.resample('2H', origin=pd.to_datetime(datetime.utcnow(),utc=True).tz_convert('Israel')).last()
         df['pct'] = df['close'].pct_change()
 
         df['weight'] = df['close'] * df['volume']
@@ -121,7 +123,8 @@ def detect_changes():
     df_all = df_all.T
     plus = df_all[df_all['pct'] > trehsold].sort_values('pct', ascending=False) #'pd.DataFrame({'c': plus_lst, 'w': plus_weight}).sort_values('w', ascending=False)['c'].to_list()
     minus = df_all[df_all['pct'] < -trehsold].sort_values('pct', ascending=True)
-    print('Ordered by Volume * closed price')
+    # print('Ordered by Volume * closed price')
+    print(f'Most changing, updated to {time_now}')
     coin = plus['coin'].values
     pct = plus['pct'].apply(lambda x: f'{x:0.2%}').values
     print('Positive', f'last: {tf} > {trehsold:.2%}', len(plus), list(zip(coin, pct)))
