@@ -86,8 +86,8 @@ def broadcast():
     if show_start_msg:
         tb_notify.send(start_msg)
     while True:
-        # if prod:
-        wait.wait()
+        if prod:
+            wait.wait()
         buy_details_lst, sell_details_lst = get_latest_buy_sell(data_wrapper, symbols,
                                                                 strategy, tf=timeframe, use_closed=use_closed)
         res = {'buy': buy_details_lst, 'sell': sell_details_lst}
@@ -95,8 +95,8 @@ def broadcast():
         if broadcast_text:
             tb_notify.send(broadcast_text)
 
-        # if not prod:  # safety
-        #     break
+        if not prod:  # safety
+            break
 
 
 if __name__ == '__main__':
