@@ -59,7 +59,7 @@ def broadcast():
     parsed_args = handle_args()
     timeframe = parsed_args['timeframe']
     trigger_minutes = parsed_args['trigger_minutes']
-    trigger_minutes = range(60)
+    # trigger_minutes = range(60)
     prod = parsed_args['prod']
     show_start_msg = parsed_args['show_start_msg']
     use_closed = False
