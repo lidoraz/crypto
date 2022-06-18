@@ -87,12 +87,26 @@ def broadcast():
     print(start_msg)
     if show_start_msg:
         tb_notify.send(start_msg)
+    curr_buy = {}
+    curr_sell = {}
+    import pandas as pd
+    last_broadcast_dt = pd.to_datetime(0, unit='s')
     while True:
         if prod:
             wait.wait()
+
+        # don't broadcast every min, sleep for a timeframe
+        time_now = pd.to_datetime(int(time.time()), unit='s')
+        if last_broadcast_dt > time_now - pd.to_timedelta(timeframe):
+            continue
+
         buy_details_lst, sell_details_lst = get_latest_buy_sell(data_wrapper, symbols,
                                                                 strategy, tf=timeframe, use_closed=use_closed)
         if len(buy_details_lst) >= n_change_coins or len(sell_details_lst) >= n_change_coins:
+            last_broadcast_dt = pd.to_datetime(int(time.time()), unit='s')
+            # curr_buy
+            # add to list and dont broadcast if unless already changed.
+            # [v['coin'] for v in sell_details_lst]
             res = {'buy': buy_details_lst, 'sell': sell_details_lst}
             broadcast_text = get_broadcast_buy_sell_pct(res, strategy, timeframe)
             if broadcast_text:
