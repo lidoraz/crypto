@@ -84,15 +84,10 @@ def run_SMAMACD(data_wrapper, tf, start_date, n_jobs):
 
 
 def run_optimizer():
-    # args = sys.argv[1:]
-    # data = json.loads(args)
-    # start_date = data['start_date']
-    # mp = data['mp']
-    # strategy_str = data['strategy']
-    # data.pop('start_date')
-    # data.pop('mp')
     tf = '1H'  # 15min'
     start_date = '2022-06-01'
+    # tf = '1T'  # 15min'
+    # start_date = '2022-06-01'
 
     n_jobs = 8
     # n_jobs = os.cpu_count()
@@ -100,6 +95,9 @@ def run_optimizer():
                                           only_exchange='binance')  # start_date='2022-04-25'
     params = (data_wrapper, tf, start_date, n_jobs)
     jobs = [
+        # run_HIGHCHANGE(*params),
+        # TODO: add highchange as test of strategy, issue is this: in order to optimize this,
+        #  it must be a duration of about 5 minutes, after that we sell if we have profit., currently sell work opposite to buy
         # run_MACross(*params),
         run_RSIBB(*params),
         # run_BB(*params),

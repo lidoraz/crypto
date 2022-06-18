@@ -59,17 +59,22 @@ def broadcast():
     parsed_args = handle_args()
     timeframe = parsed_args['timeframe']
     trigger_minutes = parsed_args['trigger_minutes']
-    # trigger_minutes = range(60)
+
+    #########################################################
+    trigger_minutes = range(60)
+    timeframe = '3T'
+    pct = 0.01  # 0.015 # for 15min
+    vol_over_pct = 0.1
+    use_closed = False
+    #########################################################
     prod = parsed_args['prod']
     show_start_msg = parsed_args['show_start_msg']
-    use_closed = False
     print(f'Checking Keys.. use_closed = {use_closed}')
-
+    # TODO: Shit coins - low volume - RNDR, FLUX, ACA, MOVR, KDA,
     tb_notify = TelegramBot(prod=prod, verbose=0)
     print('Checking Keys.. All OK')
-    strategy = HighChange({"pct": 0.02, 'vol_pct': 1.1})
-    n_change_coins = 5  # at least 5 coins must change in order to broadcast.
-    print(f'n_change_coins = {n_change_coins}')
+    strategy = HighChange({"pct": pct, 'vol_pct': vol_over_pct + 1})
+
     # strategy = MACross() # Will throw a lot of buy sells.
     print(f'-----> Strategy {strategy}, Trading every {timeframe}, at {trigger_minutes} min every hour')
     print(repr(strategy))
@@ -92,11 +97,10 @@ def broadcast():
             wait.wait()
         buy_details_lst, sell_details_lst = get_latest_buy_sell(data_wrapper, symbols,
                                                                 strategy, tf=timeframe, use_closed=use_closed)
-        if len(buy_details_lst) > n_change_coins or len(buy_details_lst) > n_change_coins:
-            res = {'buy': buy_details_lst, 'sell': sell_details_lst}
-            broadcast_text = get_broadcast_buy_sell_pct(res, strategy, timeframe)
-            if broadcast_text:
-                tb_notify.send(broadcast_text)
+        res = {'buy': buy_details_lst, 'sell': sell_details_lst}
+        broadcast_text = get_broadcast_buy_sell_pct(res, strategy, timeframe)
+        if broadcast_text:
+            tb_notify.send(broadcast_text)
 
         if not prod:  # safety
             break
