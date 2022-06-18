@@ -66,7 +66,7 @@ def broadcast():
     pct = 0.01  # 0.015 # for 15min
     vol_over_pct = 0.1
     use_closed = False
-    #########################################################
+    ########################################################
     prod = parsed_args['prod']
     show_start_msg = parsed_args['show_start_msg']
     print(f'Checking Keys.. use_closed = {use_closed}')
