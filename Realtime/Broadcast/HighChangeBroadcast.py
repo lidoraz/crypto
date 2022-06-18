@@ -71,7 +71,7 @@ def broadcast():
     n_change_coins = 5  # at least 5 coins must change in order to broadcast.
     print(f'n_change_coins = {n_change_coins}')
     # strategy = MACross() # Will throw a lot of buy sells.
-    print(f'-----> Strategy {strategy}, Broadcasting every {timeframe}, at {trigger_minutes} min every hour')
+    print(f'-----> Strategy {strategy}, Broadcasting agg TF {timeframe}, at {trigger_minutes} min every hour')
     print(repr(strategy))
     if prod:
         print('-----> WARNING: $$$$ *PRODUCTION* - SLEEPING FOR 1 MIN')
@@ -92,7 +92,7 @@ def broadcast():
             wait.wait()
         buy_details_lst, sell_details_lst = get_latest_buy_sell(data_wrapper, symbols,
                                                                 strategy, tf=timeframe, use_closed=use_closed)
-        if len(buy_details_lst) > n_change_coins or len(buy_details_lst) > n_change_coins:
+        if len(buy_details_lst) >= n_change_coins or len(sell_details_lst) >= n_change_coins:
             res = {'buy': buy_details_lst, 'sell': sell_details_lst}
             broadcast_text = get_broadcast_buy_sell_pct(res, strategy, timeframe)
             if broadcast_text:
