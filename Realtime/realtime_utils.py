@@ -37,13 +37,14 @@ def handle_args():
 
 
 def _upsample_from_1m_curr_dt(df, tf, dt_now):
-    if df is not None:
-        df = pd.concat([
-            df['open'].resample(tf, origin=dt_now).first(),
-            df['close'].resample(tf, origin=dt_now).last(),
-            df['low'].resample(tf, origin=dt_now).min(),
-            df['high'].resample(tf, origin=dt_now).max(),
-            df['volume'].resample(tf, origin=dt_now).sum()], axis=1)
+    if df is None:
+        return None
+    df = pd.concat([
+        df['open'].resample(tf, origin=dt_now).first(),
+        df['close'].resample(tf, origin=dt_now).last(),
+        df['low'].resample(tf, origin=dt_now).min(),
+        df['high'].resample(tf, origin=dt_now).max(),
+        df['volume'].resample(tf, origin=dt_now).sum()], axis=1)
     return df
 
 

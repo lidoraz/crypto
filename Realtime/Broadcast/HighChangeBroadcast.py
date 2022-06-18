@@ -58,8 +58,8 @@ def broadcast():
     """
     parsed_args = handle_args()
     timeframe = parsed_args['timeframe']
-    trigger_minutes = parsed_args['trigger_minutes']
-    # trigger_minutes = range(60)
+    # trigger_minutes = parsed_args['trigger_minutes']
+    trigger_minutes = range(60)
     prod = parsed_args['prod']
     show_start_msg = parsed_args['show_start_msg']
     use_closed = False
@@ -67,11 +67,11 @@ def broadcast():
 
     tb_notify = TelegramBot(prod=prod, verbose=0)
     print('Checking Keys.. All OK')
-    strategy = HighChange({"pct": 0.02, 'vol_pct': 1.1})
+    strategy = HighChange({"pct": 0.015, 'vol_pct': 1.1})
     n_change_coins = 5  # at least 5 coins must change in order to broadcast.
     print(f'n_change_coins = {n_change_coins}')
     # strategy = MACross() # Will throw a lot of buy sells.
-    print(f'-----> Strategy {strategy}, Trading every {timeframe}, at {trigger_minutes} min every hour')
+    print(f'-----> Strategy {strategy}, Broadcasting every {timeframe}, at {trigger_minutes} min every hour')
     print(repr(strategy))
     if prod:
         print('-----> WARNING: $$$$ *PRODUCTION* - SLEEPING FOR 1 MIN')
