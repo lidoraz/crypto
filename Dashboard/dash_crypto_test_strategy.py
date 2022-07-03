@@ -5,7 +5,7 @@ import dash_bootstrap_components as dbc
 from datetime import datetime
 import json
 
-from Backtesting.Strategies import All_STRATEGIES, HighChange
+from Backtesting.Strategies import All_STRATEGIES, HighChange, EMAVol
 from Data.Crypto.ccxt_utils import get_candles_from_db
 from Data.Crypto.symbols import exchange_symbol_pairs, DB_PATH
 from Plots.plotly_fig import get_updated_fig
@@ -31,7 +31,7 @@ app.title = title
 title_html = html.Div(title, style={'padding-right': '5%', 'margin-left': '2%'})
 coin_html = dcc.Dropdown(coins, 'BTC', id='coin-type', clearable=False, style=dict(width='60pt'))
 live_update_html = html.Div(id='live-update-text', style={'margin': 'auto'}, children="")  # 'width': '20%',
-resample_selector_html = dcc.RadioItems(options=resample_radio_options, value=resample_keywords[2], id='resample-type',
+resample_selector_html = dcc.RadioItems(options=resample_radio_options, value=resample_keywords[0], id='resample-type',
                                         inline=True)
 right_portion_html = html.Div(id='right-portion',
                               children=[html.Div(resample_selector_html)],
@@ -105,7 +105,8 @@ def _adjust_input_lookahead(input_lookahead):
 def get_indicators(strategy=None):
     from Indicators import Volume
     if not strategy:
-        strategy = HighChange({"pct": 0.015, "vol_pct": 1.15})
+        strategy = EMAVol()
+        # strategy = HighChange({"pct": 0.015, "vol_pct": 1.15})
 
     strategy_indicators = [vars(strategy)[v] for v in vars(strategy) if v.startswith('_ind_')]
     main_plot_indicators_names = ('BB', 'SUPPORT_RESISTANCE', 'SMA', 'EMA')
@@ -118,6 +119,7 @@ def get_indicators(strategy=None):
 
 def add_buy_sell_to_fig(df_ohlcv, strategy, fig, show_res=False):
     df_ohlcv = strategy.add_indicators(df_ohlcv)
+    # return fig
     buy_locations = df_ohlcv['BUY_ALGO'][df_ohlcv['BUY_ALGO']].index
     sell_locations = df_ohlcv['SELL_ALGO'][df_ohlcv['SELL_ALGO']].index
     print_cols = ['resistance', 'support']

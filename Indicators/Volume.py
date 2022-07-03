@@ -11,18 +11,18 @@ class Volume(Indicator):
     calc returns "volume_EMA7" -- smoothed version of volume
     """
 
-    def __init__(self, plot_loc=None):
+    def __init__(self, vol_ema=7, plot_loc=None):
         self.name = "VOLUME"
         self.plot_loc = (plot_loc, 1 if plot_loc else None)
         self.vol = None
         self.marker_color = None
-        self.smooth_factor = 7
-        self._smooth = EMA(self.smooth_factor)
+        self.vol_ema = vol_ema
+        self._smooth = EMA(self.vol_ema)
 
     def calc(self, ohlcv):
         self.vol = ohlcv['volume']
         self._smooth_calc = self._smooth.calc(self.vol)
-        self._smooth_calc.name = f'volume_EMA{self.smooth_factor}'
+        self._smooth_calc.name = f'volume_EMA{self.vol_ema}'
         self.marker_color = get_marker_color_candle(ohlcv)
         return self._smooth_calc
 
@@ -32,7 +32,7 @@ class Volume(Indicator):
                        marker_color=self.marker_color)
         fig.add_trace(trace, row=self.plot_loc[0], col=self.plot_loc[1])
 
-        trace = go.Scatter(x=self._smooth_calc.index, y=self._smooth_calc, name=f"VolEMA{self.smooth_factor}",
+        trace = go.Scatter(x=self._smooth_calc.index, y=self._smooth_calc, name=f"VolEMA{self.vol_ema}",
                            line_color='white', opacity=0.4)
         fig.add_trace(trace, row=self.plot_loc[0], col=self.plot_loc[1])
         return fig

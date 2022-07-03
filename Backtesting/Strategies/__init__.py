@@ -5,6 +5,7 @@ from .MACross import MACross
 from .SMAStochRSI import SMAStochRSI
 from .SMAMACD import SMAMACD
 from .HighChange import HighChange
+from .EMAVol import EMAVol
 from .Strategy import Strategy
 
 All_STRATEGIES = dict(RSIBB=RSIBB,
@@ -12,4 +13,5 @@ All_STRATEGIES = dict(RSIBB=RSIBB,
                       MACROSS=MACross,
                       RSISTO=SMAStochRSI,
                       SMAMACD=SMAMACD,
-                      HIGHCHANGE=HighChange)
+                      HIGHCHANGE=HighChange,
+                      EMAVOL=EMAVol)

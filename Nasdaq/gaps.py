@@ -10,7 +10,7 @@ gap_size_pct_large = 0.04
 
 def extract_market_type(dt):
     # TRADING IN STOCKS: MONDAY TO FIRDAY, there are special days too,
-    # PREMARKET - 4am to 9:30am
+    # PREMARKET - 4am to 9:30amd
     # MARKET - 9:30am to 16pm
     # POST - 4pm to 8pm
     if dt.hour == 9 and dt.minute >= 30 or 10 <= dt.hour <= 15 or dt.hour == 16 and dt.minute == 0:
