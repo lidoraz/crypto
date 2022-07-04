@@ -101,7 +101,7 @@ def realtime_long_short():
     # show_start_msg = parsed_args['show_start_msg']
     print('Checking Keys..')
     from binance_usdm_test import BinanceFutures
-    prod = False
+    prod = True
 
     trader = BinanceFutures(prod)
     trader.exchange.checkRequiredCredentials()  # raises AuthenticationError
