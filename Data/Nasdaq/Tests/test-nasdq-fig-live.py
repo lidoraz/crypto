@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
 
-from Nasdaq.symbols import nasdq_100
-from Nasdaq.yahoo_finance import get_from_yfinance_now
+from AStock.symbols import nasdq_100
+from AStock.yahoo_finance import get_from_yfinance_now
 from Plots.plotly_fig import get_updated_fig
 import os
 

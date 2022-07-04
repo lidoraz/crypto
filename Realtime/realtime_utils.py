@@ -79,8 +79,12 @@ def get_latest_buy_sell(data_wrapper, symbols, strategy, tf='1H', n_candles_to_g
         checked_coins.append(coin)
 
         buy_vars = strategy.act_buy(0, last_row)
+        sell_vars = strategy.act_sell(0, last_row)
+        if buy_vars and sell_vars:
+            print('WARNING - BOTH BUY AND SELL SIGNALS')
         if buy_vars:
             buy_lst.append(dict(coin=coin,
+                                side='long',
                                 buy_price=last_row['close'],
                                 buy_pct_change=last_row['pct_close'],
                                 sell_price_win_stop=buy_vars['sell_price_win_stop'],
@@ -95,3 +99,60 @@ def get_latest_buy_sell(data_wrapper, symbols, strategy, tf='1H', n_candles_to_g
           f' #Buy={len(buy_lst)} / #Sell={len(sell_lst)}, use_closed={use_closed}')
     return buy_lst, sell_lst
 
+
+def get_latest_buy_sell_1min(data_wrapper, symbols, strategy, tf='1T', n_candles_to_get=150):
+    """ gets latest coins to buy or sell based on strategy.
+        Provides support with use_closed to filter out most recent unclosed candle
+        It is designed to be used when a timeframe has been closed, such as right after a new hour has started
+        For experimental option, use_closed can be False, and then the data will be resampled to past selected TF.
+    """
+    # TODO: Edited for 1min
+    buy_lst = []
+    sell_lst = []
+    checked_coins = []
+    import time
+    ts_now = int(time.time())
+    dt_now = pd.to_datetime(ts_now, unit='s', utc=True).tz_convert('Israel')
+    start_ts = ts_now - 60 * n_candles_to_get
+
+    for coin in symbols:
+        df = data_wrapper.get_data(coin, tf, start_ts=start_ts)
+        if df is None:
+            print('Skipping:', coin, tf)
+            continue
+        diff_time = (dt_now - df.index[-1]).total_seconds()
+        if diff_time > 60 + 15:
+            print(f'WARNING: diff = {diff_time}sec! (should be between 60 < 75 max')
+
+        df = strategy.add_indicators(df)
+
+        last_row = df.iloc[-1]
+        ts = df.index[-1]
+        checked_coins.append(coin)
+
+        buy_vars = strategy.act_buy(0, last_row)
+        sell_vars = strategy.act_sell(0, last_row)
+        if buy_vars and sell_vars:
+            print('WARNING - BOTH BUY AND SELL SIGNALS')
+        if buy_vars:
+            buy_lst.append(dict(coin=coin,
+                                side='long',
+                                buy_price=last_row['close'],
+                                sell_price_win_stop=buy_vars['sell_price_win_stop'],
+                                sell_price_lose_stop=buy_vars['sell_price_lose_stop'],
+                                ts=ts))
+        elif sell_vars:
+            buy_lst.append(dict(coin=coin,
+                                side='short',
+                                sell_price=last_row['close'],
+                                buy_price_win_stop=buy_vars['buy_price_win_stop'],
+                                buy_price_lose_stop=buy_vars['buy_price_lose_stop'],
+                                ts=ts))
+        # if last_row['SELL_ALGO']:
+        #     sell_lst.append(dict(coin=coin,
+        #                          sell_price=last_row['close'],
+        #                          sell_pct_change=last_row['pct_close'],
+        #                          ts=ts))
+    print(f'At: {dt_now.strftime(TIME_CONV)} - Checked {len(checked_coins)} coins,'
+          f' #Buy={len(buy_lst)} / #Sell={len(sell_lst)}, 1min tf')
+    return buy_lst, sell_lst

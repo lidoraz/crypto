@@ -31,7 +31,8 @@ class CryptoData(ProviderData):
     #     cache_name = f'{coin}{tf}'
     #     return self._lastest_data_ts[cache_name]
 
-    def get_data(self, coin, tf, start_date: str = None):
+    def get_data(self, coin, tf, start_date: str = None, start_ts: int=None):
+        assert start_date is None or start_ts is None, 'Only one can choose'
         cache_name = f'{coin}{tf}'
         curr_ts_local = int(time.time())
         if cache_name in self._data:
@@ -44,7 +45,9 @@ class CryptoData(ProviderData):
                 return self._data[cache_name]
         # print(cache_name, 'Fetching from db..')
         start_date = start_date if start_date else self.start_date
-        data = get_candles_from_db(self.db, coin, tf, self.start_ts, start_date)
+        if start_ts:
+            start_date = None
+        data = get_candles_from_db(self.db, coin, tf, start_ts, start_date)
         if data is None:
             return None
         self._data[cache_name] = data

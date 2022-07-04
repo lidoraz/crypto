@@ -13,6 +13,7 @@ from Plots.plot_utils import *
 from Utils import Persistence
 
 coins = sorted([c[1].split('/')[0] for c in exchange_symbol_pairs])
+coins = ['BTC', 'ETH', 'BNB', 'XRP', 'ADA', 'SOL', 'DOGE', 'SHIB']
 resample_keywords = list(INTERVAL_CANDLE_LOOKBACK_TABLE.keys())
 resample_keywords_text = [f" {k} | " for k in resample_keywords[:-1]] + [f" {resample_keywords[-1]}"]
 resample_radio_options = dict(
@@ -127,13 +128,13 @@ def add_buy_sell_to_fig(df_ohlcv, strategy, fig, show_res=False):
     for buy_loc in buy_locations:
         if show_res:
             support_res_lines = df_ohlcv.loc[buy_loc][print_cols]
-            support_res_pct = support_res_lines / df_ohlcv.loc[buy_loc]['close']
+            support_res_pct = (support_res_lines / df_ohlcv.loc[buy_loc]['close']).apply(lambda x: f'{x:.2%}')
             print('BUY:', buy_loc, support_res_pct.to_dict(), support_res_lines.to_dict())
         fig.add_vline(buy_loc, row=1, col=1, line_color='green', opacity=0.4)
     for sell_loc in sell_locations:
         if show_res:
             support_res_lines = df_ohlcv.loc[sell_loc][print_cols]
-            support_res_pct = support_res_lines / df_ohlcv.loc[sell_loc]['close']
+            support_res_pct = (support_res_lines / df_ohlcv.loc[sell_loc]['close']).apply(lambda x: f'{x:.2%}')
             print('SELL:', sell_loc, support_res_pct.to_dict(), support_res_lines.to_dict())
         fig.add_vline(sell_loc, row=1, col=1, line_color='red', opacity=0.4)
     return fig
@@ -171,7 +172,7 @@ def update_graph_live(start_date, coin, resample, strategy_params_text):
 
     strategy, main_plot_indicators, sub_plots = get_indicators(strategy)
     fig = get_updated_fig(df_ohlcv, main_plot_indicators, sub_plots, xy_limit=False)
-    fig = add_buy_sell_to_fig(df_ohlcv, strategy, fig)
+    fig = add_buy_sell_to_fig(df_ohlcv, strategy, fig, show_res=True)
 
     time_conv = "%b %d, %H:%M"  # .strftime
     t1 = f'{(datetime.now() - t0).total_seconds():0.2f}'

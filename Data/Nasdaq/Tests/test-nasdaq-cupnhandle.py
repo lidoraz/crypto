@@ -1,7 +1,7 @@
 import pandas as pd
 from tqdm import tqdm
 from Backtesting.Cupnhandle import find_cupnhandle_and_show_on_data
-from Nasdaq.symbols import NASDAQ_PREPATH
+from AStock.symbols import NASDAQ_PREPATH
 import os
 
 # level 2 up

@@ -2,7 +2,7 @@ import plotly.graph_objects as go
 from Indicators import SupportResistanceLines2
 from tqdm import tqdm
 import pandas as pd
-from Nasdaq.symbols import NASDAQ_PREPATH
+from AStock.symbols import NASDAQ_PREPATH
 import os
 
 # level 2 up

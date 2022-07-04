@@ -2,7 +2,7 @@ import yfinance as yf
 import time
 import pandas as pd
 
-from Nasdaq.recommend import add_info_symbols
+from AStock.recommend import add_info_symbols
 
 market_etf = ['SPY', 'QQQ']
 gap_size_pct_min = 0.01
