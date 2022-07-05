@@ -12,39 +12,40 @@ import time
 def handle_futures(buy_lst, sell_lst, trader):
     res = {'buy': [], 'sell': []}
     # BTC TRADE MUST BE HIGHER THAN 30
-    # TODO: INSERT THIS TO CODE
+    # TODO: INSERT THIS TO CODE, Some coins have less amount after precision check
     TRADE_USDT_AMOUNT = 30
     # coins_in_stable = trader.get_assets_holding(filter_min_trade=True)
     skip_coins = []
     for sell_details in sell_lst:
         coin = sell_details['coin']
         symbol = f'{coin}/USDT'
-        price = sell_details['sell_price']
-        stop_loss_price = sell_details['buy_price_lose_stop']
-        take_profit_price = sell_details['buy_price_win_stop']
-        amount = TRADE_USDT_AMOUNT / price
-        code = trader.create_order(symbol, amount, 'sell', stop_loss_price, take_profit_price)
+        if trader.has_position(symbol):
+            skip_coins.append(coin)
+            continue
+        coin_amount_to_buy = TRADE_USDT_AMOUNT / sell_details['sell_price']
+        code = trader.create_order(symbol, 'sell', coin_amount_to_buy,
+                                   sell_details['buy_price_lose_stop'],
+                                   sell_details['buy_price_win_stop'])
         print(f"Trader:: SHORT - {coin} {code}")
         sell_details['trade_code'] = code
         res['sell'].append(sell_details)
     if len(skip_coins):
-        print(f'Listed to SELL, holding less than min trade amount. code(-3)({",".join(skip_coins)})')
+        print(f'Listed to SELL and already in position code(-2)({",".join(skip_coins)})')
 
     skip_coins = []
     for buy_details in buy_lst:
         coin = buy_details['coin']
         symbol = f'{coin}/USDT'
-        price = buy_details['buy_price']
-        stop_loss_price = buy_details['sell_price_lose_stop']
-        take_profit_price = buy_details['sell_price_win_stop']
-        amount = TRADE_USDT_AMOUNT / price
-        # (symbol, amount, side, stop_price, rw_ratio)
-        code = trader.create_order(symbol, amount, 'buy', stop_loss_price, take_profit_price)
+        if trader.has_position(symbol):
+            skip_coins.append(coin)
+            continue
+        coin_amount_to_buy = TRADE_USDT_AMOUNT / buy_details['buy_price']
+        code = trader.create_order(symbol, 'buy', coin_amount_to_buy, buy_details['sell_price_lose_stop'], buy_details['sell_price_win_stop'])
         print(f"Trader:: BUY - {coin} {code}")
         buy_details['trade_code'] = code
         res['buy'].append(buy_details)
     if len(skip_coins):
-        print(f'Listed to BUY, already owning them. code(-11)({",".join(skip_coins)})')
+        print(f'Listed to BUY and already in position code(-2)({",".join(skip_coins)})')
 
     return res
 
@@ -100,15 +101,10 @@ def realtime_long_short():
     trader.exchange.checkRequiredCredentials()  # raises AuthenticationError
     tb_notify = TelegramBot(prod=prod, verbose=0)
     print('Checking Keys.. All OK')
-    # strategy_params = dict(
-    #     aggressive=True,
-    #     n_rsi_soon=4,
-    #     rsi_ahead=10,  # RSI over 10 becomes less sesitive but its not linear, like expo.
-    #     bb_ahead=20,
-    #     rsi_low=30,
-    #     rsi_high=70,
-    #     bb_std=2.1)
-    strategy = EMAVol()
+    strategy_params = dict(
+        risk_reward=1.5,
+    )
+    strategy = EMAVol(strategy_params)
     trigger_minutes = range(60)
     timeframe = '1T'
     print(f'-----> Strategy {strategy}, Trading every {timeframe}, at {trigger_minutes} min every hour')
@@ -123,6 +119,7 @@ def realtime_long_short():
     # FILTER OUT SYMBOLS, first run on very minimal set -> 5 coins at most from binance.
     # symbols = data_wrapper.get_symbols()
     # First try on few then on rest
+    # TODO Solana has minimum of 40USD for a trade in futures.
     symbols = ['BTC', 'ETH', 'XRP', 'ADA', 'SOL', 'DOGE']  # 'SHIB' is out as it has 1000x multiply
     # symbols = ['BTC']
     wait = WaitToMinEveryHour(trigger_minutes, offset_sec=5)
@@ -140,11 +137,10 @@ def realtime_long_short():
         if broadcast_text:
             tb_notify.send(broadcast_text)
 
-        trader.remove_unlocked_positions(symbols)  # TODO: Need to find a way for create an OCO order for stop-loss orders.
-
         if not prod:  # safety
             break
-
+        # TODO: Need to find a way for create an OCO order for stop-loss orders.
+        trader.remove_unlocked_positions(symbols)
 
 if __name__ == '__main__':
     realtime_long_short()

@@ -40,7 +40,8 @@ class BinanceFutures:
             return -1
 
     def _get_all_positions(self, symbols):
-        res = [res['symbol'] for res in self.exchange.fetchPositions() if res['symbol'] in symbols and res['contracts'] > 0.0]
+        res = [res['symbol'] for res in self.exchange.fetchPositions() if
+               res['symbol'] in symbols and res['contracts'] > 0.0]
         return res
 
     def has_position(self, symbol):
@@ -49,22 +50,23 @@ class BinanceFutures:
         return res['contracts'] > 0.0
 
     def create_order(self, symbol, amount, side, stop_loss_price, take_profit_price):
-        if not self.has_position(symbol):
-            code = self._create_order(symbol, amount, side, stop_loss_price, take_profit_price)
-            return code
-        else:
+        if self.has_position(symbol):
             print(f'{symbol} Has active position...')
             return -2
+        code = self._create_order(symbol, side, amount, stop_loss_price, take_profit_price)
+        return code
 
-    def _create_order(self, symbol, amount, side, stop_loss, take_profit):
+    def _create_order(self, symbol, amount_req, side, stop_loss, take_profit):
         assert side in ('buy', 'sell')
+        amount = self.exchange.amount_to_precision(symbol, amount_req)
+        print(amount_req, amount)
         if not self.prod:
             print('called create_order, but (prod = False), returning')
             return
         # rw: 1:1 -> 1, 1:2 -> 2
-        amount = self.exchange.amount_to_precision(symbol, amount)
         try:
-            print('-> Order Request', symbol, amount, side, stop_loss, take_profit)
+            print(f'-> Order Request {symbol}, {side}, {amount}, ({stop_loss}, {take_profit})')
+            print(f'AMOUNTS: Req vs pre_amount:, {amount_req} -> {amount}')
             # TODO: Check what if {'reduceOnly': True} in params
             #  Check hard-limit of 50orders per 10sec : https://www.binance.com/en/support/faq/360004492232
             self.exchange.cancel_all_orders(symbol)  # Release any funds in order.
@@ -105,10 +107,10 @@ def check_trading():
     # TODO: MUST TEST THAT STOPPRICE IS CORRECT CURR PRICE AND SIDE!!
     # Margin is set related to the symbol in the app, also can be set in the api, but not really needed.
 
-    trader = BinanceFutures(True)
+    trader = BinanceFutures(False)
 
     if not trader.has_position(symbol):
-        trader._create_order(symbol, amount, side, stop_price, rw_ratio)
+        trader._create_order(symbol, side, amount, stop_price, rw_ratio)
     else:
         print('Has active position...')
 
