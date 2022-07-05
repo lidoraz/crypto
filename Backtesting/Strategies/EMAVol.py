@@ -4,6 +4,27 @@ from .Strategy import Strategy
 
 # Scalping strategy, only for 1, 5 min timeframes.
 
+def calc_take_profit_price(side, price, stop_loss, rw_ratio=1.0):
+    assert side in ('buy', 'sell')
+    pct_to_curr_price = 0.001
+    price_to_stop = abs(price - stop_loss)
+    if side == 'buy':  # long
+        if price / stop_loss <= 1 + pct_to_curr_price:  # should be larger than 1.001
+            print(f'{side} stop price too close to exec_price: less than {pct_to_curr_price}')
+            stop_loss = price * (1 - pct_to_curr_price)
+            take_profit = price * (1 + pct_to_curr_price)
+        else:
+            take_profit = price + rw_ratio * price_to_stop
+    else:  # short
+        if price / stop_loss >= 1 - pct_to_curr_price:  # should be less than 0.999
+            print(f'{side} stop price too close to exec_price: less than {pct_to_curr_price}')
+            stop_loss = price * (1 + pct_to_curr_price)
+            take_profit = price * (1 - pct_to_curr_price)
+        else:
+            take_profit = price - rw_ratio * price_to_stop
+
+    return stop_loss, take_profit
+
 
 class EMAVol(Strategy):
     """
@@ -20,6 +41,7 @@ class EMAVol(Strategy):
         self.n_ema_soon = params.get('n_ema_soon', 10)
         self.vol_ema = params.get('vol_ema', 20)
         self.support_ahead = params.get('support_ahead', 20)
+        self.risk_reward = 1.0  # Risk reward profit / lose
         # Can back test this before going live, just need to add short
         self._ind_ema = EMA(self.ema_ahead, color='white')  # long ema
         self._ind_ema_2 = EMA(50, color='purple')
@@ -57,7 +79,6 @@ class EMAVol(Strategy):
                          & df['volume_over'] & df['green_candle'] & df['fast_above_slow']
         df['SELL_ALGO'] = df[f'was_above_before'] & df['below_ema'] \
                           & df['volume_over'] & df['red_candle'] & df['fast_below_slow']
-        #
         # df['BUY_ALGO'] = df['above_ema']
         # df['SELL_ALGO'] = df['below_ema']
         return df
@@ -66,21 +87,22 @@ class EMAVol(Strategy):
         if row['BUY_ALGO']:
             buy_idx = idx
             buy_price = row['close']
-            sell_price_win_stop = row['resistance']
+            # sell_price_win_stop = row['resistance']
             sell_price_lose_stop = row['support']
+            stop_loss, take_profit = calc_take_profit_price('buy', buy_price, sell_price_lose_stop, self.risk_reward)
             return {'buy_idx': buy_idx,
                     'buy_price': buy_price,
-                    'sell_price_win_stop': sell_price_win_stop,
-                    'sell_price_lose_stop': sell_price_lose_stop}
+                    'sell_price_win_stop': take_profit,
+                    'sell_price_lose_stop': stop_loss}
 
     def act_sell(self, idx, row):
         if row['SELL_ALGO']:
             sell_price = row['close']
-            buy_price_win_stop = row['support']
             buy_price_lose_stop = row['resistance']  # can be 1:1  risk reward, copy code from short binance
+            stop_loss, take_profit = calc_take_profit_price('sell', sell_price, buy_price_lose_stop, self.risk_reward)
             return {'sell_idx': idx,
                     'sell_price': sell_price,
-                    'buy_price_win_stop': buy_price_win_stop,
-                    'buy_price_lose_stop': buy_price_lose_stop}
+                    'buy_price_win_stop': take_profit,
+                    'buy_price_lose_stop': stop_loss}
         # Does not really matter besides, that can sell in short and then support resistance switches places.
         pass

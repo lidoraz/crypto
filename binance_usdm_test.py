@@ -21,15 +21,15 @@ class BinanceFutures:
         # print(res)
         return res['contracts'] > 0.0
 
-    def create_order(self, symbol, amount, side, stop_price, rw_ratio=1):
+    def create_order(self, symbol, amount, side, stop_loss_price, take_profit_price):
         if not self.has_position(symbol):
-            code = self._create_order(symbol, amount, side, stop_price, rw_ratio)
+            code = self._create_order(symbol, amount, side, stop_loss_price, take_profit_price)
             return code
         else:
             print(f'{symbol} Has active position...')
-            return -1
+            return -2
 
-    def _create_order(self, symbol, amount, side, stop_price, rw_ratio=1):
+    def _create_order(self, symbol, amount, side, stop_loss, take_profit):
         assert side in ('buy', 'sell')
         if not self.prod:
             print('called create_order, but (prod = False), returning')
@@ -45,31 +45,17 @@ class BinanceFutures:
             # check if this equals to real amount. acutally if we sell or buy btc amount it does not matter.
             amount_ = order['amount']
             inverted_side = 'sell' if side == 'buy' else 'buy'
-            price_to_stop = abs(price_exec - stop_price)
-            if side == 'buy':  # long
-                stopLossPrice = stop_price
-                takeProfitPrice = price_exec + rw_ratio * price_to_stop
-                if price_exec / stop_price < 1 - self.pct_to_curr_price:
-                    print(f'stop price too close to exec_price: less than {self.pct_to_curr_price}')
-            else:  # short
-                stopLossPrice = stop_price
-                takeProfitPrice = price_exec - rw_ratio * price_to_stop
-                if stop_price / price_exec < 1 + self.pct_to_curr_price:
-                    print(f'stop price too close to exec_price: less than {self.pct_to_curr_price}')
-            stopLossPrice = self.exchange.price_to_precision(symbol, stopLossPrice)
-            takeProfitPrice = self.exchange.price_to_precision(symbol, takeProfitPrice)
-
-            print(symbol, side, price_exec, stopLossPrice, takeProfitPrice)
+            stop_loss = self.exchange.price_to_precision(symbol, stop_loss)
+            take_profit = self.exchange.price_to_precision(symbol, take_profit)
             stopLossOrder = self.exchange.create_order(symbol, 'STOP_MARKET', inverted_side, amount, None,
-                                                       {'stopPrice': stopLossPrice})
+                                                       {'stopPrice': stop_loss})
             print(stopLossOrder)
             # print(symbol, 'STOP_MARKET', inverted_side, amount, price, stopLossParams)
             takeProfitOrder = self.exchange.create_order(symbol, 'TAKE_PROFIT_MARKET', inverted_side, amount, None,
-                                                         {'stopPrice': takeProfitPrice})
+                                                         {'stopPrice': take_profit})
             print(takeProfitOrder)
+            print('##--CREATED_ORDER--->', symbol, side, price_exec, stop_loss, take_profit)
             return 0
-            # print(symbol, 'TAKE_PROFIT_MARKET', inverted_side, amount, price,
-            #       takeProfitParams)
 
         except Exception as e:
             print(type(e).__name__, str(e))

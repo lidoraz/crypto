@@ -4,6 +4,19 @@ from datetime import datetime
 TIME_CONV = "%Y-%m-%dT%H:%M:%S"  # .strftime
 
 
+def handle_args_1min():
+    import sys
+    args = sys.argv[1:]
+    prod = False
+    show_start_msg = False
+    if 'prod' in args:
+        prod = True
+    if 'start_msg' in args:
+        show_start_msg = True
+
+    return dict(prod=prod, show_start_msg=show_start_msg)
+
+
 def handle_args():
     import sys
     args = sys.argv[1:]
@@ -142,17 +155,12 @@ def get_latest_buy_sell_1min(data_wrapper, symbols, strategy, tf='1T', n_candles
                                 sell_price_lose_stop=buy_vars['sell_price_lose_stop'],
                                 ts=ts))
         elif sell_vars:
-            buy_lst.append(dict(coin=coin,
-                                side='short',
-                                sell_price=last_row['close'],
-                                buy_price_win_stop=buy_vars['buy_price_win_stop'],
-                                buy_price_lose_stop=buy_vars['buy_price_lose_stop'],
-                                ts=ts))
-        # if last_row['SELL_ALGO']:
-        #     sell_lst.append(dict(coin=coin,
-        #                          sell_price=last_row['close'],
-        #                          sell_pct_change=last_row['pct_close'],
-        #                          ts=ts))
+            sell_lst.append(dict(coin=coin,
+                                 side='short',
+                                 sell_price=last_row['close'],
+                                 buy_price_win_stop=sell_vars['buy_price_win_stop'],
+                                 buy_price_lose_stop=sell_vars['buy_price_lose_stop'],
+                                 ts=ts))
     print(f'At: {dt_now.strftime(TIME_CONV)} - Checked {len(checked_coins)} coins,'
           f' #Buy={len(buy_lst)} / #Sell={len(sell_lst)}, 1min tf')
     return buy_lst, sell_lst

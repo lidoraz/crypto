@@ -1,32 +1,29 @@
-# from Realtime.Trade.utils.RealtimeTrade import RealtimeTrade
+from binance_usdm_test import BinanceFutures
 # from Realtime.realtime_utils import handle_args
 from Data import CryptoData
 from Backtesting.Strategies import RSIBB, BB, MACross, SMAStochRSI, EMAVol
-from Realtime.realtime_utils import get_latest_buy_sell_1min
+from Realtime.realtime_utils import get_latest_buy_sell_1min, handle_args_1min
 from Utils.notify import TelegramBot
 from Utils.utils import WaitToMinEveryHour, format_num
 from tqdm import tqdm
 import time
 
 
-#  Working only with biannace at the momenet, take all the coins from the symbols, and filter only binance.
-#  run only on those coins.
-#  Use telegram to broadcast buy / sell commands, stright from the trader.
-
-
 def handle_futures(buy_lst, sell_lst, trader):
     res = {'buy': [], 'sell': []}
-    TRADE_USDT_AMOUNT = 20
+    # BTC TRADE MUST BE HIGHER THAN 30
+    # TODO: INSERT THIS TO CODE
+    TRADE_USDT_AMOUNT = 30
     # coins_in_stable = trader.get_assets_holding(filter_min_trade=True)
     skip_coins = []
     for sell_details in sell_lst:
         coin = sell_details['coin']
         symbol = f'{coin}/USDT'
-        sell_price = sell_details['sell_price']
-        stop_price = sell_details['buy_price_lose_stop']
-        amount = TRADE_USDT_AMOUNT / sell_price
-        # (symbol, amount, side, stop_price, rw_ratio)
-        code = trader.create_order(symbol, amount, 'sell', stop_price=stop_price, rw_ratio=1)
+        price = sell_details['sell_price']
+        stop_loss_price = sell_details['buy_price_lose_stop']
+        take_profit_price = sell_details['buy_price_win_stop']
+        amount = TRADE_USDT_AMOUNT / price
+        code = trader.create_order(symbol, amount, 'sell', stop_loss_price, take_profit_price)
         print(f"Trader:: SHORT - {coin} {code}")
         sell_details['trade_code'] = code
         res['sell'].append(sell_details)
@@ -37,11 +34,12 @@ def handle_futures(buy_lst, sell_lst, trader):
     for buy_details in buy_lst:
         coin = buy_details['coin']
         symbol = f'{coin}/USDT'
-        sell_price = buy_details['buy_price']
-        stop_price = buy_details['sell_price_lose_stop']
-        amount = TRADE_USDT_AMOUNT / sell_price
+        price = buy_details['buy_price']
+        stop_loss_price = buy_details['sell_price_lose_stop']
+        take_profit_price = buy_details['sell_price_win_stop']
+        amount = TRADE_USDT_AMOUNT / price
         # (symbol, amount, side, stop_price, rw_ratio)
-        code = trader.create_order(symbol, amount, 'buy', stop_price=stop_price, rw_ratio=1)
+        code = trader.create_order(symbol, amount, 'buy', stop_loss_price, take_profit_price)
         print(f"Trader:: BUY - {coin} {code}")
         buy_details['trade_code'] = code
         res['buy'].append(buy_details)
@@ -55,7 +53,7 @@ def get_broadcast_buy_sell(result, strategy):
     buys_txt = ""
     buy_str = f"🟢<b>Long Status:</b> ({len(result['buy'])})\n"
     for res in result['buy']:
-        buys_txt += f"{res['coin']} {format_num(res['buy_price'])}, ({format_num(res['sell_price_lose_stop'])}, {format_num(res['sell_price_win_stop'])}) ({res['trade_code']})\n"
+        buys_txt += f"{res['coin']} {format_num(res['buy_price'])}, (sl={format_num(res['sell_price_lose_stop'])}, tp={format_num(res['sell_price_win_stop'])}) ({res['trade_code']})\n"
     nl = ""
     if len(buys_txt):
         buys_txt = buy_str + buys_txt[:-1]
@@ -63,7 +61,7 @@ def get_broadcast_buy_sell(result, strategy):
     sells_txt = ""
     sell_str = f"{nl}🔴<b>Short Status:</b>({len(result['sell'])})\n"
     for res in result['sell']:
-        sells_txt += f"{res['coin']} {format_num(res['sell_price'])} ({res['trade_code']})\n"
+        sells_txt += f"{res['coin']} {format_num(res['sell_price'])}, (sl={format_num(res['buy_price_lose_stop'])}, tp={format_num(res['buy_price_win_stop'])}) ({res['trade_code']})\n"
     if len(sells_txt):
         sells_txt = sell_str + sells_txt[:-1]
     broadcast_text = buys_txt + sells_txt
@@ -94,15 +92,10 @@ def realtime_long_short():
       The user should check if the currency is active and reload markets periodically.
     :return:
     """
-    # parsed_args = handle_args()
-    # timeframe = parsed_args['timeframe']
-    # trigger_minutes = parsed_args['trigger_minutes']
-    # prod = parsed_args['prod']
-    # show_start_msg = parsed_args['show_start_msg']
+    parsed_args = handle_args_1min()
+    prod = parsed_args['prod']
+    show_start_msg = parsed_args['show_start_msg']
     print('Checking Keys..')
-    from binance_usdm_test import BinanceFutures
-    prod = True
-
     trader = BinanceFutures(prod)
     trader.exchange.checkRequiredCredentials()  # raises AuthenticationError
     tb_notify = TelegramBot(prod=prod, verbose=0)
@@ -130,20 +123,18 @@ def realtime_long_short():
     # FILTER OUT SYMBOLS, first run on very minimal set -> 5 coins at most from binance.
     # symbols = data_wrapper.get_symbols()
     # First try on few then on rest
-    symbols = ['BTC', 'ETH', 'XRP', 'ADA', 'SOL', 'DOGE'] #  'SHIB' is out as it has 1000x multiply
+    symbols = ['BTC', 'ETH', 'XRP', 'ADA', 'SOL', 'DOGE']  # 'SHIB' is out as it has 1000x multiply
     # symbols = ['BTC']
     wait = WaitToMinEveryHour(trigger_minutes, offset_sec=5)
     start_msg = get_start_msg(symbols, timeframe, strategy)
     print(start_msg)
-    # if show_start_msg:
-    tb_notify.send(start_msg)
-    use_closed = True
+    if show_start_msg:
+        tb_notify.send(start_msg)
     while True:
         if prod:
             wait.wait()
-        # trader.refresh_markets()
         buy_details_lst, sell_details_lst = get_latest_buy_sell_1min(data_wrapper, symbols,
-                                                                strategy, tf=timeframe, n_candles_to_get=201)
+                                                                     strategy, tf=timeframe, n_candles_to_get=201)
         res = handle_futures(buy_details_lst, sell_details_lst, trader)
         broadcast_text = get_broadcast_buy_sell(res, strategy)
         if broadcast_text:
