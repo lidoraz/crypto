@@ -37,12 +37,12 @@ class EMAVol(Strategy):
         super().__init__('EMAVOL')
         if params is None:
             params = {}
-        self.ema_ahead = params.get('ema_ahead', 200)  # 150
+        self.ema_ahead = params.get('ema_ahead', 150)  # 150
         self.n_ema_soon = params.get('n_ema_soon', 10)
         self.ema_fast_ahead = params.get('ema_fast_ahead', 25) # 50
         self.vol_ema = params.get('vol_ema', 20)
         self.support_ahead = params.get('support_ahead', 20)
-        self.risk_reward = params.get('risk_reward', 1.5)  # Risk reward profit / lose
+        self.risk_reward = params.get('risk_reward', 1.2)  # Risk reward profit / lose
         # Can back test this before going live, just need to add short
         self._ind_ema = EMA(self.ema_ahead, color='white')  # long ema
         self._ind_ema_2 = EMA(self.ema_fast_ahead, color='purple')
