@@ -199,7 +199,7 @@ def selected_stocks():
 
 if __name__ == '__main__':
     # MAYBE ADD VOLATILITY DURING PREMARKT - something like the GAP rules for snp500
-    symbols = snp500_stocks(150)
+    symbols = snp500_stocks(50)
     # TODO: ADD NASDAQ 100
     # symbols = []
     symbols = set(symbols + selected_stocks())

@@ -8,10 +8,20 @@ class BinanceFutures:
             'apiKey': os.environ.get('BINANCE_API'),
             'secret': os.environ.get('BINANCE_SECRET'),
         })
+        self.prod = prod
         self.pct_to_curr_price = 0.0010
         self.exchange_name = 'BINANCE'
-        self.prod = prod
         markets = self.exchange.load_markets()
+        # market = self.exchange.market('BTC/USDT')
+        # .private_post_order_oco({
+        #                         'symbol': market['id'],
+        #                         'side': 'SELL',  # SELL, BUY
+        #                         'quantity': f_amount,
+        #                         'price': f_win_price,
+        #                         'stopPrice': f_stop_price,
+        #                         'stopLimitPrice': f_lose_price,  # If provided, stopLimitTimeInForce is required
+        #                         'stopLimitTimeInForce': 'GTC',  # GTC, FOK, IOC
+        #                     })
         # exchange.verbose = True  # uncomment for debugging purposes
         #  exchange.fetch_open_orders(symbol)
         #  exchange.cancel_all_orders(symbol)
@@ -54,6 +64,9 @@ class BinanceFutures:
         # rw: 1:1 -> 1, 1:2 -> 2
         amount = self.exchange.amount_to_precision(symbol, amount)
         try:
+            print('-> Order Request', symbol, amount, side, stop_loss, take_profit)
+            # TODO: Check what if {'reduceOnly': True} in params
+            #  Check hard-limit of 50orders per 10sec : https://www.binance.com/en/support/faq/360004492232
             self.exchange.cancel_all_orders(symbol)  # Release any funds in order.
             order = self.exchange.create_order(symbol, 'MARKET', side, amount)
             # order = {'price': 20000, 'amount': 0.001}

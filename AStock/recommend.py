@@ -104,7 +104,7 @@ def get_news(ticker, curr_dt):
         for story in ticker.news:
             story['providerPublishTime'] = pd.to_datetime(story['providerPublishTime'], unit='s')
             dt = pd.to_datetime(story['providerPublishTime'], unit='s')
-            if curr_dt.date() > dt + pd.to_timedelta('7D'):
+            if curr_dt.date() > (dt + pd.to_timedelta('7D')).date():
                 continue
             recent_news.append(dict(dt=dt,
                                     title=story['title'],

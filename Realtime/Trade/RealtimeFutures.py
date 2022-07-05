@@ -140,7 +140,7 @@ def realtime_long_short():
         if broadcast_text:
             tb_notify.send(broadcast_text)
 
-        trader.remove_unlocked_positions(symbols)
+        trader.remove_unlocked_positions(symbols)  # TODO: Need to find a way for create an OCO order for stop-loss orders.
 
         if not prod:  # safety
             break
