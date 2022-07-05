@@ -16,6 +16,23 @@ class BinanceFutures:
         #  exchange.fetch_open_orders(symbol)
         #  exchange.cancel_all_orders(symbol)
 
+    def remove_unlocked_positions(self, symbols):
+        symbols = [f'{symbol}/USDT' for symbol in symbols]
+        try:
+            symbols_with_positions = self._get_all_positions(symbols)
+            for symbol in symbols:
+                if not symbols_with_positions:
+                    if len(self.exchange.fetch_open_orders(symbol)) > 0:
+                        self.exchange.cancel_all_orders(symbol)
+                        print(f'Canceled open order for closed position in {symbol}')
+        except Exception as e:
+            print(type(e).__name__, str(e))
+            return -1
+
+    def _get_all_positions(self, symbols):
+        res = [res['symbol'] for res in self.exchange.fetchPositions() if res['symbol'] in symbols and res['contracts'] > 0.0]
+        return res
+
     def has_position(self, symbol):
         res = [res for res in self.exchange.fetchPositions() if res['symbol'] == symbol][0]
         # print(res)

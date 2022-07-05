@@ -140,6 +140,8 @@ def realtime_long_short():
         if broadcast_text:
             tb_notify.send(broadcast_text)
 
+        trader.remove_unlocked_positions(symbols)
+
         if not prod:  # safety
             break
 
