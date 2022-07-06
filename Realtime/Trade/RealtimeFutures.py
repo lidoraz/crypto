@@ -140,7 +140,7 @@ def realtime_long_short():
         if not prod:  # safety
             break
         # TODO: Need to find a way for create an OCO order for stop-loss orders.
-        trader.remove_unlocked_positions(symbols)
+        # trader.remove_unlocked_positions(symbols)
 
 if __name__ == '__main__':
     realtime_long_short()

@@ -80,11 +80,13 @@ class BinanceFutures:
             stop_loss = self.exchange.price_to_precision(symbol, stop_loss)
             take_profit = self.exchange.price_to_precision(symbol, take_profit)
             stopLossOrder = self.exchange.create_order(symbol, 'STOP_MARKET', inverted_side, amount, None,
-                                                       {'stopPrice': stop_loss})
+                                                       {'stopPrice': stop_loss,
+                                                        "reduceOnly": True})
             print(stopLossOrder)
             # print(symbol, 'STOP_MARKET', inverted_side, amount, price, stopLossParams)
             takeProfitOrder = self.exchange.create_order(symbol, 'TAKE_PROFIT_MARKET', inverted_side, amount, None,
-                                                         {'stopPrice': take_profit})
+                                                         {'stopPrice': take_profit,
+                                                          "reduceOnly": True})
             print(takeProfitOrder)
             print('##--CREATED_ORDER--->', symbol, side, price_exec, stop_loss, take_profit)
             return 0
