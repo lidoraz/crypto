@@ -13,7 +13,7 @@ def handle_futures(buy_lst, sell_lst, trader):
     res = {'buy': [], 'sell': []}
     # BTC TRADE MUST BE HIGHER THAN 30
     # TODO: INSERT THIS TO CODE, Some coins have less amount after precision check
-    TRADE_USDT_AMOUNT = 30
+    TRADE_USDT_AMOUNT = 40
     # coins_in_stable = trader.get_assets_holding(filter_min_trade=True)
     skip_coins = []
     for sell_details in sell_lst:
