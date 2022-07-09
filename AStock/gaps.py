@@ -22,25 +22,26 @@ def extract_market_type(dt):
     return 'INVALID'
 
 
-def get_stock_data(symbols):
+def get_stock_data(symbols, days_before=6, with_prepost=True, with_actions=False):
     t0 = time.time()
     end = int(time.time())
-    days_before = 6
+    days_before = days_before
     start = end - 60 * 60 * 24 * days_before  # 1 day before
     start = pd.to_datetime(start, unit='s', utc=True)
 
     data = yf.download(' '.join(symbols), start=start, end=None,
-                       prepost=True,  # include pre/post market data
+                       prepost=with_prepost,  # include pre/post market data
                        rounding=True,
-                       actions=True,  # dividend + stock splits data
+                       actions=with_actions,  # dividend + stock splits data
                        group_by='ticker',  # default is on columns. ticker is easier to iterate
                        auto_adjust=False,  # false on default, what does it do?
                        show_errors=True,
                        interval='1m', threads=True, progress=False)
     print(f"start={start}, data: {str(data.index[-1])} took: {time.time() - t0:0.2f}")
-    data['DT'] = data.index
-    data['Date'] = data.index.date
-    data['Type'] = data['DT'].apply(extract_market_type)
+    if with_prepost:
+        data['DT'] = data.index
+        data['Date'] = data.index.date
+        data['Type'] = data['DT'].apply(extract_market_type)
     return data
 
 

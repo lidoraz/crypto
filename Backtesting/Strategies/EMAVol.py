@@ -2,8 +2,6 @@ from Indicators import EMA, Volume, SupportResistanceLines2, MACD
 from .Strategy import Strategy
 
 
-# Scalping strategy, only for 1, 5 min timeframes.
-
 def calc_take_profit_price(side, price, stop_loss, rw_ratio=1.0):
     assert side in ('buy', 'sell')
     pct_to_curr_price = 0.001
@@ -28,6 +26,7 @@ def calc_take_profit_price(side, price, stop_loss, rw_ratio=1.0):
 
 class EMAVol(Strategy):
     """
+        # Scalping strategy, only for 1, 5 min timeframes.
         Inspired by this channel: https://www.youtube.com/watch?v=Dmh0BfJURTM
         This strategy aims to work on the 1min tf, using mainly long EMA and vol to indicate change in trend and entry
         Dual strategy, can long and short
@@ -66,20 +65,26 @@ class EMAVol(Strategy):
         # df['above_ema'].rolling(5).sum() > 0
         min_candles_af_area = 1
         # GET IF CROSSED EMA ABOVE recently
-        df['above_ema'] = (df['close'] > df[ema_col]) & (df['open'] > df[ema_col])
-        df[f'was_above_before'] = df['above_ema'].rolling(self.n_ema_soon).sum() >= min_candles_af_area
-        df['green_candle'] = df['open'] < df['close']  # can use wick as well, to signal hammers
-        df['fast_above_slow'] = df[ema_fast_col] > df[ema_col]
+        df['green_candle_L'] = df['open'] < df['close']  # can use wick as well, to signal hammers
+        # df['engulfing_green_candle_L'] = (df['open'] < df['close'])
+        df['above_ema_L'] = (df['close'] > df[ema_col]) & (df['open'] > df[ema_col])
+        df[f'was_above_ema_S'] = df['above_ema_L'].rolling(self.n_ema_soon).sum() >= min_candles_af_area
+        df['fast_above_slow_L'] = df[ema_fast_col] > df[ema_col]
         # sell condition
-        df[f'below_ema'] = (df['open'] < df[ema_col]) & (df['close'] < df[ema_col])
-        df[f'was_below_before'] = df['below_ema'].rolling(self.n_ema_soon).sum() >= min_candles_af_area
-        df['red_candle'] = df['open'] > df['close']
-        df['fast_below_slow'] = df[ema_fast_col] < df[ema_col]
+        df['red_candle_S'] = df['open'] > df['close']
+        df[f'below_ema_S'] = (df['open'] < df[ema_col]) & (df['close'] < df[ema_col])
+        df[f'was_below_ema_L'] = df['below_ema_S'].rolling(self.n_ema_soon).sum() >= min_candles_af_area
+        df['fast_below_slow_S'] = df[ema_fast_col] < df[ema_col]
 
-        df['BUY_ALGO'] = df[f'was_below_before'] & df['above_ema'] \
-                         & df['volume_over'] & df['green_candle'] & df['fast_above_slow']
-        df['SELL_ALGO'] = df[f'was_above_before'] & df['below_ema'] \
-                          & df['volume_over'] & df['red_candle'] & df['fast_below_slow']
+        # df['BUY_ALGO'] = df[f'was_below_ema_L'] & df['above_ema_L'] \
+        #                  & df['volume_over'] & df['green_candle_L'] & df['fast_above_slow_L']
+        # df['SELL_ALGO'] = df[f'was_above_ema_S'] & df['below_ema_S'] \
+        #                   & df['volume_over'] & df['red_candle_S'] & df['fast_below_slow_S']
+        # Moran add, switch pos
+        df['SELL_ALGO'] = df[f'was_below_ema_L'] & df['above_ema_L'] \
+                         & df['volume_over'] & df['fast_above_slow_L'] & df['red_candle_S']
+        df['BUY_ALGO'] = df[f'was_above_ema_S'] & df['below_ema_S'] \
+                          & df['volume_over'] & df['fast_below_slow_S'] & df['green_candle_L']
         # df['BUY_ALGO'] = df['above_ema']
         # df['SELL_ALGO'] = df['below_ema']
         return df

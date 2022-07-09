@@ -17,7 +17,7 @@ class EMA(Indicator):
         else:
             prices = ohlc
         # https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.ewm.html
-        self.ra = prices.ewm(span=self.lookahead).mean()  # closed to the right!!
+        self.ra = prices.ewm(span=self.lookahead, adjust=False).mean()  # closed to the right!!
         self.ra.name = f'EWM_{self.lookahead}'
 
         if to_frame:
