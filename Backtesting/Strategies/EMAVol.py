@@ -80,7 +80,7 @@ class EMAVol(Strategy):
         #                  & df['volume_over'] & df['green_candle_L'] & df['fast_above_slow_L']
         # df['SELL_ALGO'] = df[f'was_above_ema_S'] & df['below_ema_S'] \
         #                   & df['volume_over'] & df['red_candle_S'] & df['fast_below_slow_S']
-        # Moran add, switch pos
+        # Moran add, switch pos, maybe move to higher tf
         df['SELL_ALGO'] = df[f'was_below_ema_L'] & df['above_ema_L'] \
                          & df['volume_over'] & df['fast_above_slow_L'] & df['red_candle_S']
         df['BUY_ALGO'] = df[f'was_above_ema_S'] & df['below_ema_S'] \
