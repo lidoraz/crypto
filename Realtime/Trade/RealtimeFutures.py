@@ -40,7 +40,8 @@ def handle_futures(buy_lst, sell_lst, trader):
             skip_coins.append(coin)
             continue
         coin_amount_to_buy = TRADE_USDT_AMOUNT / buy_details['buy_price']
-        code = trader.create_order(symbol, 'buy', coin_amount_to_buy, buy_details['sell_price_lose_stop'], buy_details['sell_price_win_stop'])
+        code = trader.create_order(symbol, 'buy', coin_amount_to_buy, buy_details['sell_price_lose_stop'],
+                                   buy_details['sell_price_win_stop'])
         print(f"Trader:: BUY - {coin} {code}")
         buy_details['trade_code'] = code
         res['buy'].append(buy_details)
@@ -101,12 +102,18 @@ def realtime_long_short():
     trader.exchange.checkRequiredCredentials()  # raises AuthenticationError
     tb_notify = TelegramBot(prod=prod, verbose=0)
     print('Checking Keys.. All OK')
+    # positive profit.. of 7.5$ after a month...
     strategy_params = dict(
-        risk_reward=1.5,
-    )
+        ema_ahead=200,
+        n_ema_soon=3,
+        ema_fast_ahead=14,
+        vol_ema=20,
+        risk_reward=1.2)
     strategy = EMAVol(strategy_params)
-    trigger_minutes = range(60)
-    timeframe = '1T'
+    # trigger_minutes = np.linspace(0, 60, )(60)
+    trigger_minutes = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]
+    timeframe = '5T'
+
     print(f'-----> Strategy {strategy}, Trading every {timeframe}, at {trigger_minutes} min every hour')
     print(repr(strategy))
     if prod:
@@ -141,6 +148,7 @@ def realtime_long_short():
             break
         # TODO: Need to find a way for create an OCO order for stop-loss orders.
         # trader.remove_unlocked_positions(symbols)
+
 
 if __name__ == '__main__':
     realtime_long_short()

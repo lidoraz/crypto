@@ -76,8 +76,8 @@ class BacktestOptimizer:
 
     def get_dict(self):
         _dict = {
-            symbol: dict(posSide=None, n_buys=0, n_sells=0, n_stopwins=0, n_stoploses=0, coin_amount=0, t_buy_value=0,
-                         t_sell_value=0, pos_buys=[], pos_sells=[], trades=[]) for symbol in self.symbols}
+            symbol: dict(posSide=None, n_buys=0, n_sells=0, n_stopwins=0, n_stoploses=0, coin_amount=0, total_buy_value=0,
+                         total_sell_value=0, pos_buys=[], pos_sells=[], trades=[]) for symbol in self.symbols}
         return _dict
 
     def _handle_buy(self, curr_ts, row, context):
@@ -90,7 +90,7 @@ class BacktestOptimizer:
             buy_value_net = self.trade_value_stable - fee
             context['coin_amount'] += (buy_value_net / buy_price)
             self.free_balance -= self.trade_value_stable
-            context['t_buy_value'] += buy_value_net
+            context['total_buy_value'] += buy_value_net
             context['pos_buys'].append(dict(
                 ts=curr_ts,
                 price=buy_price,
@@ -113,7 +113,7 @@ class BacktestOptimizer:
             sell_value = self.trade_value_stable - fee
             context['coin_amount'] += sell_value / sell_price  # Maybe should minus as its short
             self.free_balance -= self.trade_value_stable
-            context['t_sell_value'] += sell_value
+            context['total_sell_value'] += sell_value
             context['pos_sells'].append(dict(
                 ts=curr_ts,
                 price=sell_price,
