@@ -5,7 +5,7 @@ import dash_bootstrap_components as dbc
 from datetime import datetime
 import json
 
-from Backtesting.Strategies import All_STRATEGIES, HighChange, EMAVol
+from Backtesting.Strategies import All_STRATEGIES, HighChange, EMAVol, EMATrendSTC
 from Data.Crypto.ccxt_utils import get_candles_from_db
 from Data.Crypto.symbols import exchange_symbol_pairs, DB_PATH
 from Plots.plotly_fig import get_updated_fig
@@ -106,10 +106,12 @@ def _adjust_input_lookahead(input_lookahead):
 def get_indicators(strategy=None):
     from Indicators import Volume
     if not strategy:
+        # strategy = EMATrendSTC()
         strategy = EMAVol()
         # strategy = HighChange({"pct": 0.015, "vol_pct": 1.15})
 
     strategy_indicators = [vars(strategy)[v] for v in vars(strategy) if v.startswith('_ind_')]
+    # main_plot_indicators_names = ('BB', 'SUPPORT_RESISTANCE', 'SMA', 'EMA', 'TRENDTRADER')
     main_plot_indicators_names = ('BB', 'SUPPORT_RESISTANCE', 'SMA', 'EMA')
     main_plot_indicators = [ind for ind in strategy_indicators if ind.name in main_plot_indicators_names]
     sub_plots = [ind for ind in strategy_indicators if ind not in main_plot_indicators]
@@ -162,6 +164,7 @@ def update_graph_live(start_date, coin, resample, strategy_params_text):
         print('JSONDecoder failed..')
         return dash.no_update, dash.no_update, str(repr(e)), True
     if len(start_date):
+        # in order to fail with indicators, its better to take 200 candles prior to start_date and start date will be a start display
         start_ts = int(pd.to_datetime(start_date).timestamp())
         end_date = pd.to_datetime(start_date) + INTERVAL_CANDLE_LOOKBACK_TABLE[resample]
     else:

@@ -6,6 +6,8 @@ from .SMAStochRSI import SMAStochRSI
 from .SMAMACD import SMAMACD
 from .HighChange import HighChange
 from .EMAVol import EMAVol
+from .EMATrendSTC import EMATrendSTC
+
 from .Strategy import Strategy
 
 All_STRATEGIES = dict(RSIBB=RSIBB,
@@ -14,4 +16,5 @@ All_STRATEGIES = dict(RSIBB=RSIBB,
                       RSISTO=SMAStochRSI,
                       SMAMACD=SMAMACD,
                       HIGHCHANGE=HighChange,
-                      EMAVOL=EMAVol)
+                      EMAVOL=EMAVol,
+                      EMATRENDSTC=EMATrendSTC)

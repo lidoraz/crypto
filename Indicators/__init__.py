@@ -9,6 +9,8 @@ from .SupportResistanceLines2 import SupportResistanceLines2
 from .CandleStick import CandleStick
 from .Volume import Volume
 from .StochRSI import StochRSI
+from .TrendTrader import TrendTrader
+from .STC import STC
 
 # TODO: Add PCT change, maybe volume.
 # TODO:  The ADX Indicator
