@@ -2,7 +2,7 @@ from binance_usdm_test import BinanceFutures
 # from Realtime.realtime_utils import handle_args
 from Data import CryptoData
 from Backtesting.Strategies import RSIBB, BB, MACross, SMAStochRSI, EMAVol
-from Realtime.realtime_utils import get_latest_buy_sell_1min, handle_args_1min
+from Realtime.realtime_utils import get_latest_buy_sell_futures, handle_args_1min
 from Utils.notify import TelegramBot
 from Utils.utils import WaitToMinEveryHour, format_num
 from tqdm import tqdm
@@ -137,7 +137,7 @@ def realtime_long_short():
     while True:
         if prod:
             wait.wait()
-        buy_details_lst, sell_details_lst = get_latest_buy_sell_1min(data_wrapper, symbols,
+        buy_details_lst, sell_details_lst = get_latest_buy_sell_futures(data_wrapper, symbols,
                                                                      strategy, tf=timeframe, n_candles_to_get=201)
         res = handle_futures(buy_details_lst, sell_details_lst, trader)
         broadcast_text = get_broadcast_buy_sell(res, strategy)

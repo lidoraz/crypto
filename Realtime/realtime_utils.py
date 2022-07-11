@@ -113,7 +113,7 @@ def get_latest_buy_sell(data_wrapper, symbols, strategy, tf='1H', n_candles_to_g
     return buy_lst, sell_lst
 
 
-def get_latest_buy_sell_1min(data_wrapper, symbols, strategy, tf='1T', n_candles_to_get=150):
+def get_latest_buy_sell_futures(data_wrapper, symbols, strategy, tf='1T', n_candles_to_get=150):
     """ gets latest coins to buy or sell based on strategy.
         Provides support with use_closed to filter out most recent unclosed candle
         It is designed to be used when a timeframe has been closed, such as right after a new hour has started
@@ -127,6 +127,7 @@ def get_latest_buy_sell_1min(data_wrapper, symbols, strategy, tf='1T', n_candles
     ts_now = int(time.time())
     dt_now = pd.to_datetime(ts_now, unit='s', utc=True).tz_convert('Israel')
     start_ts = ts_now - 60 * n_candles_to_get
+    interval_in_sec = pd.to_timedelta(tf).total_seconds()
 
     for coin in symbols:
         df = data_wrapper.get_data(coin, tf, start_ts=start_ts)
@@ -134,7 +135,7 @@ def get_latest_buy_sell_1min(data_wrapper, symbols, strategy, tf='1T', n_candles
             print('Skipping:', coin, tf)
             continue
         diff_time = (dt_now - df.index[-1]).total_seconds()
-        if diff_time > 60 + 15:
+        if diff_time > interval_in_sec + 15:
             print(f'WARNING: diff = {diff_time}sec! (should be between 60 < 75 max')
 
         df = strategy.add_indicators(df)
