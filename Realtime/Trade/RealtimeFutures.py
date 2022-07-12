@@ -115,14 +115,19 @@ def realtime_long_short():
     # timeframe = '5T'
     # 5T,200,3,14,20,20,1.2
     # 1H,100,14,25,1,20,1.0 # PROFIT: 38.01, pct: 15.20% from 2022-05-01 to 2022-07-12
-    timeframe = '1H'
-    strategy_params = dict(
-        ema_ahead=100,
-        n_ema_soon=14,
-        ema_fast_ahead=25,
-        vol_ema=1,
-        support_ahead=20,
-        risk_reward=1.0)
+    ################
+    # timeframe = '1H'
+    # strategy_params = dict(
+    #     ema_ahead=100,
+    #     n_ema_soon=14,
+    #     ema_fast_ahead=25,
+    #     vol_ema=1,
+    #     support_ahead=20,
+    #     risk_reward=1.0)
+    ################
+    timeframe = '5T'
+    strategy_params = {"ema_ahead": 200, "n_ema_soon": 3, "ema_fast_ahead": 14, "vol_ema": 20, "support_ahead": 20, "risk_reward": 1.2}
+
     strategy = EMAVol(strategy_params)
     trigger_minutes = get_trigger_minutes(timeframe)
 

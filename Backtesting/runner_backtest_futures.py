@@ -2,10 +2,16 @@ from Data import CryptoData  # , NasdaqData
 from Backtesting.optimize_futures import find_optimal_strategy
 
 
+def override_test_one_strategy(param, params):
+    # param = ('5T', 150, 3, 25, 1, 20, 1.2)
+    return {k: [param[i]] for i, (k, v) in enumerate(params.items())}
+
+
 def run_VOLEMA(data_wrapper, start_date, n_jobs):
     strategy = "EMAVOL"
+
     params = {  # 1h,9,14,15,26.0,68.0,1.9,324.30691727745153
-        'tf': ['1H', '15T'],  # ['1H', '15T'],  # ['1H'] # '15min',
+        'tf': ['5T', '15T'],  # 'tf': ['1H', '15T'],  # ['1H', '15T'],  # ['1H'] # '15min',
         'ema_ahead': [100, 150, 180, 200],
         'n_ema_soon': [3, 7, 14],
         'ema_fast_ahead': [14, 25, 50],
@@ -14,13 +20,9 @@ def run_VOLEMA(data_wrapper, start_date, n_jobs):
         'risk_reward': [1, 1.2, 1.5]
     }
     # test only one
-    n_jobs = 1
+    # n_jobs = 1
     # param = ('15T', 150, 7, 14, 20, 1.5)
-    param = ('1H', 150, 3, 25, 1, 20, 1.2)
-    def check_one_strategy(param, params):
-        return {k: [param[i]] for i, (k, v) in enumerate(params.items())}
-    params = check_one_strategy(param, params)
-    print('params', params)
+    # params = override_test_one_strategy(param)
     return find_optimal_strategy(data_wrapper, start_date, strategy=strategy, optimized_params=params, n_jobs=n_jobs)
 
 
