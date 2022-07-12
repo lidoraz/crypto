@@ -133,6 +133,8 @@ def find_gaps(symbols, add_info=False):
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
+    print('----------- ALL DATA ----------')
+    print(conv_df(df_gaps))
     print('----> Market Directions:')
     print(conv_df(df_etf))
     vol_filter = 2

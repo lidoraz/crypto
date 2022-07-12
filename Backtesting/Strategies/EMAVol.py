@@ -26,7 +26,8 @@ def calc_take_profit_price(side, price, stop_loss, rw_ratio=1.0):
 
 class EMAVol(Strategy):
     """
-        # Scalping strategy, only for 1, 5 min timeframes.
+        # Scalping strategy, only for 1, 5 min timeframes. (or maybe more)
+        # if volume is <= 1 strategy will not take into account vol
         Inspired by this channel: https://www.youtube.com/watch?v=Dmh0BfJURTM
         This strategy aims to work on the 1min tf, using mainly long EMA and vol to indicate change in trend and entry
         Dual strategy, can long and short
@@ -58,7 +59,10 @@ class EMAVol(Strategy):
         df = df.join(self._ind_lines.calc(df))
         ema_col = self._ind_ema.ra.name
         ema_fast_col = self._ind_ema_2.ra.name
-        df['volume_over'] = df.volume > df[f'volume_EMA{self._ind_vol.vol_ema}'] * 1.01
+        if self.vol_ema > 1:  # if volume is <= 1 strategy will not take into account vol
+            df['volume_over'] = df.volume > df[f'volume_EMA{self._ind_vol.vol_ema}'] * 1.01
+        else:
+            df['volume_over'] = True
         # buy condition
         # (df['close'] > df[ema_col]).rolling(self.n_ema_soon).sum()
         # (df['close'] > df[ema_col]).rolling(self.n_ema_soon).sum() > 0
@@ -80,16 +84,14 @@ class EMAVol(Strategy):
                          & df['volume_over'] & df['green_candle_L'] & df['fast_above_slow_L']
         df['SELL_ALGO'] = df[f'was_above_ema_S'] & df['below_ema_S'] \
                           & df['volume_over'] & df['red_candle_S'] & df['fast_below_slow_S']
-        # df['BUY_ALGO'] = df[f'was_below_ema_L'] & df['above_ema_L'] \
-        #                  & df['volume_over'] & df['green_candle_L'] & df['fast_above_slow_L']
-        # df['SELL_ALGO'] = df[f'was_above_ema_S'] & df['below_ema_S'] \
-        #                   & df['volume_over'] & df['red_candle_S'] & df['fast_below_slow_S']
         # Moran add, switch pos, maybe move to higher tf
         # prob need to add big candle for a reversal
         # df['SELL_ALGO'] = df[f'was_below_ema_L'] & df['above_ema_L'] \
         #                  & df['volume_over'] & df['fast_above_slow_L'] & df['red_candle_S']
         # df['BUY_ALGO'] = df[f'was_above_ema_S'] & df['below_ema_S'] \
         #                   & df['volume_over'] & df['fast_below_slow_S'] & df['green_candle_L']
+
+        # Test realtime futures with this open
         # df['BUY_ALGO'] = df['green_candle_L']
         # df['SELL_ALGO'] = df['red_candle_S']
         return df

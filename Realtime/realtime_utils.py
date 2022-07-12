@@ -113,11 +113,10 @@ def get_latest_buy_sell(data_wrapper, symbols, strategy, tf='1H', n_candles_to_g
     return buy_lst, sell_lst
 
 
-def get_latest_buy_sell_futures(data_wrapper, symbols, strategy, tf='1T', n_candles_to_get=150):
+def get_latest_buy_sell_futures(data_wrapper, symbols, strategy, tf, n_candles_to_get):
     """ gets latest coins to buy or sell based on strategy.
         Provides support with use_closed to filter out most recent unclosed candle
         It is designed to be used when a timeframe has been closed, such as right after a new hour has started
-        For experimental option, use_closed can be False, and then the data will be resampled to past selected TF.
     """
     # TODO: Edited for 1min
     buy_lst = []
@@ -163,5 +162,5 @@ def get_latest_buy_sell_futures(data_wrapper, symbols, strategy, tf='1T', n_cand
                                  buy_price_lose_stop=sell_vars['buy_price_lose_stop'],
                                  ts=ts))
     print(f'At: {dt_now.strftime(TIME_CONV)} - Checked {len(checked_coins)} coins,'
-          f' #Buy={len(buy_lst)} / #Sell={len(sell_lst)}, 1min tf')
+          f' #Buy={len(buy_lst)} / #Sell={len(sell_lst)}, {tf} tf')
     return buy_lst, sell_lst

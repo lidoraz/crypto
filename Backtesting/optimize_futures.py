@@ -28,12 +28,11 @@ def update_trade_stats(run_dict):
 #             return round(v, 3)
 #     for k,v in d.items():
 
-# TODO: How to handle multiple buys with buy price? and the stop losses?
+# How to handle multiple buys with buy price? and the stop losses?
 class BacktestOptimizer:
     def __init__(self, provider: ProviderData, strategy: Strategy, params, env_params):
         self.provider = provider
-        self.symbols = ['BTC', 'ETH', 'XRP', 'ADA', 'SOL', 'DOGE']
-        # self.symbols = sorted(provider.get_symbols())
+        self.symbols = sorted(provider.get_symbols())
         self.trades_str = []
         self.n_open_trades = 0
         # self.params = params
@@ -61,7 +60,7 @@ class BacktestOptimizer:
                 index_ts = df.index
             self.dfs.append((symbol, df))
             if self.verbose:
-                print(f'Added indicators for {symbol} ({i+1}/{len(self.symbols)})')
+                print(f'Added indicators for {symbol} ({i + 1}/{len(self.symbols)})')
         self.run_optimizer_ts = index_ts
 
     def get_assets_valuation(self, _dict, at_idx=None):
@@ -76,7 +75,8 @@ class BacktestOptimizer:
 
     def get_dict(self):
         _dict = {
-            symbol: dict(posSide=None, n_buys=0, n_sells=0, n_stopwins=0, n_stoploses=0, coin_amount=0, total_buy_value=0,
+            symbol: dict(posSide=None, n_buys=0, n_sells=0, n_stopwins=0, n_stoploses=0, coin_amount=0,
+                         total_buy_value=0,
                          total_sell_value=0, pos_buys=[], pos_sells=[], trades=[]) for symbol in self.symbols}
         return _dict
 
@@ -90,7 +90,7 @@ class BacktestOptimizer:
             buy_value_net = self.trade_value_stable - fee
             context['coin_amount'] += (buy_value_net / buy_price)
             self.free_balance -= self.trade_value_stable
-            context['total_buy_value'] += buy_value_net
+
             context['pos_buys'].append(dict(
                 ts=curr_ts,
                 price=buy_price,
@@ -98,6 +98,7 @@ class BacktestOptimizer:
                 win_stop=buy_vars['sell_price_win_stop'],
                 lose_stop=buy_vars['sell_price_lose_stop']))
             context['posSide'] = 'BUY'
+            context['total_buy_value'] += buy_value_net
             context['n_buys'] += 1
             self.n_open_trades += 1
             return True
@@ -113,7 +114,6 @@ class BacktestOptimizer:
             sell_value = self.trade_value_stable - fee
             context['coin_amount'] += sell_value / sell_price  # Maybe should minus as its short
             self.free_balance -= self.trade_value_stable
-            context['total_sell_value'] += sell_value
             context['pos_sells'].append(dict(
                 ts=curr_ts,
                 price=sell_price,
@@ -121,76 +121,78 @@ class BacktestOptimizer:
                 win_stop=sell_vars['buy_price_win_stop'],
                 lose_stop=sell_vars['buy_price_lose_stop']))
             context['posSide'] = 'SELL'
+            context['total_sell_value'] += sell_value
             context['n_sells'] += 1
             self.n_open_trades += 1
             return True
         return False
+
+    def __close_buy(self, context, low, high):
+        last_buy = context['pos_buys'][-1]
+        if low > last_buy['lose_stop'] and high < last_buy['win_stop']:
+            return None
+        elif high >= last_buy['win_stop']:
+            cause = 'WIN_STOP'
+            sell_price = last_buy['win_stop']
+            context['n_stopwins'] += 1
+        elif low <= last_buy['lose_stop']:
+            cause = 'LOSE_STOP'
+            sell_price = last_buy['lose_stop']
+            context['n_stoploses'] += 1
+        else:
+            raise ValueError('Invalid state in buy')
+        sell_value_gross = (context['coin_amount'] * sell_price) * (1 - self.trade_com)
+        fee = sell_value_gross * self.trade_com
+        sell_value = sell_value_gross - fee
+        return last_buy['ts'], last_buy['price'], sell_price, last_buy['buy_value'], sell_value, cause
+
+    def __close_sell(self, context, low, high):
+        last_sell = context['pos_sells'][-1]
+        if low > last_sell['win_stop'] and high < last_sell['lose_stop']:
+            return None
+        elif high >= last_sell['lose_stop']:
+            cause = 'LOSE_STOP'
+            buy_price = last_sell['lose_stop']
+            context['n_stoploses'] += 1
+        elif low <= last_sell['win_stop']:
+            cause = 'WIN_STOP'
+            buy_price = last_sell['win_stop']
+            context['n_stopwins'] += 1
+        else:
+            raise ValueError('Invalid state in sell')
+        buy_value_gross = (context['coin_amount'] * buy_price)
+        fee = buy_value_gross * self.trade_com
+        buy_value = buy_value_gross - fee
+        return last_sell['ts'], buy_price, last_sell['price'], buy_value, last_sell['sell_value'], cause
 
     def _close_pos(self, curr_ts, row, symbol, context):
         side = context['posSide']
         assert side in ('BUY', 'SELL')
         low = row['low']
         high = row['high']
-        cause = None
-        buy_price = None
-        sell_price = None
         if side == 'BUY':
-            last_buy = context['pos_buys'][-1]
-            if low > last_buy['lose_stop'] and high < last_buy['win_stop']:
-                return None
-            elif high >= last_buy['win_stop']:
-                cause = 'WIN_STOP'
-                sell_price = last_buy['win_stop']
-                context['n_stopwins'] += 1
-            elif low <= last_buy['lose_stop']:
-                cause = 'LOSE_STOP'
-                sell_price = last_buy['lose_stop']
-                context['n_stoploses'] += 1
-            else:
-                print('Wrong state')
-            pos_ts = last_buy['ts']
-            buy_value = last_buy['buy_value']
-            buy_price = last_buy['price']
-            sell_value_gross = (context['coin_amount'] * sell_price) * (1 - self.trade_com)
-            fee = sell_value_gross * self.trade_com
-            sell_value = sell_value_gross - fee
+            res = self.__close_buy(context, low, high)
         else:
-            last_sell = context['pos_sells'][-1]
-            if low > last_sell['win_stop'] and high < last_sell['lose_stop']:
-                return None
-            elif high >= last_sell['lose_stop']:
-                cause = 'LOSE_STOP'
-                buy_price = last_sell['lose_stop']
-                context['n_stoploses'] += 1
-            elif low <= last_sell['win_stop']:
-                cause = 'WIN_STOP'
-                buy_price = last_sell['win_stop']
-                context['n_stopwins'] += 1
-            else:
-                print('Wrong state')
-            pos_ts = last_sell['ts']
-            sell_value = last_sell['sell_value']
-            sell_price = last_sell['price']
-            buy_value_gross = (context['coin_amount'] * buy_price)
-            fee = buy_value_gross * self.trade_com
-            buy_value = buy_value_gross - fee
+            res = self.__close_sell(context, low, high)
+        if res is None:
+            return None
+        pos_ts, buy_price, sell_price, buy_value, sell_value, cause = res
         context['posSide'] = None
-        profit = round(sell_value - buy_value, 2)
-        profit_pct = round((sell_price / buy_price) - 1, 4)  # ROI
+        profit = sell_value - buy_value
+        profit_pct = sell_price / buy_price - 1  # ROI
         context['coin_amount'] = 0  # assuming we always sell all
-        # close trade
         min_holding = (curr_ts - pos_ts).total_seconds() // 60
         self.n_open_trades -= 1
         self.free_balance += sell_value
         # CAN BE USED AS TRADE INFO
         trade = dict(
+            symbol=symbol,
             side=side,
             entry_ts=pos_ts.strftime(TIME_CONV),
             exit_ts=curr_ts.strftime(TIME_CONV),
-            symbol=symbol,
             cause=cause,
-            profit=f'{profit:.2f}',  # profit,
-            profit_pct=f'{profit_pct:.2%}',  # profit_pct,
+            profit=f'{profit:.2f}',
+            profit_pct=f'{profit_pct:.2%}',
             buy_p=round(buy_price, 3),
             sold_p=round(sell_price, 3),
             min_holding=min_holding,
@@ -211,23 +213,16 @@ class BacktestOptimizer:
                     continue
                 context = _dict[symbol]
                 row = df.loc[curr_ts]
-                # check if pos it closed
-                if context['posSide']:
+                if context['posSide']:  # check has pos, check if close it
                     trade = self._close_pos(curr_ts, row, symbol, context)
                     if trade:
                         print_str = str(trade).replace("'", '').replace(' ', '\t')[1:-1]  # maybe use json
                         self.trades_str.append(print_str)
                         if self.verbose:
                             print(print_str)
-
-                if context['posSide']:  # has position
-                    continue
-                is_buy = self._handle_buy(curr_ts, row, context)
-                is_sell = False
-                if not is_buy:
-                    is_sell = self._handle_sell(curr_ts, row, context)
-                # if is_sell or is_buy:
-                #     print(curr_ts, symbol, is_sell, is_buy)
+                else:
+                    if not self._handle_buy(curr_ts, row, context):
+                        self._handle_sell(curr_ts, row, context)
 
         assets_valuation_sum, assets = self.get_assets_valuation(_dict)
         trade_stats = update_trade_stats(_dict)
@@ -235,6 +230,7 @@ class BacktestOptimizer:
         total_profit = round(total_balance - self.start_budget, 2)
         total_profit_pct = round((total_balance / self.start_budget) - 1, 4)
         run_results = dict(
+            tf=self.tf,
             profit=total_profit,
             profit_pct=total_profit_pct,
             total_balance=total_balance,
@@ -242,10 +238,6 @@ class BacktestOptimizer:
             assets_valuation=round(assets_valuation_sum, 3),
             **trade_stats,
             n_open=self.n_open_trades)
-        # print(f'\nrun: Starting at={self.start_budget} ==> {total_balance}'
-        #       f'(balance={self.free_balance :0.2f},asset={assets_valuation_sum:0.2f})'
-        #       f' stats={trade_stats}, n_open={self.n_open_trades}\n'
-        #       f'Profits: {total_balance - self.start_budget :0.2f}, pct={(total_balance / self.start_budget) - 1 :0.2%}')
         return run_results, self.trades_str, assets
 
 
@@ -261,8 +253,7 @@ def run_optimizer(provider: ProviderData, strategy_name: str, params, env_params
 def find_optimal_strategy(provider: ProviderData, start_date, strategy: str, optimized_params: dict, n_jobs=8):
     budget = 250
     trade_value = 40
-    comm = 0.001  # 0.001
-    # trade_value = max(int(0.05 * budget), 11)
+    comm = 0.0004  # Binance futures taker is 0.04%, (2022-07-12), 0.001
     assert trade_value >= 11, 'trade_value must be higher than 10, increase budget'
     env_params = dict(budget=budget, trade_value=trade_value, min_trade=40, trade_com=comm,
                       verbose=0 if n_jobs > 1 else 1)  # trade_v = 25
@@ -327,6 +318,7 @@ def find_optimal_strategy(provider: ProviderData, start_date, strategy: str, opt
 
     common_cols = [
         'total_balance',
+        'tf',
         'profit',
         'profit_pct',
         'free_balance',

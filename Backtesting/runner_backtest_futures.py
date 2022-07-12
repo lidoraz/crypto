@@ -1,27 +1,32 @@
 from Data import CryptoData  # , NasdaqData
 from Backtesting.optimize_futures import find_optimal_strategy
-import os
-import numpy as np
-import sys
-import json
 
 
-def run_VOLEMA(data_wrapper, tf, start_date, n_jobs):
+def run_VOLEMA(data_wrapper, start_date, n_jobs):
     strategy = "EMAVOL"
     params = {  # 1h,9,14,15,26.0,68.0,1.9,324.30691727745153
-        'tf': [tf],  # ['1H'] # '15min',
-        'ema_ahead': [150, 180, 200],
+        'tf': ['1H', '15T'],  # ['1H', '15T'],  # ['1H'] # '15min',
+        'ema_ahead': [100, 150, 180, 200],
         'n_ema_soon': [3, 7, 14],
         'ema_fast_ahead': [14, 25, 50],
-        'vol_ema': [10, 20],
+        'vol_ema': [1, 10, 20],  # EMA 1 should be no volume at all
+        'support_ahead': [10, 20],
         'risk_reward': [1, 1.2, 1.5]
     }
+    # test only one
+    n_jobs = 1
+    # param = ('15T', 150, 7, 14, 20, 1.5)
+    param = ('1H', 150, 3, 25, 1, 20, 1.2)
+    def check_one_strategy(param, params):
+        return {k: [param[i]] for i, (k, v) in enumerate(params.items())}
+    params = check_one_strategy(param, params)
+    print('params', params)
     return find_optimal_strategy(data_wrapper, start_date, strategy=strategy, optimized_params=params, n_jobs=n_jobs)
 
 
 def run_optimizer():
-    tf = '5T'  # 15min'
-    start_date = '2022-06-01'  # 22%!!
+    # tf = '1H'#, '5T'  # 15min'
+    start_date = '2022-05-01'  # 22%!!
     # start_date = '2022-07-05'
     # tf = '1T'  # 15min'
     # start_date = '2022-06-01'
@@ -30,7 +35,7 @@ def run_optimizer():
     # n_jobs = os.cpu_count()
     data_wrapper = CryptoData.get_wrapper(live=False, start_date=start_date,
                                           only_exchange='binance')  # start_date='2022-04-25'
-    params = (data_wrapper, tf, start_date, n_jobs)
+    params = (data_wrapper, start_date, n_jobs)
     jobs = [
         run_VOLEMA(*params),
     ]

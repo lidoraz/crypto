@@ -2,6 +2,7 @@ from Indicators import EMA, STC, SupportResistanceLines2, TrendTrader
 from .Strategy import Strategy
 
 
+# TODO: Not implemented
 def calc_take_profit_price(side, price, stop_loss, rw_ratio=1.0):
     assert side in ('buy', 'sell')
     pct_to_curr_price = 0.001

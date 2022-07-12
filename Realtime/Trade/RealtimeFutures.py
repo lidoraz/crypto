@@ -86,6 +86,15 @@ def sleep_before(time_sleep=60):
         time.sleep(1)
 
 
+def get_trigger_minutes(tf):
+    if tf == '1H':
+        return [0]
+    if tf[-1] == 'T':
+        tf = int(tf.split('T')[0])
+        return list(range(0, 60, tf))
+    return ValueError('tf type not supported (1Min to 1Hour only)')
+
+
 def realtime_long_short():
     """
     The active flag is typically used in ``currencies` <currency structure>` and ``markets` <market structure>`.
@@ -103,16 +112,19 @@ def realtime_long_short():
     tb_notify = TelegramBot(prod=prod, verbose=0)
     print('Checking Keys.. All OK')
     # positive profit.. of 7.5$ after a month...
+    # timeframe = '5T'
+    # 5T,200,3,14,20,20,1.2
+    # 1H,100,14,25,1,20,1.0 # PROFIT: 38.01, pct: 15.20% from 2022-05-01 to 2022-07-12
+    timeframe = '1H'
     strategy_params = dict(
-        ema_ahead=200,
-        n_ema_soon=3,
-        ema_fast_ahead=14,
-        vol_ema=20,
-        risk_reward=1.2)
+        ema_ahead=100,
+        n_ema_soon=14,
+        ema_fast_ahead=25,
+        vol_ema=1,
+        support_ahead=20,
+        risk_reward=1.0)
     strategy = EMAVol(strategy_params)
-    # trigger_minutes = np.linspace(0, 60, )(60)
-    trigger_minutes = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]
-    timeframe = '5T'
+    trigger_minutes = get_trigger_minutes(timeframe)
 
     print(f'-----> Strategy {strategy}, Trading every {timeframe}, at {trigger_minutes} min every hour')
     print(repr(strategy))
@@ -121,14 +133,11 @@ def realtime_long_short():
         sleep_before()
 
     data_wrapper = CryptoData.get_wrapper(live=True,
-                                          start_date='2022-05-01',
                                           only_exchange=trader.exchange_name)
-    # FILTER OUT SYMBOLS, first run on very minimal set -> 5 coins at most from binance.
-    # symbols = data_wrapper.get_symbols()
+    symbols = data_wrapper.get_symbols()
     # First try on few then on rest
-    # TODO Solana has minimum of 40USD for a trade in futures.
-    symbols = ['BTC', 'ETH', 'XRP', 'ADA', 'SOL', 'DOGE']  # 'SHIB' is out as it has 1000x multiply
-    # symbols = ['BTC']
+    # Solana has minimum of 40USD for a trade in futures.
+    # symbols = ['BTC', 'ETH', 'XRP', 'ADA', 'SOL', 'DOGE']  # 'SHIB' is out as it has 1000x multiply
     wait = WaitToMinEveryHour(trigger_minutes, offset_sec=5)
     start_msg = get_start_msg(symbols, timeframe, strategy)
     print(start_msg)
@@ -138,7 +147,7 @@ def realtime_long_short():
         if prod:
             wait.wait()
         buy_details_lst, sell_details_lst = get_latest_buy_sell_futures(data_wrapper, symbols,
-                                                                     strategy, tf=timeframe, n_candles_to_get=201)
+                                                                        strategy, tf=timeframe, n_candles_to_get=201)
         res = handle_futures(buy_details_lst, sell_details_lst, trader)
         broadcast_text = get_broadcast_buy_sell(res, strategy)
         if broadcast_text:
@@ -146,7 +155,7 @@ def realtime_long_short():
 
         if not prod:  # safety
             break
-        # TODO: Need to find a way for create an OCO order for stop-loss orders.
+        # Need to find a way for create an OCO order for stop-loss orders, currently reduce-only works okay.
         # trader.remove_unlocked_positions(symbols)
 
 
