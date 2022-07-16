@@ -59,7 +59,7 @@ def run_EMA3(data_wrapper, start_date, n_jobs):
         'ema_slow_lk': [100, 150, 200, 300],
         'ema_mid_lk': [50, 75],
         'ema_fast_lk': [14, 25],
-        'n_ema_soon': [1, 3, 7],
+        'n_ema_soon': [3, 7],
         'support_ahead': [5, 10, 20],
         'risk_reward': [1, 1.2, 1.5]
     }
