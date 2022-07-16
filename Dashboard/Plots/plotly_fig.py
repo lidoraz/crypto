@@ -24,7 +24,7 @@ def get_generic_plots(lookahead=14, lookback_length=None, plot_index=-1):
     return main_plot_indicators, sub_plots
 
 
-def get_updated_fig(df_ohlcv, main_plot_ind=(), sub_plots=(), xy_limit=True, show_legend=True, with_data=False):
+def get_updated_fig(df_ohlcv, main_plot_ind=(), sub_plots=(), xy_limit=True, show_legend=True, with_data=False, calc_ind=True):
     if not len(main_plot_ind) and not len(sub_plots):
         main_plot_ind, sub_plots = get_generic_plots()
 
@@ -36,7 +36,7 @@ def get_updated_fig(df_ohlcv, main_plot_ind=(), sub_plots=(), xy_limit=True, sho
         s_plot.plot_loc = (idx + 2, 1)
 
     # relative height of main frame compared to all traces
-    row_heights = [len(sub_plots) * 2] + [1 for _ in sub_plots]
+    row_heights = [len(sub_plots) * 3] + [1 for _ in sub_plots]
 
     fig = make_subplots(rows=len(sub_plots) + 1, cols=1,
                         row_heights=row_heights,  # [6, 3, 1, 1]
@@ -46,10 +46,12 @@ def get_updated_fig(df_ohlcv, main_plot_ind=(), sub_plots=(), xy_limit=True, sho
     ind_candle.plot(fig)
 
     for main_ind in main_plot_ind:
-        df_ohlcv = df_ohlcv.join(main_ind.calc(df_ohlcv))
-        main_ind.plot(fig)
+        if calc_ind:
+            df_ohlcv = df_ohlcv.join(main_ind.calc(df_ohlcv))
+        fig = main_ind.plot(fig)
     for sub_ind in sub_plots:
-        df_ohlcv = df_ohlcv.join(sub_ind.calc(df_ohlcv))
+        if calc_ind:
+            df_ohlcv = df_ohlcv.join(sub_ind.calc(df_ohlcv))
         fig = sub_ind.plot(fig)
 
     fig_update_layout_combined_view(fig)

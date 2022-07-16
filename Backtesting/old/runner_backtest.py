@@ -1,9 +1,5 @@
 from Data import CryptoData  # , NasdaqData
-from Backtesting.optimize import find_optimal_strategy
-import os
-import numpy as np
-import sys
-import json
+from Backtesting.old.optimize import find_optimal_strategy
 
 
 def run_MACross(data_wrapper, tf, start_date, n_jobs):

@@ -7,8 +7,9 @@ from .SMAMACD import SMAMACD
 from .HighChange import HighChange
 from .EMAVol import EMAVol
 from .EMATrendSTC import EMATrendSTC
-
+from .EMABB import EMABB
 from .Strategy import Strategy
+from .EMA3 import EMA3
 
 All_STRATEGIES = dict(RSIBB=RSIBB,
                       BB=BB,
@@ -17,4 +18,6 @@ All_STRATEGIES = dict(RSIBB=RSIBB,
                       SMAMACD=SMAMACD,
                       HIGHCHANGE=HighChange,
                       EMAVOL=EMAVol,
-                      EMATRENDSTC=EMATrendSTC)
+                      EMATRENDSTC=EMATrendSTC,
+                      EMABB=EMABB,
+                      EMA3=EMA3)

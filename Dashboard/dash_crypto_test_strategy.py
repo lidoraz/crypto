@@ -5,7 +5,7 @@ import dash_bootstrap_components as dbc
 from datetime import datetime
 import json
 
-from Backtesting.Strategies import All_STRATEGIES, HighChange, EMAVol, EMATrendSTC
+from Backtesting.Strategies import All_STRATEGIES, HighChange, EMAVol, EMATrendSTC, EMABB
 from Data.Crypto.ccxt_utils import get_candles_from_db
 from Data.Crypto.symbols import exchange_symbol_pairs, DB_PATH
 from Plots.plotly_fig import get_updated_fig
@@ -32,7 +32,7 @@ app.title = title
 title_html = html.Div(title, style={'padding-right': '5%', 'margin-left': '2%'})
 coin_html = dcc.Dropdown(coins, 'BTC', id='coin-type', clearable=False, style=dict(width='60pt'))
 live_update_html = html.Div(id='live-update-text', style={'margin': 'auto'}, children="")  # 'width': '20%',
-resample_selector_html = dcc.RadioItems(options=resample_radio_options, value=resample_keywords[0], id='resample-type',
+resample_selector_html = dcc.RadioItems(options=resample_radio_options, value='15T', id='resample-type',
                                         inline=True)
 right_portion_html = html.Div(id='right-portion',
                               children=[html.Div(resample_selector_html)],
@@ -68,8 +68,8 @@ app.layout = html.Div([
     ),
     html.Div(id='graph-container', children=[
         dcc.Graph(id='live-update-graph', config={'scrollZoom': True,
-                                                  'modeBarButtonsToRemove': ['toImage', 'select2d', 'lasso2d', 'pan2d',
-                                                                             'zoom2d', 'autoScale2d'],
+                                                  # 'modeBarButtonsToRemove': ['toImage', 'select2d', 'lasso2d', 'pan2d',
+                                                  #                            'zoom2d', 'autoScale2d'],
                                                   'displaylogo': False},
                   style={'width': 'auto', 'height': '85vh'}
                   # TODO important https://stackoverflow.com/questions/46287189/how-can-i-change-the-size-of-my-dash-graph
@@ -102,26 +102,7 @@ def _adjust_input_lookahead(input_lookahead):
         input_lookahead = 14
     return max(min(input_lookahead, 100), 3)
 
-
-def get_indicators(strategy=None):
-    from Indicators import Volume
-    if not strategy:
-        # strategy = EMATrendSTC()
-        strategy = EMAVol()
-        # strategy = HighChange({"pct": 0.015, "vol_pct": 1.15})
-
-    strategy_indicators = [vars(strategy)[v] for v in vars(strategy) if v.startswith('_ind_')]
-    # main_plot_indicators_names = ('BB', 'SUPPORT_RESISTANCE', 'SMA', 'EMA', 'TRENDTRADER')
-    main_plot_indicators_names = ('BB', 'SUPPORT_RESISTANCE', 'SMA', 'EMA')
-    main_plot_indicators = [ind for ind in strategy_indicators if ind.name in main_plot_indicators_names]
-    sub_plots = [ind for ind in strategy_indicators if ind not in main_plot_indicators]
-    if len(sub_plots) == 0:
-        sub_plots.append(Volume())
-    return strategy, main_plot_indicators, sub_plots
-
-
-def add_buy_sell_to_fig(df_ohlcv, strategy, fig, show_res=False):
-    df_ohlcv = strategy.add_indicators(df_ohlcv)
+def add_buy_sell_to_fig(df_ohlcv, fig, show_res=False):
     # return fig
     buy_locations = df_ohlcv['BUY_ALGO'][df_ohlcv['BUY_ALGO']].index
     sell_locations = df_ohlcv['SELL_ALGO'][df_ohlcv['SELL_ALGO']].index
@@ -140,6 +121,24 @@ def add_buy_sell_to_fig(df_ohlcv, strategy, fig, show_res=False):
             print('SELL:', sell_loc, support_res_pct.to_dict(), support_res_lines.to_dict())
         fig.add_vline(sell_loc, row=1, col=1, line_color='red', opacity=0.4)
     return fig
+
+
+def get_indicators(strategy=None):
+    from Indicators import Volume
+    if not strategy:
+        # strategy = EMABB()
+        # strategy = EMAVol({"ema_ahead": 200, "n_ema_soon": 3, "ema_fast_ahead": 14, "vol_ema": 20, "support_ahead": 20, "risk_reward": 1.2})
+        strategy = EMAVol()
+        # strategy = EMATrendSTC()
+        # strategy = HighChange({"pct": 0.015, "vol_pct": 1.15})
+
+    strategy_indicators = [vars(strategy)[v] for v in vars(strategy) if v.startswith('_ind_')]
+    main_plot_indicators_names = ('BB', 'SUPPORT_RESISTANCE', 'SMA', 'EMA', 'TRENDTRADER')
+    main_plot_indicators = [ind for ind in strategy_indicators if ind.name in main_plot_indicators_names]
+    sub_plots = [ind for ind in strategy_indicators if ind not in main_plot_indicators]
+    if len(sub_plots) == 0:
+        sub_plots.append(Volume())
+    return strategy, main_plot_indicators, sub_plots
 
 
 @app.callback(Output('live-update-graph', 'figure'),
@@ -166,16 +165,21 @@ def update_graph_live(start_date, coin, resample, strategy_params_text):
     if len(start_date):
         # in order to fail with indicators, its better to take 200 candles prior to start_date and start date will be a start display
         start_ts = int(pd.to_datetime(start_date).timestamp())
-        end_date = pd.to_datetime(start_date) + INTERVAL_CANDLE_LOOKBACK_TABLE[resample]
+        end_date = pd.to_datetime(start_date) + INTERVAL_CANDLE_LOOKBACK_TABLE[resample] * 2
     else:
-        start_ts = int((datetime.utcnow() - INTERVAL_CANDLE_LOOKBACK_TABLE[resample]).timestamp())
+        start_ts = int((datetime.utcnow() - INTERVAL_CANDLE_LOOKBACK_TABLE[resample] * 2).timestamp())
     df_ohlcv = get_candles_from_db(db, coin, resample, start_ts=start_ts)
     if end_date:
         df_ohlcv = df_ohlcv[df_ohlcv.index <= pd.to_datetime(end_date, utc=True).tz_convert('Israel')]
 
     strategy, main_plot_indicators, sub_plots = get_indicators(strategy)
-    fig = get_updated_fig(df_ohlcv, main_plot_indicators, sub_plots, xy_limit=False)
-    fig = add_buy_sell_to_fig(df_ohlcv, strategy, fig, show_res=True)
+    attrs = df_ohlcv.attrs
+    df_ohlcv = strategy.add_indicators(df_ohlcv)
+    df_ohlcv.attrs = attrs
+    fig = get_updated_fig(df_ohlcv, main_plot_indicators, sub_plots, xy_limit=False, calc_ind=False)
+    show_resistance_supports = True
+    fig = add_buy_sell_to_fig(df_ohlcv, fig, show_res=show_resistance_supports)
+
 
     time_conv = "%b %d, %H:%M"  # .strftime
     t1 = f'{(datetime.now() - t0).total_seconds():0.2f}'

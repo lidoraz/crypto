@@ -126,6 +126,7 @@ def realtime_long_short():
     #     risk_reward=1.0)
     ################
     timeframe = '5T'
+    # TODO: add tf and strategy name into the configuration for easy changing strategies.
     strategy_params = {"ema_ahead": 200, "n_ema_soon": 3, "ema_fast_ahead": 14, "vol_ema": 20, "support_ahead": 20, "risk_reward": 1.2}
 
     strategy = EMAVol(strategy_params)

@@ -8,6 +8,9 @@ import os
 from Data import ProviderData
 from Backtesting.Strategies import *
 
+import matplotlib
+matplotlib.use('TkAgg') # for interactive debugging
+
 TIME_CONV = "%y-%m-%dT%H:%M"
 
 
@@ -33,19 +36,21 @@ class BacktestOptimizer:
     def __init__(self, provider: ProviderData, strategy: Strategy, params, env_params):
         self.provider = provider
         self.symbols = sorted(provider.get_symbols())
-        self.trades_str = []
+        self._dict = self.get_dict()
+        self.trades = []
         self.n_open_trades = 0
         # self.params = params
         self.tf = params['tf']
         self.start_budget = env_params['budget']
         self.free_balance = self.start_budget
+        self.portfolio_value = self.free_balance
+        self.curr_price = {}
         self.trade_value_stable = env_params['trade_value']
         self.min_trade = env_params['min_trade']
         self.trade_com = env_params['trade_com']
         self.dfs = []
         self.strategy = strategy
         self.run_optimizer_ts = None
-        self.trades_str = []
         self.verbose = env_params['verbose']
 
     def prepare_run_data(self):
@@ -63,14 +68,16 @@ class BacktestOptimizer:
                 print(f'Added indicators for {symbol} ({i + 1}/{len(self.symbols)})')
         self.run_optimizer_ts = index_ts
 
-    def get_assets_valuation(self, _dict, at_idx=None):
-        assets = {sym: v['coin_amount'] for sym, v in _dict.items() if v['coin_amount'] > 0}
+    def get_assets_valuation(self, at_idx=None, only_sum=False):
+        assets = {sym: v['coin_amount'] for sym, v in self._dict.items() if v['coin_amount'] > 0}
         if at_idx is None:
             assets_price = {sym: df.iloc[-1]['close'] for sym, df in self.dfs if sym in assets.keys()}
         else:
             assets_price = {sym: df.loc[at_idx]['close'] for sym, df in self.dfs if sym in assets.keys()}
         assets_valuation = {k: v * assets_price[k] for k, v in assets.items()}
         assets_valuation_sum = sum(assets_valuation.values())
+        if only_sum:
+            return assets_valuation_sum
         return assets_valuation_sum, assets
 
     def get_dict(self):
@@ -132,11 +139,11 @@ class BacktestOptimizer:
         if low > last_buy['lose_stop'] and high < last_buy['win_stop']:
             return None
         elif high >= last_buy['win_stop']:
-            cause = 'WIN_STOP'
+            cause = 'TP'
             sell_price = last_buy['win_stop']
             context['n_stopwins'] += 1
         elif low <= last_buy['lose_stop']:
-            cause = 'LOSE_STOP'
+            cause = 'SL'
             sell_price = last_buy['lose_stop']
             context['n_stoploses'] += 1
         else:
@@ -151,11 +158,11 @@ class BacktestOptimizer:
         if low > last_sell['win_stop'] and high < last_sell['lose_stop']:
             return None
         elif high >= last_sell['lose_stop']:
-            cause = 'LOSE_STOP'
+            cause = 'SL'
             buy_price = last_sell['lose_stop']
             context['n_stoploses'] += 1
         elif low <= last_sell['win_stop']:
-            cause = 'WIN_STOP'
+            cause = 'TP'
             buy_price = last_sell['win_stop']
             context['n_stopwins'] += 1
         else:
@@ -181,29 +188,33 @@ class BacktestOptimizer:
         profit = sell_value - buy_value
         profit_pct = sell_price / buy_price - 1  # ROI
         context['coin_amount'] = 0  # assuming we always sell all
-        min_holding = (curr_ts - pos_ts).total_seconds() // 60
+        holding_min = (curr_ts - pos_ts).total_seconds() // 60
         self.n_open_trades -= 1
         self.free_balance += sell_value
         # CAN BE USED AS TRADE INFO
+        curr_portfolio = round(self.free_balance + self.get_assets_valuation(at_idx=curr_ts, only_sum=True), 3)
         trade = dict(
             symbol=symbol,
             side=side,
             entry_ts=pos_ts.strftime(TIME_CONV),
             exit_ts=curr_ts.strftime(TIME_CONV),
             cause=cause,
-            profit=f'{profit:.2f}',
+            profit_net=f'{profit:.2f}',
             profit_pct=f'{profit_pct:.2%}',
             buy_p=round(buy_price, 3),
             sold_p=round(sell_price, 3),
-            min_holding=min_holding,
+            holding_min=holding_min,
+            buy_value=round(buy_value, 3),
             sold_value=round(sell_value, 3),
-            balance=round(self.free_balance, 3))
+            balance=round(self.free_balance, 3),
+            # Very heavy calculation, can be updated when checking prices to be instant.
+            # Add also profit without fees
+            portfolio=curr_portfolio)
         context['trades'].append(trade)
         return trade
 
     def run(self):
         self.prepare_run_data()
-        _dict = self.get_dict()
         for curr_ts in self.run_optimizer_ts:
             if self.n_open_trades == 0 and self.free_balance < self.min_trade:
                 print('budget is over try again.')
@@ -211,21 +222,26 @@ class BacktestOptimizer:
             for symbol, df in self.dfs:
                 if curr_ts not in df.index:
                     continue
-                context = _dict[symbol]
+                self.curr_price[symbol] = df['close'].loc[curr_ts]
+                context = self._dict[symbol]
                 row = df.loc[curr_ts]
                 if context['posSide']:  # check has pos, check if close it
                     trade = self._close_pos(curr_ts, row, symbol, context)
                     if trade:
-                        print_str = str(trade).replace("'", '').replace(' ', '\t')[1:-1]  # maybe use json
-                        self.trades_str.append(print_str)
+                        self.trades.append(trade)
                         if self.verbose:
+                            print_str = str(trade).replace("'", '').replace(' ', '\t')[1:-1]  # maybe use json
                             print(print_str)
                 else:
-                    if not self._handle_buy(curr_ts, row, context):
-                        self._handle_sell(curr_ts, row, context)
-
-        assets_valuation_sum, assets = self.get_assets_valuation(_dict)
-        trade_stats = update_trade_stats(_dict)
+                    is_buy = self._handle_buy(curr_ts, row, context)
+                    is_sell = self._handle_sell(curr_ts, row, context)
+                    # assert not is_buy or not is_sell
+            # self.portfolio_value  # insert porforilio value
+        # TODO: Why there is a large deviation between profit in trades, as looked in jupyter
+        #  if the profit is net, how come we got 46profit while, 246 in the total balance?
+        #  Thats ok as it did not include owned assets
+        assets_valuation_sum, assets = self.get_assets_valuation()
+        trade_stats = update_trade_stats(self._dict)
         total_balance = round(self.free_balance + assets_valuation_sum, 3)
         total_profit = round(total_balance - self.start_budget, 2)
         total_profit_pct = round((total_balance / self.start_budget) - 1, 4)
@@ -238,7 +254,7 @@ class BacktestOptimizer:
             assets_valuation=round(assets_valuation_sum, 3),
             **trade_stats,
             n_open=self.n_open_trades)
-        return run_results, self.trades_str, assets
+        return run_results, self.trades, assets
 
 
 def run_optimizer(provider: ProviderData, strategy_name: str, params, env_params):
@@ -277,12 +293,12 @@ def find_optimal_strategy(provider: ProviderData, start_date, strategy: str, opt
             tqdm(permutations_dicts))
 
     metric = 'profit_pct'
-    l_trades_str = []
+    l_trades = []
     res = []
     for params, job_result in zip(permutations_dicts, job_results):
-        run_res, trades_str, assets = job_result
+        run_res, trades, assets = job_result
         params.update(run_res)
-        l_trades_str.append(trades_str)
+        l_trades.append(trades)
         res.append(params)
 
     df = pd.DataFrame(res)
@@ -290,7 +306,7 @@ def find_optimal_strategy(provider: ProviderData, start_date, strategy: str, opt
     # [print(sym,([v[k] for k in v if k.startswith('n_')])) for sym,v in _dict.items()] print n_Buys #todo
     # get win strategy:
     win_idx = df.index[0]
-    win_trades = l_trades_str[win_idx]
+    win_trades = l_trades[win_idx]
     win_row = df.iloc[0]
     print('Index:', win_idx)
     print(f'Total Portfoio Balance: PROFIT: {win_row["profit"]:0.2f},'
@@ -310,11 +326,10 @@ def find_optimal_strategy(provider: ProviderData, start_date, strategy: str, opt
     os.makedirs(output_path, exist_ok=True)
 
     full_path_summary = output_path + name + '_summary.csv'
-    full_path_trades = output_path + name + '_trades.tsv'
+    full_path_trades = output_path + name + '_trades.csv'
+    # TODO: Add res summary into the trades file, the json config etc..
     df.to_csv(full_path_summary)
-    with open(full_path_trades, 'w') as f:
-        for trade in win_trades:
-            print(trade, file=f)
+    pd.DataFrame(win_trades).to_csv(full_path_trades)
 
     common_cols = [
         'total_balance',

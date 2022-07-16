@@ -33,29 +33,18 @@ def wma(data, lk):
 
 class TrendTrader(Indicator):
     """
-    Momentum indicator, used to detect momentum
-    MACD measures the relationship between two EMAs
+    // This is plots the indicator developed by Andrew Abraham
+    // in the Trading the Trend article of TASC September 1998
+    // Trend Trader Strategy
     """
 
     def __init__(self, lookahead=21, multiplier=3, plot_loc=None):
         self.name = "TRENDTRADER"
         self.lookahead = lookahead
         self.multiplier = multiplier
-        # TODO: can normalize but does not work that good.
-        # self.normalize = normalize
-        # self.normalize_lk = 100
         self.plot_loc = (plot_loc, 1 if plot_loc else None)
-        #
-        # self._ind_fast = EMA(lookahead_short)  # fast
-        # self._ind_slow = EMA(lookahead_long)  # slow
-        # self._ind_signal = EMA(lookahead_signal)  # smooth
-        self.plot_c = dict(macd="#2962FF",
-                           signal='#FF6D00',
-                           grow_above='#26A69A',
-                           fall_above='#B2DFDB',
-                           grow_below='#FFCDD2',
-                           fall_below='#FF5252')
         self._marker_color = None
+        self.ra = None
 
     def calc(self, ohlc) -> pd.DataFrame:
         # max(high-low, abs(high - close[1], abs(low -close[1]))
@@ -70,18 +59,18 @@ class TrendTrader(Indicator):
         close = ohlc['close']
         ret = np.where((close > hi_limit) & (close > lo_limit), hi_limit,
                        np.where((close < lo_limit) & (close < hi_limit),
-                                lo_limit,
-                                close))
-
-        # self.ra = pd.Series(ret, close.index)
-        self.ra = avg_tr
+                                lo_limit, np.nan))
+        # fills the nan values, with backward data, fills first value in series with close
+        ret = pd.Series(ret, index=close.index).ffill().fillna(close)
+        self.ra = ret
         self.ra.name = 'TrendTrader'
         self.name = f"Trend({self.lookahead},{self.multiplier})"
+        # All good, tested against TW.
         return self.ra
 
     def plot(self, fig):
         ra = go.Scatter(x=self.ra.index, y=self.ra,
-                        line_color=self.plot_c['macd'],
+                        line_color='#2196F3',
                         line_width=1, legendgroup=self.name, name=self.name)
         fig.add_trace(ra, row=self.plot_loc[0], col=self.plot_loc[1])
         # fig.add_hline(y=0, row=self.plot_loc[0], col=self.plot_loc[1], line_width=0.5, line_color='black')

@@ -28,14 +28,22 @@ class STC(Indicator):
     def calc(self, ohlc) -> pd.DataFrame:
         prices = ohlc['close']
         macd = self._ind_fast.calc(ohlc) - self._ind_slow.calc(ohlc)
+        # calc MACD
         lo_macd = macd.rolling(self.lookahead).min()
         hi_macd = macd.rolling(self.lookahead).max() - lo_macd
         t_macd = np.where(lo_macd > 0, (macd - lo_macd) / hi_macd * 100, 0)
-        ddd = np.where(t_macd != 0.0, 0, self.ratio * t_macd)
-        lo_ddd = pd.Series(ddd).rolling(self.lookahead).min()
-        hi_ddd = pd.Series(ddd).rolling(self.lookahead).max()
-        dddddd = np.where(hi_ddd > 0, (ddd - lo_ddd) / hi_ddd * 100, 0)
-        res = self.ratio * dddddd
+        lo_macd = pd.Series(t_macd).rolling(self.lookahead).min()
+        hi_macd = pd.Series(t_macd).rolling(self.lookahead).max() - lo_macd
+        #### CCCC nonsense below
+        x1 = pd.Series(np.where(hi_macd > 0, (t_macd - lo_macd) / hi_macd * 100, np.nan), index=ohlc.index)
+        x1 = x1.ffill().fillna(0)
+        print(x1.tail(20))
+        # TODO: USD Trading view to fill this up, then we are able to test this strategy and think if it worths anything.
+        # x2 =
+        # ddd = np.where(t_macd != 0.0, 0, self.ratio * t_macd)
+        # dddddd = np.where(hi_ddd > 0, (ddd - lo_ddd) / hi_ddd * 100, 0)
+        # res = self.ratio * dddddd
+        res = x1
         res = pd.Series(res, index=macd.index)
         # lo_macd.apply(lambda x: (macd - lo_macd) / hi_macd * 100 if x > 0 else 0)
         # ddd = t_macd if
