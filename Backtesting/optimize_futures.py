@@ -320,7 +320,7 @@ def find_optimal_strategy(provider: ProviderData, start_date, strategy: str, opt
     # save df
     time = datetime.now()
     print(f"TIME TOOK: {int((time - time_start).total_seconds() / 60)} min")
-    name = f'{time.strftime(TIME_CONV)}_{start_date}_{provider.name}_{strategy}'
+    name = f'{time.strftime(TIME_CONV).replace(":", ".")}_{start_date}_{provider.name}_{strategy}'
 
     output_path = 'Backtesting/strategy_output/'
     os.makedirs(output_path, exist_ok=True)
