@@ -87,12 +87,13 @@ def sleep_before(time_sleep=60):
 
 
 def get_trigger_minutes(tf):
-    if tf == '1H':
+    # if tf == '1H':
+    if tf[-1] == 'H':
         return [0]
     if tf[-1] == 'T':
         tf = int(tf.split('T')[0])
         return list(range(0, 60, tf))
-    return ValueError('tf type not supported (1Min to 1Hour only)')
+    raise ValueError('tf type not supported (1Min to 1Hour only)')
 
 
 def realtime_long_short():
