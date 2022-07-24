@@ -2,7 +2,7 @@ import yfinance as yf
 import time
 import pandas as pd
 
-from Analytics.Nasdaq.gaps import snp500_stocks, selected_stocks
+from AStock.gaps import snp500_stocks, selected_stocks
 
 
 def get_daily_data(symbols, days_before):

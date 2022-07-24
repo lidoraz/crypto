@@ -26,7 +26,8 @@ ccxt_errors = (ccxt.errors.RateLimitExceeded,
 FETCH_LIMIT = 1000
 # START_TS = 1651000000  # 1646000000  # Sunday, February 27, 2022
 time_delta_sec_month = 60 * 60 * 24 * 30
-START_TS = int(time.time()) - time_delta_sec_month * 3  # Take two month before from script start
+N_MONTHS = 2
+START_TS = int(time.time()) - time_delta_sec_month * N_MONTHS  # Take two month before from script start
 N_TRIES_LIMIT = 100
 
 

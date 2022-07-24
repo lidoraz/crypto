@@ -2,6 +2,7 @@ from Data import CryptoData  # , NasdaqData
 from Backtesting.optimize_futures import find_optimal_strategy
 import os
 
+
 def override_test_one_strategy(param):
     # param = ('5T', 150, 3, 25, 1, 20, 1.2)
     # return {k: [param[i]] for i, (k, v) in enumerate(params.items())}
@@ -23,12 +24,11 @@ def run_VOLEMA(data_wrapper, start_date, n_jobs):
     # param = {'tf': '15T', "ema_ahead": 200, "n_ema_soon": 3, "ema_fast_ahead": 14,
     #          "vol_ema": 20, "support_ahead": 20, "risk_reward": 1.2}
     # 1H,100,14,25,1,20,1.0
-    # param = {"name": "EMAVOL", "ema_ahead": 100, "n_ema_soon": 14, "ema_fast_ahead": 25, "vol_ema": 20,
-    #          "support_ahead": 5, "risk_reward": 1.0}
-    # param['tf'] = '1H'
-    # n_jobs = 1
-    # {"ema_ahead": 200, "n_ema_soon": 3, "ema_fast_ahead": 14, "vol_ema": 20, "support_ahead": 20, "risk_reward": 1.2}
-    # params = override_test_one_strategy(param)
+    param = {"name": "EMAVOL", "ema_ahead": 100, "n_ema_soon": 14, "ema_fast_ahead": 50, "vol_ema": 1,
+             "support_ahead": 5, "risk_reward": 1.0}
+    n_jobs = 1
+    param['tf'] = '1H'
+    params = override_test_one_strategy(param)
     return find_optimal_strategy(data_wrapper, start_date, strategy=strategy, optimized_params=params, n_jobs=n_jobs)
 
 
@@ -55,29 +55,37 @@ def run_EMABB(data_wrapper, start_date, n_jobs):
 def run_EMA3(data_wrapper, start_date, n_jobs):
     strategy = "EMA3"
     params = {
-        'tf': ['15T', '1H'],
-        'ema_slow_lk': [100, 150, 200, 300],
-        'ema_mid_lk': [50, 75],
-        'ema_fast_lk': [14, 25],
-        'n_ema_soon': [3, 7],
+        'tf': ['30T', '60T', '90T', '2H', '4H'],
+        'ema_slow_lk': [200, 300, 400],
+        'ema_mid_lk': [30, 50, 75],
+        # 'ema_fast_lk': [14, 25],
+        'n_ema_soon': [3, 7, 10],
+        'vol_pct': [0,  0.1, 0.15, 0.2],
         'support_ahead': [5, 10, 20],
-        'risk_reward': [1, 1.2, 1.5]
+        'risk_reward': [1, 1.2, 1.5, 2.0, 2.5]
     }
+    n_jobs = 1
+    # # 'tf': '90T'
+    # 60T,300,30,10,0.05,20,2.0
+    param = {'tf': '2H', 'ema_slow_lk': 200, 'ema_mid_lk': 30, "risk_reward": 2.0, "support_ahead": 5, "vol_pct": 0.05}
+    params = override_test_one_strategy(param)
     return find_optimal_strategy(data_wrapper, start_date, strategy=strategy, optimized_params=params, n_jobs=n_jobs)
+
 
 def run_optimizer():
     start_date = '2022-02-01'  # 22%!!
-    # start_date = '2022-07-05'
-    # start_date = '2022-06-01'
+    # Todo: think about adding mulitiple TP -> (50%, 25%, 25%)
+    # start_date = '2022-03-05'
+    start_date = '2022-06-01'
     # TODO: need to remember that indicators dont work well from start as it needs about 200 candles to operate correctly.
     n_jobs = os.cpu_count()
     data_wrapper = CryptoData.get_wrapper(live=False, start_date=start_date,
                                           only_exchange='binance')  # start_date='2022-04-25'
     params = (data_wrapper, start_date, n_jobs)
     jobs = [
-        run_VOLEMA,
+        # run_VOLEMA,
         # run_EMABB,
-        # run_EMA3,
+        run_EMA3,
     ]
     print(f'Test result for multiple strategies: starting={start_date}')
     from Backtesting.old.optimize import TIME_CONV

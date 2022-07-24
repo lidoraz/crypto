@@ -9,6 +9,6 @@ colorlover
 yfinance
 # Jinja2>=3.1.2
 tqdm
-TA-Lib
+# TA-Lib # for candle identification (not used)
 twilio
 openpyxl

@@ -1,7 +1,7 @@
 from binance_usdm_test import BinanceFutures
 # from Realtime.realtime_utils import handle_args
 from Data import CryptoData
-from Backtesting.Strategies import RSIBB, BB, MACross, SMAStochRSI, EMAVol
+from Backtesting.Strategies import RSIBB, BB, MACross, SMAStochRSI, EMAVol, EMA3
 from Realtime.realtime_utils import get_latest_buy_sell_futures, handle_args_1min
 from Utils.notify import TelegramBot
 from Utils.utils import WaitToMinEveryHour, format_num
@@ -128,10 +128,10 @@ def realtime_long_short():
     # TODO: add tf and strategy name into the configuration for easy changing strategies.
     # timeframe = '5T'
     # strategy_params = {"ema_ahead": 200, "n_ema_soon": 3, "ema_fast_ahead": 14, "vol_ema": 20, "support_ahead": 20, "risk_reward": 1.2}
-    timeframe = '1H'
-    strategy_params = {"ema_ahead": 100, "n_ema_soon": 14, "ema_fast_ahead": 50, "vol_ema": 1,
-                       "support_ahead": 5, "risk_reward": 1}
-    strategy = EMAVol(strategy_params)
+    strategy_params = {'tf': '2H', 'ema_slow_lk': 200, 'ema_mid_lk': 30, "risk_reward": 2.0, "support_ahead": 5, "vol_pct": 0.05}
+    timeframe = strategy_params['tf']
+
+    strategy = EMA3(strategy_params)
     trigger_minutes = get_trigger_minutes(timeframe)
 
     print(f'-----> Strategy {strategy}, Trading every {timeframe}, at {trigger_minutes} min every hour')

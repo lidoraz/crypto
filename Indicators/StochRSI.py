@@ -8,6 +8,7 @@ from . import SMA
 
 class StochRSI(Indicator):
     def __init__(self, lookahead, smooth=5, plot_loc=None, color='white'):
+        self.name = "StochRSI"
         self.lookahead = lookahead
         self.stoch_rsi = None
         self.smooth_stock_rsi = None

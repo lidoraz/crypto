@@ -13,6 +13,7 @@ INTERVAL_CANDLE_LOOKBACK_TABLE = {
     '5T': timedelta(hours=5 * LOAD_DATA_MUL),
     '15T': timedelta(hours=15 * LOAD_DATA_MUL),
     '1H': timedelta(hours=60 * LOAD_DATA_MUL),
+    '2H': timedelta(hours=60 * 2 * LOAD_DATA_MUL),
     '4H': timedelta(hours=60 * 4 * LOAD_DATA_MUL),
     '12H': timedelta(hours=60 * 4 * 3 * LOAD_DATA_MUL),
     '1D': timedelta(hours=60 * 4 * 6 * LOAD_DATA_MUL)

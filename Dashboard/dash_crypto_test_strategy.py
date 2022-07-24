@@ -13,9 +13,11 @@ from Plots.plot_utils import *
 from Utils import Persistence
 
 coins = sorted([c[1].split('/')[0] for c in exchange_symbol_pairs])
-coins = ['BTC', 'ETH', 'BNB', 'XRP', 'ADA', 'SOL', 'DOGE', 'SHIB']
 resample_keywords = list(INTERVAL_CANDLE_LOOKBACK_TABLE.keys())
 resample_keywords_text = [f" {k} | " for k in resample_keywords[:-1]] + [f" {resample_keywords[-1]}"]
+default_tf = '1H'
+default_coin = 'BTC'
+
 resample_radio_options = dict(
     zip(resample_keywords, resample_keywords_text))  # {k: f' {k} |' for k in resample_keywords}
 
@@ -30,9 +32,10 @@ server = app.server  # needed for deployment
 app.title = title
 
 title_html = html.Div(title, style={'padding-right': '5%', 'margin-left': '2%'})
-coin_html = dcc.Dropdown(coins, 'BTC', id='coin-type', clearable=False, style=dict(width='60pt'))
-live_update_html = html.Div(id='live-update-text', style={'margin': 'auto'}, children="")  # 'width': '20%',
-resample_selector_html = dcc.RadioItems(options=resample_radio_options, value='15T', id='resample-type',
+coin_html = dcc.Dropdown(coins, default_coin, id='coin-type', clearable=False, style=dict(width='60pt'))
+live_update_html = html.Div(id='live-update-text', style={'margin': 'auto', 'font-size': 12, 'padding': '5px'},
+                            children="")  # 'width': '20%',
+resample_selector_html = dcc.RadioItems(options=resample_radio_options, value=default_tf, id='resample-type',
                                         inline=True)
 right_portion_html = html.Div(id='right-portion',
                               children=[html.Div(resample_selector_html)],
@@ -97,11 +100,6 @@ def show_graph_when_loaded(figure):
         return None
 
 
-def _adjust_input_lookahead(input_lookahead):
-    if input_lookahead is None:
-        input_lookahead = 14
-    return max(min(input_lookahead, 100), 3)
-
 def add_buy_sell_to_fig(df_ohlcv, fig, show_res=False):
     # return fig
     buy_locations = df_ohlcv['BUY_ALGO'][df_ohlcv['BUY_ALGO']].index
@@ -120,15 +118,18 @@ def add_buy_sell_to_fig(df_ohlcv, fig, show_res=False):
             support_res_pct = (support_res_lines / df_ohlcv.loc[sell_loc]['close']).apply(lambda x: f'{x:.2%}')
             print('SELL:', sell_loc, support_res_pct.to_dict(), support_res_lines.to_dict())
         fig.add_vline(sell_loc, row=1, col=1, line_color='red', opacity=0.4)
+    fig.add_vline(df_ohlcv.index[200], row=1, col=1, line_color='white')
     return fig
 
 
 def get_indicators(strategy=None):
     from Indicators import Volume
     if not strategy:
+        from Backtesting.Strategies import EMA3
         # strategy = EMABB()
+        strategy = EMA3()
         # strategy = EMAVol({"ema_ahead": 200, "n_ema_soon": 3, "ema_fast_ahead": 14, "vol_ema": 20, "support_ahead": 20, "risk_reward": 1.2})
-        strategy = EMAVol()
+        # strategy = EMAVol()
         # strategy = EMATrendSTC()
         # strategy = HighChange({"pct": 0.015, "vol_pct": 1.15})
 
@@ -153,6 +154,7 @@ def update_graph_live(start_date, coin, resample, strategy_params_text):
     strategy = None
     end_date = None
     print(start_date, coin, resample)
+    get_back_data_mul = 2
     t0 = datetime.now()
     try:
         if len(strategy_params_text) > 0:
@@ -165,9 +167,9 @@ def update_graph_live(start_date, coin, resample, strategy_params_text):
     if len(start_date):
         # in order to fail with indicators, its better to take 200 candles prior to start_date and start date will be a start display
         start_ts = int(pd.to_datetime(start_date).timestamp())
-        end_date = pd.to_datetime(start_date) + INTERVAL_CANDLE_LOOKBACK_TABLE[resample] * 2
+        end_date = pd.to_datetime(start_date) + INTERVAL_CANDLE_LOOKBACK_TABLE[resample] * get_back_data_mul
     else:
-        start_ts = int((datetime.utcnow() - INTERVAL_CANDLE_LOOKBACK_TABLE[resample] * 2).timestamp())
+        start_ts = int((datetime.utcnow() - INTERVAL_CANDLE_LOOKBACK_TABLE[resample] * get_back_data_mul).timestamp())
     df_ohlcv = get_candles_from_db(db, coin, resample, start_ts=start_ts)
     if end_date:
         df_ohlcv = df_ohlcv[df_ohlcv.index <= pd.to_datetime(end_date, utc=True).tz_convert('Israel')]
@@ -179,7 +181,6 @@ def update_graph_live(start_date, coin, resample, strategy_params_text):
     fig = get_updated_fig(df_ohlcv, main_plot_indicators, sub_plots, xy_limit=False, calc_ind=False)
     show_resistance_supports = True
     fig = add_buy_sell_to_fig(df_ohlcv, fig, show_res=show_resistance_supports)
-
 
     time_conv = "%b %d, %H:%M"  # .strftime
     t1 = f'{(datetime.now() - t0).total_seconds():0.2f}'

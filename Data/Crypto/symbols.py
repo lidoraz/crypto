@@ -16,7 +16,10 @@ exchange_symbol_pairs = [
     ('binance', 'SAND/USDT'),
     ('binance', 'DOT/USDT'),
     ('binance', 'GMT/USDT'),
+    ('binance', 'ATOM/USDT'),
     ('binance', 'UNI/USDT')
+
+    #####
     # # ('binance', 'ACA/USDT'),
     # # ('binance', 'GAL/USDT'),
     # # ('binance', 'GMT/USDT'),

@@ -1,48 +1,23 @@
-from Indicators import EMA, Volume, SupportResistanceLines2
-from .Strategy import Strategy
-
-
-def calc_take_profit_price(side, price, stop_loss, rw_ratio=1.0):
-    assert side in ('buy', 'sell')
-    pct_to_curr_price = 0.001
-    price_to_stop = abs(price - stop_loss)
-    if side == 'buy':  # long
-        if price / stop_loss <= 1 + pct_to_curr_price:  # should be larger than 1.001
-            print(f'{side} stop price too close to exec_price: less than {pct_to_curr_price}')
-            stop_loss = price * (1 - pct_to_curr_price)
-            take_profit = price * (1 + pct_to_curr_price)
-        else:
-            take_profit = price + rw_ratio * price_to_stop
-    else:  # short
-        if price / stop_loss >= 1 - pct_to_curr_price:  # should be less than 0.999
-            print(f'{side} stop price too close to exec_price: less than {pct_to_curr_price}')
-            stop_loss = price * (1 + pct_to_curr_price)
-            take_profit = price * (1 - pct_to_curr_price)
-        else:
-            take_profit = price - rw_ratio * price_to_stop
-
-    return stop_loss, take_profit
+from Indicators import EMA, Volume, SupportResistanceLines2, MACD, StochRSI
+from .Strategy import *
 
 
 class EMA3(Strategy):
     """
-        # Scalping strategy, only for 1, 5 min timeframes. (or maybe more)
-        # if volume is <= 1 strategy will not take into account vol
-        Inspired by this channel: https://www.youtube.com/watch?v=Dmh0BfJURTM
-        This strategy aims to work on the 1min tf, using mainly long EMA and vol to indicate change in trend and entry
-        Dual strategy, can long and short
+        Dual strategy
     """
 
     def __init__(self, params=None):
-        super().__init__('EMAVOL')
+        super().__init__('EMA3')
         if params is None:
             params = {}
         self.ema_slow_lk = params.get('ema_slow_lk', 200)  # 150
         self.ema_mid_lk = params.get('ema_mid_lk', 50)  # 150
-        self.ema_fast_lk = params.get('ema_fast_lk', 20)  # 50
+        self.ema_fast_lk = params.get('ema_fast_lk', 14)  # 50
         self.n_ema_soon = params.get('n_ema_soon', 3)
-        # self.vol_ema = params.get('vol_ema', 20)
-        self.support_ahead = params.get('support_ahead', 20)
+        self.vol_ema = params.get('vol_ema', 20)
+        self.vol_pct = params.get('vol_pct', 0.15)
+        self.support_ahead = params.get('support_ahead', 10)
         self.risk_reward = params.get('risk_reward', 1.2)  # Risk reward profit / lose
         # Can back test this before going live, just need to add short
         self._ind_ema_slow = EMA(self.ema_slow_lk, color='white')  # long ema
@@ -55,57 +30,46 @@ class EMA3(Strategy):
         self._ind_ema_fast = EMA(self.ema_fast_lk, color='purple')
         # support resistance levels should be about 0.25% to 0.10%, really minor as the change in 1min small, disable fix_if, use different numbers if not found.
         self._ind_lines = SupportResistanceLines2(self.support_ahead, fix_if_too_close=False)
-        # self._ind_macd = MACD()
-        # self._ind_vol = Volume(vol_ema=self.vol_ema)
+        self._ind_macd = MACD()
+        # self._ind_rsi = StochRSI(14)
+        self._ind_vol = Volume(vol_ema=14)
 
     def add_indicators(self, df):
-        # df = df.join(self._ind_vol.calc(df))
-        # df = df.join(self._ind_macd.calc(df))
+        df = df.join(self._ind_vol.calc(df))
+        # df = df.join(self._ind_rsi.calc(df))
+        df = df.join(self._ind_macd.calc(df))
         df = df.join(self._ind_ema_slow.calc(df))
+
         df = df.join(self._ind_ema_mid.calc(df))
         df = df.join(self._ind_ema_fast.calc(df))
         df = df.join(self._ind_lines.calc(df))
         ema_slow_col = self._ind_ema_slow.ra.name
         ema_mid_col = self._ind_ema_mid.ra.name
-        ema_fast_col = self._ind_ema_fast.ra.name
-        # if self.vol_ema > 1:  # if volume is <= 1 strategy will not take into account vol
-        #     df['volume_over'] = df.volume > df[f'volume_EMA{self._ind_vol.vol_ema}'] * 1.01
-        # else:
-        #     df['volume_over'] = True
+
+        if self.vol_ema > 1:  # if volume is <= 1 strategy will not take into account vol
+            df['volume_over'] = df.volume > df[f'volume_EMA{self._ind_vol.vol_ema}'] * (1 + self.vol_pct)
+        else:
+            df['volume_over'] = True
+        # TODO: Check if difference in optimization whenever crossed is at low / high as before, and if MACD confirmation is useful.
         # buy condition
-        # (df['close'] > df[ema_col]).rolling(self.n_ema_soon).sum()
-        # (df['close'] > df[ema_col]).rolling(self.n_ema_soon).sum() > 0
-        # df['above_ema'].rolling(5).sum() > 0
-        min_candles_af_area = 1
-        # GET IF CROSSED EMA ABOVE recently
         df['green_candle_L'] = df['open'] < df['close']  # can use wick as well, to signal hammers
-        # df['engulfing_green_candle_L'] = (df['open'] < df['close'])
-        df['uptrend'] = df[ema_mid_col] > df[ema_slow_col]
-        df['above_ema_L'] = (df['close'] > df[ema_mid_col])  # & (df['open'] > df[ema_mid_col])
-        df[f'was_above_ema_S'] = df['above_ema_L'].rolling(self.n_ema_soon).sum() >= min_candles_af_area
-        df['fast_above_mid_L'] = df[ema_fast_col] > df[ema_mid_col]
+        df['uptrend'] = df['close'] > df[ema_slow_col]
+        # low #close
+        df['crossed_above'] = crossed_above(df['low'], df[ema_mid_col], self.n_ema_soon)
+        # df['crossed_trend_above'] = crossed_above(df['close'], df[ema_slow_col], self.n_ema_soon)
+        # df['fast_above_mid_L'] = df[ema_fast_col] > df[ema_mid_col]
 
         # sell condition
         df['red_candle_S'] = df['open'] > df['close']
-        df['downtrend'] = df[ema_mid_col] < df[ema_slow_col]
-        df[f'below_ema_S'] = (df['close'] < df[ema_mid_col])  # & (df['open'] < df[ema_mid_col])
-        df[f'was_below_ema_L'] = df['below_ema_S'].rolling(self.n_ema_soon).sum() >= min_candles_af_area
-        df['fast_below_mid_S'] = df[ema_fast_col] < df[ema_mid_col]
-
-        df['BUY_ALGO'] = df[f'was_below_ema_L'] & df['above_ema_L'] \
-                         & df['green_candle_L'] & df['fast_above_mid_L'] & df['uptrend']
-        df['SELL_ALGO'] = df[f'was_above_ema_S'] & df['below_ema_S'] \
-                          & df['red_candle_S'] & df['fast_below_mid_S'] & df['downtrend']
-        # Moran add, switch pos, maybe move to higher tf
-        # prob need to add big candle for a reversal
-        # df['SELL_ALGO'] = df[f'was_below_ema_L'] & df['above_ema_L'] \
-        #                  & df['volume_over'] & df['fast_above_slow_L'] & df['red_candle_S']
-        # df['BUY_ALGO'] = df[f'was_above_ema_S'] & df['below_ema_S'] \
-        #                   & df['volume_over'] & df['fast_below_slow_S'] & df['green_candle_L']
-
-        # Test realtime futures with this open
-        # df['BUY_ALGO'] = df['green_candle_L']
-        # df['SELL_ALGO'] = df['red_candle_S']
+        df['downtrend'] = df['close'] < df[ema_slow_col]
+        # high
+        # CAN ADD SURGES: when in uptrend, and suddly become above the uptrend, look if
+        df[f'crossed_below'] = crossed_below(df['high'], df[ema_mid_col], self.n_ema_soon)
+        # df['crossed_trend_below'] = crossed_below(df['close'], df[ema_slow_col], self.n_ema_soon)
+        # df['fast_below_mid_S'] = df[ema_fast_col] < df[ema_mid_col]
+        # Disable False signals if  BOTH EMAS are too close to each other (market is sideways)
+        df['BUY_ALGO'] = df[f'uptrend'] & df['crossed_above'] & df['green_candle_L'] & df['volume_over'] & (df['MACD_HIST'] > 0) #| df['crossed_trend_above']
+        df['SELL_ALGO'] = df[f'downtrend'] & df['crossed_below'] & df['red_candle_S'] & df['volume_over'] & (df['MACD_HIST'] < 0) # | df['crossed_trend_below']
         return df
 
     def act_buy(self, idx, row):

@@ -1,28 +1,5 @@
 from Indicators import EMA, STC, SupportResistanceLines2, TrendTrader
-from .Strategy import Strategy
-
-
-# TODO: Not implemented
-def calc_take_profit_price(side, price, stop_loss, rw_ratio=1.0):
-    assert side in ('buy', 'sell')
-    pct_to_curr_price = 0.001
-    price_to_stop = abs(price - stop_loss)
-    if side == 'buy':  # long
-        if price / stop_loss <= 1 + pct_to_curr_price:  # should be larger than 1.001
-            print(f'{side} stop price too close to exec_price: less than {pct_to_curr_price}')
-            stop_loss = price * (1 - pct_to_curr_price)
-            take_profit = price * (1 + pct_to_curr_price)
-        else:
-            take_profit = price + rw_ratio * price_to_stop
-    else:  # short
-        if price / stop_loss >= 1 - pct_to_curr_price:  # should be less than 0.999
-            print(f'{side} stop price too close to exec_price: less than {pct_to_curr_price}')
-            stop_loss = price * (1 + pct_to_curr_price)
-            take_profit = price * (1 - pct_to_curr_price)
-        else:
-            take_profit = price - rw_ratio * price_to_stop
-
-    return stop_loss, take_profit
+from .Strategy import *
 
 
 class EMATrendSTC(Strategy):
