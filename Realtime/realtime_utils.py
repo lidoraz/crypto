@@ -125,11 +125,11 @@ def get_latest_buy_sell_futures(data_wrapper, symbols, strategy, tf, n_candles_t
     import time
     ts_now = int(time.time())
     dt_now = pd.to_datetime(ts_now, unit='s', utc=True).tz_convert('Israel')
-    start_ts = ts_now - 60 * n_candles_to_get
+    start_date = str((dt_now - pd.to_timedelta(tf) * n_candles_to_get).date())
     interval_in_sec = pd.to_timedelta(tf).total_seconds()
 
     for coin in symbols:
-        df = data_wrapper.get_data(coin, tf, start_ts=start_ts)
+        df = data_wrapper.get_data(coin, tf, start_date=start_date)
         if df is None:
             print('Skipping:', coin, tf)
             continue

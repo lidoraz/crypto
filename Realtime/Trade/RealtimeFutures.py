@@ -149,7 +149,6 @@ def realtime_long_short():
     # symbols = ['BTC', 'ETH', 'XRP', 'ADA', 'SOL', 'DOGE']  # 'SHIB' is out as it has 1000x multiply
     wait = WaitToMinEveryHour(trigger_minutes, offset_sec=5)
     start_msg = get_start_msg(symbols, timeframe, strategy)
-    print(start_msg)
     if show_start_msg:
         tb_notify.send(start_msg)
     while True:
