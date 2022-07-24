@@ -31,7 +31,7 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.CYBORG],
 server = app.server  # needed for deployment
 app.title = title
 
-title_html = html.Div(title, style={'padding-right': '5%', 'margin-left': '2%'})
+title_html = html.Div(title, style={'padding-right': '1%', 'margin-left': '2%'})
 coin_html = dcc.Dropdown(coins, default_coin, id='coin-type', clearable=False, style=dict(width='60pt'))
 live_update_html = html.Div(id='live-update-text', style={'margin': 'auto', 'font-size': 12, 'padding': '5px'},
                             children="")  # 'width': '20%',
@@ -55,6 +55,7 @@ app.layout = html.Div([
                   dcc.Input(id='start-date', placeholder='start_date', value="", debounce=True,
                             )],
                  style={'display': 'flex'}),
+        dcc.Input(id="n-data-back", value=1, debounce=True, placeholder='N back', style={'width': '30px'}),
         dcc.Input(
             id="strategy-params",
             value="",
@@ -149,12 +150,16 @@ def get_indicators(strategy=None):
               Input('start-date', 'value'),
               Input('coin-type', 'value'),
               Input('resample-type', 'value'),
+              Input('n-data-back', 'value'),
               Input('strategy-params', 'value'))
-def update_graph_live(start_date, coin, resample, strategy_params_text):
+def update_graph_live(start_date, coin, resample, n_data_back, strategy_params_text):
     strategy = None
     end_date = None
+    try:
+        n_data_back = int(n_data_back)
+    except ValueError as e:
+        n_data_back = 1
     print(start_date, coin, resample)
-    get_back_data_mul = 2
     t0 = datetime.now()
     try:
         if len(strategy_params_text) > 0:
@@ -167,9 +172,9 @@ def update_graph_live(start_date, coin, resample, strategy_params_text):
     if len(start_date):
         # in order to fail with indicators, its better to take 200 candles prior to start_date and start date will be a start display
         start_ts = int(pd.to_datetime(start_date).timestamp())
-        end_date = pd.to_datetime(start_date) + INTERVAL_CANDLE_LOOKBACK_TABLE[resample] * get_back_data_mul
+        end_date = pd.to_datetime(start_date) + INTERVAL_CANDLE_LOOKBACK_TABLE[resample] * n_data_back
     else:
-        start_ts = int((datetime.utcnow() - INTERVAL_CANDLE_LOOKBACK_TABLE[resample] * get_back_data_mul).timestamp())
+        start_ts = int((datetime.utcnow() - INTERVAL_CANDLE_LOOKBACK_TABLE[resample] * n_data_back).timestamp())
     df_ohlcv = get_candles_from_db(db, coin, resample, start_ts=start_ts)
     if end_date:
         df_ohlcv = df_ohlcv[df_ohlcv.index <= pd.to_datetime(end_date, utc=True).tz_convert('Israel')]

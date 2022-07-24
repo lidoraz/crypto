@@ -67,7 +67,7 @@ def run_EMA3(data_wrapper, start_date, n_jobs):
     n_jobs = 1
     # # 'tf': '90T'
     # 60T,300,30,10,0.05,20,2.0
-    param = {'tf': '2H', 'ema_slow_lk': 200, 'ema_mid_lk': 30, "risk_reward": 2.0, "support_ahead": 5, "vol_pct": 0.05}
+    param = {'tf': '2H', 'ema_slow_lk': 200, 'ema_mid_lk': 30, "risk_reward": 2.0, "support_ahead": 5, "vol_pct": 0.00}
     params = override_test_one_strategy(param)
     return find_optimal_strategy(data_wrapper, start_date, strategy=strategy, optimized_params=params, n_jobs=n_jobs)
 
