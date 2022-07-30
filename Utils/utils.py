@@ -49,8 +49,8 @@ def wait_until(end_datetime):
             return
 
 
-# will trigger on every minute provided, with and offset option
 class WaitToMinEveryHour:
+    """ Triggers on every minute provided, with an offset option"""
     def __init__(self, trigger_minutes, offset_sec=15):
         self.trigger_minutes = trigger_minutes
         self.offset_sec = offset_sec

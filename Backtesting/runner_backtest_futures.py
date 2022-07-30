@@ -54,21 +54,33 @@ def run_EMABB(data_wrapper, start_date, n_jobs):
 
 def run_EMA3(data_wrapper, start_date, n_jobs):
     strategy = "EMA3"
+    # self.ema_slow_lk = params.get('ema_slow_lk', 200)  # 150
+    # self.ema_mid_lk = params.get('ema_mid_lk', 50)  # 150
+    # self.crossed_ma_low_high = params.get('crossed_ma_low_high', True)
+    # self.ema_fast_lk = params.get('ema_fast_lk', 14)  # 50
+    # self.n_ema_soon = params.get('n_ema_soon', 3)
+    # self.vol_ema = params.get('vol_ema', 20)
+    # self.vol_pct = params.get('vol_pct', 0.15)
+    # self.max_stop_pct = params.get('max_stop_pct', 0.06)
+    # self.support_ahead = params.get('support_ahead', 10)
+    # self.risk_reward = params.get('risk_reward', 1.2)
     params = {
-        'tf': ['30T', '60T', '90T', '2H', '4H'],
+        'tf': ['60T', '90T', '2H', '4H'], # 30T
         'ema_slow_lk': [200, 300, 400],
         'ema_mid_lk': [30, 50, 75],
         # 'ema_fast_lk': [14, 25],
-        'n_ema_soon': [3, 7, 10],
-        'vol_pct': [0,  0.1, 0.15, 0.2],
-        'support_ahead': [5, 10, 20],
-        'risk_reward': [1, 1.2, 1.5, 2.0, 2.5]
+        'n_ema_soon': [3, 7],
+        'vol_pct': [0,  0.1, 0.2],
+        'crossed_ma_low_high': [False, True], # change which column is used to trigger a position, low / close
+        'max_stop_pct':[None, 0.03, 0.07],
+        'support_ahead': [5, 10],
+        'risk_reward': [1, 1.2, 1.5, 2.0]
     }
-    n_jobs = 1
-    # # 'tf': '90T'
+    # n_jobs = 1
+    # 'tf': '90T'
     # 60T,300,30,10,0.05,20,2.0
-    param = {'tf': '2H', 'ema_slow_lk': 200, 'ema_mid_lk': 30, "risk_reward": 2.0, "support_ahead": 5, "vol_pct": 0.00}
-    params = override_test_one_strategy(param)
+    # param = {'tf': '2H', 'ema_slow_lk': 200, 'ema_mid_lk': 50, "risk_reward": 1.5, "support_ahead": 5, "vol_pct": 0.00}
+    # params = override_test_one_strategy(param)
     return find_optimal_strategy(data_wrapper, start_date, strategy=strategy, optimized_params=params, n_jobs=n_jobs)
 
 

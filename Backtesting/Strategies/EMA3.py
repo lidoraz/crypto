@@ -13,10 +13,12 @@ class EMA3(Strategy):
             params = {}
         self.ema_slow_lk = params.get('ema_slow_lk', 200)  # 150
         self.ema_mid_lk = params.get('ema_mid_lk', 50)  # 150
+        self.crossed_ma_low_high = params.get('crossed_ma_low_high', True)
         self.ema_fast_lk = params.get('ema_fast_lk', 14)  # 50
         self.n_ema_soon = params.get('n_ema_soon', 3)
         self.vol_ema = params.get('vol_ema', 20)
         self.vol_pct = params.get('vol_pct', 0.15)
+        self.max_stop_pct = params.get('max_stop_pct', 0.06)
         self.support_ahead = params.get('support_ahead', 10)
         self.risk_reward = params.get('risk_reward', 1.2)  # Risk reward profit / lose
         # Can back test this before going live, just need to add short
@@ -41,7 +43,7 @@ class EMA3(Strategy):
         df = df.join(self._ind_ema_slow.calc(df))
 
         df = df.join(self._ind_ema_mid.calc(df))
-        df = df.join(self._ind_ema_fast.calc(df))
+        # df = df.join(self._ind_ema_fast.calc(df))
         df = df.join(self._ind_lines.calc(df))
         ema_slow_col = self._ind_ema_slow.ra.name
         ema_mid_col = self._ind_ema_mid.ra.name
@@ -55,7 +57,13 @@ class EMA3(Strategy):
         df['green_candle_L'] = df['open'] < df['close']  # can use wick as well, to signal hammers
         df['uptrend'] = df['close'] > df[ema_slow_col]
         # low #close
-        df['crossed_above'] = crossed_above(df['low'], df[ema_mid_col], self.n_ema_soon)
+        if self.crossed_ma_low_high:
+            crossed_col_long = 'low'
+            crossed_col_short = 'high'
+        else:
+            crossed_col_long = 'close'
+            crossed_col_short = 'close'
+        df['crossed_above'] = crossed_above(df[crossed_col_long], df[ema_mid_col], self.n_ema_soon)
         # df['crossed_trend_above'] = crossed_above(df['close'], df[ema_slow_col], self.n_ema_soon)
         # df['fast_above_mid_L'] = df[ema_fast_col] > df[ema_mid_col]
 
@@ -64,7 +72,7 @@ class EMA3(Strategy):
         df['downtrend'] = df['close'] < df[ema_slow_col]
         # high
         # CAN ADD SURGES: when in uptrend, and suddly become above the uptrend, look if
-        df[f'crossed_below'] = crossed_below(df['high'], df[ema_mid_col], self.n_ema_soon)
+        df[f'crossed_below'] = crossed_below(df[crossed_col_short], df[ema_mid_col], self.n_ema_soon)
         # df['crossed_trend_below'] = crossed_below(df['close'], df[ema_slow_col], self.n_ema_soon)
         # df['fast_below_mid_S'] = df[ema_fast_col] < df[ema_mid_col]
         # Disable False signals if  BOTH EMAS are too close to each other (market is sideways)
@@ -78,7 +86,8 @@ class EMA3(Strategy):
             buy_price = row['close']
             # sell_price_win_stop = row['resistance']
             sell_price_lose_stop = row['support']
-            stop_loss, take_profit = calc_take_profit_price('buy', buy_price, sell_price_lose_stop, self.risk_reward)
+            stop_loss, take_profit = calc_take_profit_price('buy', buy_price, sell_price_lose_stop, self.risk_reward, self.max_stop_pct)
+            # tp -> 0.5 at 1.5, 0.25 at 2.0, 0.25 at 2.5
             return {'buy_idx': buy_idx,
                     'buy_price': buy_price,
                     'sell_price_win_stop': take_profit,
@@ -88,7 +97,7 @@ class EMA3(Strategy):
         if row['SELL_ALGO']:
             sell_price = row['close']
             buy_price_lose_stop = row['resistance']  # can be 1:1  risk reward, copy code from short binance
-            stop_loss, take_profit = calc_take_profit_price('sell', sell_price, buy_price_lose_stop, self.risk_reward)
+            stop_loss, take_profit = calc_take_profit_price('sell', sell_price, buy_price_lose_stop, self.risk_reward, self.max_stop_pct)
             return {'sell_idx': idx,
                     'sell_price': sell_price,
                     'buy_price_win_stop': take_profit,

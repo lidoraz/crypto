@@ -48,10 +48,21 @@ def crossed_below(a, b, n_back=1):
     return crossed(a, b, "below").rolling(n_back).sum() > 0
 
 
-def calc_take_profit_price(side, price, stop_loss, rw_ratio=1.0, pct_to_curr_price=0.005):
+def calc_take_profit_price(side, price, stop_loss, rw_ratio=1.0, max_stop_pct=0.08):
+    """
+    # Stop loss is calculated by last swing low, however, it is adujsted in case it is too high with max_stop_pct
+    # TP is calculated by last swing low diff from current price, multiplied by rw_ratio, depending on amount, usually 1-1.5
+    # risk management, need to split tp to 3 tp stages, for better securing profits
+    """
     assert side in ('buy', 'sell')
+    assert max_stop_pct is None or max_stop_pct is not None and 0.01 < max_stop_pct < 0.15
+    if max_stop_pct in (None, 0):
+        max_stop_pct = 1
+    pct_to_curr_price = 0.005
     price_to_stop = abs(price - stop_loss)
     if side == 'buy':  # long
+        if max_stop_pct:
+            stop_loss = max(price * (1 - max_stop_pct), stop_loss)
         if price / stop_loss <= 1 + pct_to_curr_price:  # should be larger than 1.001
             print(f'{side} stop price too close to exec_price: less than {pct_to_curr_price}')
             stop_loss = price * (1 - pct_to_curr_price)
@@ -59,6 +70,8 @@ def calc_take_profit_price(side, price, stop_loss, rw_ratio=1.0, pct_to_curr_pri
         else:
             take_profit = price + rw_ratio * price_to_stop
     else:  # short
+        if max_stop_pct:
+            stop_loss = min(price * (1 + max_stop_pct), stop_loss)
         if price / stop_loss >= 1 - pct_to_curr_price:  # should be less than 0.999
             print(f'{side} stop price too close to exec_price: less than {pct_to_curr_price}')
             stop_loss = price * (1 + pct_to_curr_price)

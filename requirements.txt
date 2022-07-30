@@ -12,3 +12,5 @@ tqdm
 # TA-Lib # for candle identification (not used)
 twilio
 openpyxl
+psycopg2-binary
+requests
