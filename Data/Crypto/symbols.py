@@ -80,4 +80,4 @@ exchange_symbol_pairs = [
     # # ('mexc_global', 'GCOIN/USDT')
 ]
 exchange_symbol_pairs = list(set(exchange_symbol_pairs))
-DB_PATH = '/Users/lidorazulay/Documents/DS/Crypto/resources/ccxt_1m.db'
+DB_PATH = 'resources/ccxt_1m.db'
