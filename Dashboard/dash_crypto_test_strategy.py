@@ -136,11 +136,12 @@ def get_indicators(strategy=None, strategy_params=None):
 
 def choose_strategy(strategy_params_text):
     strategy = None
+    strategy_params = None
     if len(strategy_params_text) > 0:
         strategy_params = json.loads(strategy_params_text)
-        strategy = All_STRATEGIES[strategy_params['name']](strategy_params)
+        strategy = All_STRATEGIES[strategy_params['name']]
         print('chosen strategy', strategy)
-    return strategy
+    return strategy, strategy_params
 
 
 def get_data_with_adjusted_dt(coin, resample, n_lookback_ratio, start_date):
@@ -178,12 +179,12 @@ def update_graph_live(start_date, coin, resample, n_lookback_ratio, strategy_par
     print(start_date, coin, resample)
     t0 = datetime.now()
     try:
-        strategy = choose_strategy(strategy_params_text)
+        strategy, strategy_params = choose_strategy(strategy_params_text)
     except Exception as e:
         print('JSONDecoder failed..')
         return dash.no_update, dash.no_update, str(repr(e)), True
     " # ------------------------------------------------------------------------------------------------ "
-    strategy_params = None
+
     if not strategy:
         strategy = All_STRATEGIES['S3']
         # strategy = EMABB()
