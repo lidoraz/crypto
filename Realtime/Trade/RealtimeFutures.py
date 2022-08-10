@@ -14,6 +14,7 @@ def handle_futures(buy_lst, sell_lst, trader, use_trailing=False):
     # BTC TRADE MUST BE HIGHER THAN 30
     # TODO: INSERT THIS TO CODE, Some coins have less amount after precision check
     TRADE_USDT_AMOUNT = 40
+    trail_pct_amount = 1.5 if use_trailing else None
     # coins_in_stable = trader.get_assets_holding(filter_min_trade=True)
     skip_coins = []
     for sell_details in sell_lst:
@@ -23,16 +24,10 @@ def handle_futures(buy_lst, sell_lst, trader, use_trailing=False):
             skip_coins.append(coin)
             continue
         coin_amount_to_buy = TRADE_USDT_AMOUNT / sell_details['sell_price']
-        if use_trailing:
-            code = trader.create_order_trailing(symbol, 'sell', coin_amount_to_buy,
-                                                sell_details['buy_price_lose_stop'],
-                                                1.5,
-                                                sell_details['buy_price_win_stop'])
-        else:
-
-            code = trader.create_order(symbol, 'sell', coin_amount_to_buy,
-                                       sell_details['buy_price_lose_stop'],
-                                       sell_details['buy_price_win_stop'])
+        code = trader.create_order_trailing(symbol, 'sell', coin_amount_to_buy,
+                                            sell_details['buy_price_lose_stop'],
+                                            trail_pct_amount,
+                                            sell_details['buy_price_win_stop'])
         print(f"Trader:: SHORT - {coin} {code}")
         sell_details['trade_code'] = code
         res['sell'].append(sell_details)
@@ -47,8 +42,10 @@ def handle_futures(buy_lst, sell_lst, trader, use_trailing=False):
             skip_coins.append(coin)
             continue
         coin_amount_to_buy = TRADE_USDT_AMOUNT / buy_details['buy_price']
-        code = trader.create_order(symbol, 'buy', coin_amount_to_buy, buy_details['sell_price_lose_stop'],
-                                   buy_details['sell_price_win_stop'])
+        code = trader.create_order_trailing(symbol, 'buy', coin_amount_to_buy,
+                                            buy_details['sell_price_lose_stop'],
+                                            trail_pct_amount,
+                                            buy_details['sell_price_win_stop'])
         print(f"Trader:: BUY - {coin} {code}")
         buy_details['trade_code'] = code
         res['buy'].append(buy_details)
@@ -147,7 +144,7 @@ def realtime_long_short():
     # ,tf,ema_slow_lk,ema_mid_lk,n_ema_soon,crossed_ma_low_high,adx_use_smooth,adx_threshold,max_stop_pct,support_ahead,risk_reward,
     # S3 60T,200,50,3,True,False,20,0.07,10,1.5
     strategy = All_STRATEGIES['S3']
-    strategy_params = {"tf": "1H", "ema_slow_lk": 200, "ema_mid_lk": 50, "n_ema_soon": 3,
+    strategy_params = {"tf": "2H", "ema_slow_lk": 200, "ema_mid_lk": 50, "n_ema_soon": 3,
                        "crossed_ma_low_high": True, "adx_use_smooth": False,
                        "adx_threshold": 20, "max_stop_pct": 0.07, "support_ahead": 10, "risk_reward": 1.5}
     # {"name": "EMA3", "ema_slow_lk": 200, "ema_mid_lk": 30, "risk_reward": 2.0, "support_ahead": 5, "vol_pct": 0.00}

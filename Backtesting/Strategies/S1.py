@@ -5,6 +5,9 @@ from .Strategy import *
 class S1(Strategy):
     """
         Dual strategy
+
+        # WILL IMPLEMENT IT TO use breakouts over long time, like 7 days up to 1 month
+        # test if new value has breakout past resitances
     """
 
     def __init__(self, params=None):
