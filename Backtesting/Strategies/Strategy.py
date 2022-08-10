@@ -1,6 +1,7 @@
 from abc import abstractmethod, ABC
 import json
 import pandas as pd
+import numpy as np
 
 
 class Strategy(ABC):
@@ -15,6 +16,20 @@ class Strategy(ABC):
     def act_buy(self, idx, row):
         pass
 
+    @abstractmethod
+    def act_sell(self, idx, row):
+        pass
+
+    def calc_indicators(self, df, dropna=True):
+        attrs = df.attrs
+        indicators = [ind for ind in dir(self) if ind.startswith('_ind_')]
+        for ind in indicators:
+            df = df.join(getattr(self, ind).calc(df))
+        if dropna:
+            df = df.dropna()
+        df.attrs = attrs
+        return df
+
     def __repr__(self):
         props = vars(self)
         props = {k: props[k] for k in props if not k.startswith('_')}
@@ -24,7 +39,7 @@ class Strategy(ABC):
         return self.name
 
 
-def crossed(a: pd.Series, b: pd.Series, direction):
+def crossed(a: pd.Series, b: [pd.Series, int], direction):
     if direction == "above":
         return (a > b) & (a.shift(1) <= b.shift(1))
 
@@ -46,6 +61,10 @@ def crossed_below(a, b, n_back=1):
     a crossed b and now its below b, n_back candles recently
     """
     return crossed(a, b, "below").rolling(n_back).sum() > 0
+
+
+def check_all_ind(ind_bool_list):
+    return pd.concat(ind_bool_list, axis=1).all(axis=1)
 
 
 def calc_take_profit_price(side, price, stop_loss, rw_ratio=1.0, max_stop_pct=0.08):

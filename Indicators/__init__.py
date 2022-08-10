@@ -11,6 +11,8 @@ from .Volume import Volume
 from .StochRSI import StochRSI
 from .TrendTrader import TrendTrader
 from .STC import STC
+from .ADX import ADX
+from .MFI import MFI
 
 # TODO: Add PCT change, maybe volume.
 # TODO:  The ADX Indicator

@@ -20,6 +20,8 @@ exchange_symbol_pairs = [
     ('binance', 'UNI/USDT'),
     ('binance', 'XRP/USDT'),
     ('binance', 'APE/USDT'),
+    ('binance', 'FIL/USDT'),
+    ('binance', 'LINK/USDT'),
 
     #####
     # # ('binance', 'ACA/USDT'),
@@ -63,8 +65,6 @@ exchange_symbol_pairs = [
     # # ('binance', 'KNC/USDT'),
     # # ('binance', 'ATOM/USDT'),
     # # ('binance', 'UNI/USDT'),
-    # # ('binance', 'FIL/USDT'),
-    # # ('binance', 'LINK/USDT'),
     # # ('binance', 'VET/USDT'),
     # # ('binance', 'ETC/USDT'),
     # # ('binance', 'MKR/USDT'),
@@ -80,4 +80,4 @@ exchange_symbol_pairs = [
     # # ('mexc_global', 'GCOIN/USDT')
 ]
 exchange_symbol_pairs = list(set(exchange_symbol_pairs))
-DB_PATH = 'resources/ccxt_1m.db'
+DB_PATH = '/Users/lidorazulay/Documents/DS/Crypto/resources/ccxt_1m.db'

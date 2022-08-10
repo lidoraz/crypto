@@ -33,8 +33,8 @@ class EMABB(Strategy):
         df = df.join(self._ind_ema_fast.calc(df))
         df = df.join(self._ind_bb.calc(df))
         # df = df.join(self._ind_lines.calc(df))
-        ema_slow_col = self._ind_ema_slow.ra.name
-        ema_fast_col = self._ind_ema_fast.ra.name
+        ema_slow_col = self._ind_ema_slow.name
+        ema_fast_col = self._ind_ema_fast.name
         bb_lk = self.bb_lk
         # GET IF CROSSED EMA ABOVE recently
         # df['engulfing_green_candle_L'] = (df['open'] < df['close'])

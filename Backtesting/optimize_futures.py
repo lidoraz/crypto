@@ -58,7 +58,6 @@ class BacktestOptimizer:
         for i, symbol in enumerate(self.symbols):
             df = self.provider.get_data(symbol, self.tf)
             df = self.strategy.add_indicators(df)
-            df = df[200:]  # `todo: ema200 dropped
             if index_ts is not None:
                 if len(df.index) > len(index_ts):
                     index_ts = df.index
@@ -268,8 +267,8 @@ def run_optimizer(provider: ProviderData, strategy_name: str, params, env_params
 
 
 def find_optimal_strategy(provider: ProviderData, start_date, strategy: str, optimized_params: dict, n_jobs=8):
-    budget = 500
-    trade_value = 40
+    budget = 1000
+    trade_value = 50
     comm = 0.0004  # Binance futures taker is 0.04%, (2022-07-12), 0.001
     assert trade_value >= 11, 'trade_value must be higher than 10, increase budget'
     env_params = dict(budget=budget, trade_value=trade_value, min_trade=40, trade_com=comm,

@@ -8,31 +8,30 @@ from .Indicator import Indicator, get_marker_color_candle
 
 class Volume(Indicator):
     """
-    calc returns "volume_EMA7" -- smoothed version of volume
+    calc returns "VolEMA7" -- smoothed version of volume
     """
-
     def __init__(self, vol_ema=7, plot_loc=None):
-        self.name = "VOLUME"
+        super(Volume, self).__init__(f'VolEMA{vol_ema}', "SUB_PLOT")
         self.plot_loc = (plot_loc, 1 if plot_loc else None)
-        self.vol = None
-        self.marker_color = None
+        self._smoothed_name = None
         self.vol_ema = vol_ema
         self._smooth = EMA(self.vol_ema)
 
     def calc(self, ohlcv):
-        self.vol = ohlcv['volume']
-        self._smooth_calc = self._smooth.calc(self.vol)
-        self._smooth_calc.name = f'volume_EMA{self.vol_ema}'
-        self.marker_color = get_marker_color_candle(ohlcv)
-        return self._smooth_calc
+        smooth = self._smooth.calc(ohlcv['volume'])
+        smooth.name = self.name
+        self._smoothed_name = smooth.name
+        return smooth
 
-    def plot(self, fig, color='Orange'):
-        ra = self.vol
+    def plot(self, df, fig, color='Orange'):
+        ra = df['volume']
+        vol_smooth = df[self.name]
+        marker_color = get_marker_color_candle(df)
         trace = go.Bar(x=ra.index, y=ra, name='Volume', opacity=0.9,  # yaxis='y2',
-                       marker_color=self.marker_color)
+                       marker_color=marker_color)
         fig.add_trace(trace, row=self.plot_loc[0], col=self.plot_loc[1])
 
-        trace = go.Scatter(x=self._smooth_calc.index, y=self._smooth_calc, name=f"VolEMA{self.vol_ema}",
+        trace = go.Scatter(x=vol_smooth.index, y=vol_smooth, name=self.name,
                            line_color='white', opacity=0.4)
         fig.add_trace(trace, row=self.plot_loc[0], col=self.plot_loc[1])
         return fig

@@ -5,7 +5,7 @@ import dash_bootstrap_components as dbc
 from datetime import datetime
 import json
 
-from Backtesting.Strategies import All_STRATEGIES, HighChange, EMAVol, EMATrendSTC, EMABB
+from Backtesting.Strategies import All_STRATEGIES, EMAVol, EMATrendSTC, EMABB
 from Data.Crypto.ccxt_utils import get_candles_from_db
 from Data.Crypto.symbols import exchange_symbol_pairs, DB_PATH
 from Plots.plotly_fig import get_updated_fig
@@ -55,7 +55,7 @@ app.layout = html.Div([
                   dcc.Input(id='start-date', placeholder='start_date', value="", debounce=True,
                             )],
                  style={'display': 'flex'}),
-        dcc.Input(id="n-data-back", value=1, debounce=True, placeholder='N back', style={'width': '30px'}),
+        dcc.Input(id="n-data-back", value="1", debounce=True, placeholder='N back', style={'width': '30px'}),
         dcc.Input(
             id="strategy-params",
             value="",
@@ -119,29 +119,45 @@ def add_buy_sell_to_fig(df_ohlcv, fig, show_res=False):
             support_res_pct = (support_res_lines / df_ohlcv.loc[sell_loc]['close']).apply(lambda x: f'{x:.2%}')
             print('SELL:', sell_loc, support_res_pct.to_dict(), support_res_lines.to_dict())
         fig.add_vline(sell_loc, row=1, col=1, line_color='red', opacity=0.4)
-    fig.add_vline(df_ohlcv.index[200], row=1, col=1, line_color='white')
+    # fig.add_vline(df_ohlcv.index[200], row=1, col=1, line_color='white')
     return fig
 
 
-def get_indicators(strategy=None):
+def get_indicators(strategy=None, strategy_params=None):
     from Indicators import Volume
-    if not strategy:
-        from Backtesting.Strategies import EMA3
-        # strategy = EMABB()
-        strategy = EMA3()
-        # strategy = EMAVol({"ema_ahead": 200, "n_ema_soon": 3, "ema_fast_ahead": 14, "vol_ema": 20, "support_ahead": 20, "risk_reward": 1.2})
-        # strategy = EMAVol()
-        # strategy = EMATrendSTC()
-        # strategy = HighChange({"pct": 0.015, "vol_pct": 1.15})
-
+    strategy = strategy(strategy_params)
     strategy_indicators = [vars(strategy)[v] for v in vars(strategy) if v.startswith('_ind_')]
-    main_plot_indicators_names = ('BB', 'SUPPORT_RESISTANCE', 'SMA', 'EMA', 'TRENDTRADER')
-    main_plot_indicators = [ind for ind in strategy_indicators if ind.name in main_plot_indicators_names]
+    main_plot_indicators = [ind for ind in strategy_indicators if ind.location == 'MAIN_PLOT']
     sub_plots = [ind for ind in strategy_indicators if ind not in main_plot_indicators]
     if len(sub_plots) == 0:
         sub_plots.append(Volume())
     return strategy, main_plot_indicators, sub_plots
 
+
+def choose_strategy(strategy_params_text):
+    strategy = None
+    if len(strategy_params_text) > 0:
+        strategy_params = json.loads(strategy_params_text)
+        strategy = All_STRATEGIES[strategy_params['name']](strategy_params)
+        print('chosen strategy', strategy)
+    return strategy
+
+
+def get_data_with_adjusted_dt(coin, resample, n_lookback_ratio, start_date):
+    end_date = None
+    lookback_candles = 200
+    if len(start_date):
+        # in order to fail with indicators, its better to take 200 candles prior to start_date and start date will be a start display
+        start_ts = int((pd.to_datetime(start_date) - pd.to_timedelta(resample) * lookback_candles).timestamp())
+        end_date = pd.to_datetime(start_date) + INTERVAL_CANDLE_LOOKBACK_TABLE[resample] * n_lookback_ratio
+    else:
+        time_delta = pd.to_timedelta(resample) * lookback_candles + INTERVAL_CANDLE_LOOKBACK_TABLE[
+            resample] * n_lookback_ratio
+        start_ts = int((datetime.utcnow() - time_delta).timestamp())
+    df_ohlcv = get_candles_from_db(db, coin, resample, start_ts=start_ts)
+    if end_date:
+        df_ohlcv = df_ohlcv[df_ohlcv.index <= pd.to_datetime(end_date, utc=True).tz_convert('Israel')]
+    return df_ohlcv
 
 @app.callback(Output('live-update-graph', 'figure'),
               Output('live-update-text', 'children'),
@@ -152,45 +168,43 @@ def get_indicators(strategy=None):
               Input('resample-type', 'value'),
               Input('n-data-back', 'value'),
               Input('strategy-params', 'value'))
-def update_graph_live(start_date, coin, resample, n_data_back, strategy_params_text):
-    strategy = None
-    end_date = None
+def update_graph_live(start_date, coin, resample, n_lookback_ratio, strategy_params_text):
     try:
-        n_data_back = int(n_data_back)
+        assert len(n_lookback_ratio)
+        n_lookback_ratio = float(n_lookback_ratio)
+        assert n_lookback_ratio >= 1
     except ValueError as e:
         n_data_back = 1
     print(start_date, coin, resample)
     t0 = datetime.now()
     try:
-        if len(strategy_params_text) > 0:
-            strategy_params = json.loads(strategy_params_text)
-            strategy = All_STRATEGIES[strategy_params['name']](strategy_params)
-            print('chosen strategy', strategy)
+        strategy = choose_strategy(strategy_params_text)
     except Exception as e:
         print('JSONDecoder failed..')
         return dash.no_update, dash.no_update, str(repr(e)), True
-    if len(start_date):
-        # in order to fail with indicators, its better to take 200 candles prior to start_date and start date will be a start display
-        start_ts = int(pd.to_datetime(start_date).timestamp())
-        end_date = pd.to_datetime(start_date) + INTERVAL_CANDLE_LOOKBACK_TABLE[resample] * n_data_back
-    else:
-        start_ts = int((datetime.utcnow() - INTERVAL_CANDLE_LOOKBACK_TABLE[resample] * n_data_back).timestamp())
-    df_ohlcv = get_candles_from_db(db, coin, resample, start_ts=start_ts)
-    if end_date:
-        df_ohlcv = df_ohlcv[df_ohlcv.index <= pd.to_datetime(end_date, utc=True).tz_convert('Israel')]
+    " # ------------------------------------------------------------------------------------------------ "
+    strategy_params = None
+    if not strategy:
+        strategy = All_STRATEGIES['S3']
+        # strategy = EMABB()
+        # strategy = EMA3()
+        # strategy = ADXRSI()
+        strategy_params = {"tf": "1H", "ema_slow_lk": 200, "ema_mid_lk": 50, "n_ema_soon": 3,
+                           "crossed_ma_low_high": True, "adx_use_smooth": False,
+                           "adx_threshold": 20, "max_stop_pct": 0.07, "support_ahead": 10, "risk_reward": 1.5}
+    " # ------------------------------------------------------------------------------------------------ "
+    strategy, main_plot_indicators, sub_plots = get_indicators(strategy, strategy_params)
 
-    strategy, main_plot_indicators, sub_plots = get_indicators(strategy)
-    attrs = df_ohlcv.attrs
-    df_ohlcv = strategy.add_indicators(df_ohlcv)
-    df_ohlcv.attrs = attrs
-    fig = get_updated_fig(df_ohlcv, main_plot_indicators, sub_plots, xy_limit=False, calc_ind=False)
+    df = get_data_with_adjusted_dt(coin, resample, n_lookback_ratio, start_date)
+    df = strategy.add_indicators(df)
+    fig = get_updated_fig(df, main_plot_indicators, sub_plots, xy_limit=False, calc_ind=False)
     show_resistance_supports = True
-    fig = add_buy_sell_to_fig(df_ohlcv, fig, show_res=show_resistance_supports)
+    fig = add_buy_sell_to_fig(df, fig, show_res=show_resistance_supports)
 
     time_conv = "%b %d, %H:%M"  # .strftime
     t1 = f'{(datetime.now() - t0).total_seconds():0.2f}'
-    text = [html.Div(f'({df_ohlcv.index[0].strftime(time_conv)} => {df_ohlcv.index[-1].strftime(time_conv)}), {t1}s'
-                     f'\n{coin}, rows={len(df_ohlcv)}'),
+    text = [html.Div(f'({df.index[0].strftime(time_conv)} => {df.index[-1].strftime(time_conv)}), {t1}s'
+                     f'\n{coin}, rows={len(df)}'),
             html.Div(f'{repr(strategy)}')]
     print(f'ready at:{t1}sec')
     return fig, text, None, False
@@ -205,7 +219,7 @@ if __name__ == '__main__':
     if len(args) == 2 and args[0] == '-port':
         app.run_server(port=args[1], host='0.0.0.0')
     else:
-        app.run_server(debug=True)
+        app.run_server(debug=True)  # , dev_tools_ui=True
     # https://dash.plotly.com/live-updates
     # live-updates keep the plot intact:
     # https://stackoverflow.com/questions/63876187/plotly-dash-how-to-show-the-same-selected-area-of-a-figure-between-callbacks

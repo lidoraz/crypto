@@ -80,17 +80,15 @@ class SupportResistanceLines2(Indicator):
     """
 
     def __init__(self, lookback_length=None, fix_if_too_close=True, plot_index=-1, plot_loc=None):
-        self.name = "SUPPORT_RESISTANCE"
+        super(SupportResistanceLines2, self).__init__(f"SR({lookback_length}", "MAIN_PLOT")
         self.lookback_length = lookback_length
         self.plot_index = plot_index
         self.n_lookahead_points = 7
         self.plot_ts = None
         self.plot_loc = (plot_loc, 1 if plot_loc else None)
-        self.ohlcv = None
         self.resistances_value = None
         self.supports_value = None
         self.lookaheads = None
-        # TODO: add a print of that to the __repr__.
         self.fix_if_too_close = fix_if_too_close
 
     # TODO: support resistance should be calculated in predfined intervals, OR by getting k maximums as resistances and supports.
@@ -108,7 +106,6 @@ class SupportResistanceLines2(Indicator):
             self.lookback_length = lookaheads[0]  # just return something so dashboard wont fall
 
         # for each point in data, we will have n_lookaheads of support and resistance.
-        self.ohlcv = ohlc
         self.resistances_value = [calc_roll(ohlc, lk, is_idx=False, is_max=True) for lk in lookaheads]
         self.supports_value = [calc_roll(ohlc, lk, is_idx=False, is_max=False) for lk in lookaheads]
         self.lookaheads = lookaheads
@@ -130,20 +127,21 @@ class SupportResistanceLines2(Indicator):
         fig.add_trace(t, row=self.plot_loc[0], col=self.plot_loc[1])
         return fig
 
-    def plot(self, fig):
-        ohlc = self.ohlcv
+    def plot(self, df, fig):
+        ohlc = df
         lookaheads = self.lookaheads
         resistances_ts = [calc_roll(ohlc, lk, is_idx=True, is_max=True) for lk in lookaheads]
         supports_ts = [calc_roll(ohlc, lk, is_idx=True, is_max=False) for lk in lookaheads]
         # combine all into one dataframe, each support resistance will have #number of lookaheads
         all_combined = pd.concat(self.resistances_value + resistances_ts + self.supports_value + supports_ts, axis=1)
+        all_combined = all_combined.dropna()
         # TODO: limit res to one major line.
         idx = len(ohlc) + self.plot_index
         # used for plot, combines ts and its support / resistance level into ts/value series
         supports, resistances = combine_value_ts_supports_by_index(ohlc.index, all_combined, idx=idx)
         for min_ts, min_v in supports.items():
             fig = self._plot(fig, min_ts, min_v, False)
-        for max_ts, max_v in supports.items():
+        for max_ts, max_v in resistances.items():
             fig = self._plot(fig, max_ts, max_v, True)
 
         return fig

@@ -1,6 +1,6 @@
 from Indicators import RSI, BollingerBands, SupportResistanceLines2
 from Indicators import SMA
-from .Strategy import Strategy
+from Backtesting.Strategies.Strategy import Strategy
 
 class RSIBB(Strategy):
     """

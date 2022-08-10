@@ -3,14 +3,21 @@ import pandas as pd
 
 
 class Indicator(ABC):
+    def __init__(self, name, location):
+        assert location in ('SUB_PLOT', 'MAIN_PLOT')
+        self.name = name
+        self.location = location
 
     @abstractmethod
     def calc(self, data: [pd.DataFrame, pd.Series]):
         pass
 
     @abstractmethod
-    def plot(self, **kwargs):
+    def plot(self, df, fig):
         pass
+
+    def __repr__(self):
+        return self.name
 
 
 def get_marker_color_candle(coin_ohlc):

@@ -178,7 +178,7 @@ def compare_volume_monthly():
     from sklearn.preprocessing import MinMaxScaler
 
     fig = go.Figure()
-    days_before = 90
+    days_before = 90 * 3
     scaled = False
     in_usdt = True
     tf = '1W'
@@ -262,15 +262,15 @@ def generate_report():
             set_properties(**{'font-size': '10pt', 'font-family': 'ui-monospace'}) \
             .to_html('Analytics/output.html')
 
-    df.to_csv('report.csv')
+    # df.to_csv('report.csv')
     print_html_pct(df)
 
 
 if __name__ == '__main__':
-    detect_changes()
+    # detect_changes()
     # generate_crypto_qqq()
     # compare_volume_monthly()
     # correlation()
     # output_timeseries()
-    # generate_report()
+    generate_report()
     # get_most_changing_coins_in_tf()

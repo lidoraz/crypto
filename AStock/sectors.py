@@ -19,7 +19,7 @@ def get_daily_data(symbols, n_months=6):
     print(f"start={start}, data: {str(data.index[-1])} took: {time.time() - t0:0.2f}")
     return data
 
-
+# https://etfdb.com/etfs/commodity/gold/
 # ETF usually contains 2 giant companies with 20% each, and rest are smaller
 all_etf_longname = {
     'SPY': 'S&P500',
@@ -37,6 +37,9 @@ all_etf_longname = {
     'XLRE': 'Real Estate',
     'SMH': 'SemiConductor vaneck',
     # 'XSD': 'SemiConductor iShares',
+    'UNG': 'NaturalGas',
+    'USO': 'CrudeOil',
+    'GLD': 'Gold',
     'JETS': 'Airlines',
     'URTH': 'ACWI World',
     'ARKK': 'Innovation',

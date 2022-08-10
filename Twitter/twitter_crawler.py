@@ -153,7 +153,6 @@ def realtime_to_db():
         if df is not None and len(df):
             df_new = db.save_to_db(df)
             if len(df_new):
-                print(f'Fetched {len(df_new)} new tweets:')
                 print_from_db(df_new)
 
 

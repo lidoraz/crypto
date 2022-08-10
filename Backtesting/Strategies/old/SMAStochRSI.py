@@ -1,5 +1,5 @@
 from Indicators import StochRSI, SMA, SupportResistanceLines2
-from .Strategy import Strategy
+from Backtesting.Strategies.Strategy import Strategy
 
 
 class SMAStochRSI(Strategy):

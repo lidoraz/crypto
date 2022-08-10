@@ -3,28 +3,29 @@ from .plot_utils import *
 from Indicators import *
 
 
-def get_generic_plots(lookahead=14, lookback_length=None, plot_index=-1):
+def get_generic_plots():
     sub_plots = [
         Volume(),
-        # CandleIdentification(normalize_detected_patterns=False),
-        RSI(lookahead),
+        CandleIdentification(normalize_detected_patterns=False),
+        # RSI(14),
         # StochRSI(lookahead, 5),
         # MACD(lookahead_short=12, lookahead_long=26, lookahead_signal=9),
     ]
     main_plot_indicators = [
-        SMA(lookahead=7, plot_loc=1, color='orange'),
-        SMA(lookahead=25, plot_loc=1, color='purple'),
-        SMA(lookahead=99, plot_loc=1, color='cyan'),
+        SMA(lookback=7, plot_loc=1, color='orange'),
+        SMA(lookback=25, plot_loc=1, color='purple'),
+        SMA(lookback=99, plot_loc=1, color='cyan'),
         # EMA(lookahead=99, plot_loc=1, color='cyan'),
         # FibMA(14, color='Pink'),
         # EMA(14, color='Teal'),
-        # BollingerBands(lookahead, 2, visible=False, plot_loc=1),
-        SupportResistanceLines2(lookback_length=lookback_length, plot_index=plot_index, plot_loc=1)
+        BollingerBands(20, 2, visible=False, plot_loc=1),
+        SupportResistanceLines2(lookback_length=None, plot_index=-1, plot_loc=1)
     ]
     return main_plot_indicators, sub_plots
 
 
-def get_updated_fig(df_ohlcv, main_plot_ind=(), sub_plots=(), xy_limit=True, show_legend=True, with_data=False, calc_ind=True):
+def get_updated_fig(df_ohlcv, main_plot_ind=(), sub_plots=(), xy_limit=True, show_legend=True, with_data=False,
+                    calc_ind=True):
     if not len(main_plot_ind) and not len(sub_plots):
         main_plot_ind, sub_plots = get_generic_plots()
 
@@ -43,16 +44,15 @@ def get_updated_fig(df_ohlcv, main_plot_ind=(), sub_plots=(), xy_limit=True, sho
                         vertical_spacing=0.02,  # 0.04,
                         # specs=[[{"secondary_y": True}], [{"secondary_y": False}]],
                         shared_xaxes=True)
-    ind_candle.plot(fig)
+    ind_candle.plot(df_ohlcv, fig)
 
-    for main_ind in main_plot_ind:
-        if calc_ind:
-            df_ohlcv = df_ohlcv.join(main_ind.calc(df_ohlcv))
-        fig = main_ind.plot(fig)
-    for sub_ind in sub_plots:
-        if calc_ind:
-            df_ohlcv = df_ohlcv.join(sub_ind.calc(df_ohlcv))
-        fig = sub_ind.plot(fig)
+    if calc_ind:
+        for ind in main_plot_ind + sub_plots:
+            df_ohlcv = df_ohlcv.join(ind.calc(df_ohlcv))
+
+    df_ohlcv = df_ohlcv.dropna()
+    for ind in main_plot_ind + sub_plots:
+        fig = ind.plot(df_ohlcv, fig)
 
     fig_update_layout_combined_view(fig)
     if xy_limit:

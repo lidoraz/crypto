@@ -38,9 +38,9 @@ class TrendTrader(Indicator):
     // Trend Trader Strategy
     """
 
-    def __init__(self, lookahead=21, multiplier=3, plot_loc=None):
-        self.name = "TRENDTRADER"
-        self.lookahead = lookahead
+    def __init__(self, lookback=21, multiplier=3, plot_loc=None):
+        super(TrendTrader, self).__init__(f"Trend({self.lookback},{self.multiplier})", "SUB_PLOT")
+        self.lookback = lookback
         self.multiplier = multiplier
         self.plot_loc = (plot_loc, 1 if plot_loc else None)
         self._marker_color = None
@@ -51,9 +51,9 @@ class TrendTrader(Indicator):
         atr_1 = np.maximum(ohlc.high - ohlc.low,
                            (ohlc.high - ohlc.close.shift(1)).abs(),
                            (ohlc.low - ohlc.close.shift(1)).abs())
-        avg_tr = wma(atr_1, self.lookahead)
-        highest_c = ohlc['high'].rolling(self.lookahead).max()
-        lowest_c = ohlc['low'].rolling(self.lookahead).min()
+        avg_tr = wma(atr_1, self.lookback)
+        highest_c = ohlc['high'].rolling(self.lookback).max()
+        lowest_c = ohlc['low'].rolling(self.lookback).min()
         hi_limit = highest_c.shift(1) - (avg_tr.shift(1) * self.multiplier)
         lo_limit = lowest_c.shift(1) + (avg_tr.shift(1) * self.multiplier)
         close = ohlc['close']
@@ -62,13 +62,11 @@ class TrendTrader(Indicator):
                                 lo_limit, np.nan))
         # fills the nan values, with backward data, fills first value in series with close
         ret = pd.Series(ret, index=close.index).ffill().fillna(close)
-        self.ra = ret
-        self.ra.name = 'TrendTrader'
-        self.name = f"Trend({self.lookahead},{self.multiplier})"
+        ret.name = 'TrendTrader'
         # All good, tested against TW.
-        return self.ra
+        return ret
 
-    def plot(self, fig):
+    def plot(self, df, fig):
         ra = go.Scatter(x=self.ra.index, y=self.ra,
                         line_color='#2196F3',
                         line_width=1, legendgroup=self.name, name=self.name)

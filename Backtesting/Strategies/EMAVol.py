@@ -35,8 +35,8 @@ class EMAVol(Strategy):
         df = df.join(self._ind_ema.calc(df))
         df = df.join(self._ind_ema_2.calc(df))
         df = df.join(self._ind_lines.calc(df))
-        ema_col = self._ind_ema.ra.name
-        ema_fast_col = self._ind_ema_2.ra.name
+        ema_col = self._ind_ema.name
+        ema_fast_col = self._ind_ema_2.name
         if self.vol_ema > 1:  # if volume is <= 1 strategy will not take into account vol
             df['volume_over'] = df.volume > df[f'volume_EMA{self._ind_vol.vol_ema}'] * 1.01
         else:

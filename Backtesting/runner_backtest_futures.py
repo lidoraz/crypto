@@ -65,21 +65,50 @@ def run_EMA3(data_wrapper, start_date, n_jobs):
     # self.support_ahead = params.get('support_ahead', 10)
     # self.risk_reward = params.get('risk_reward', 1.2)
     params = {
-        'tf': ['60T', '90T', '2H', '4H'], # 30T
+        'tf': ['60T', '90T', '2H', '4H'],  # 30T
         'ema_slow_lk': [200, 300, 400],
         'ema_mid_lk': [30, 50, 75],
         # 'ema_fast_lk': [14, 25],
         'n_ema_soon': [3, 7],
-        'vol_pct': [0,  0.1, 0.2],
-        'crossed_ma_low_high': [False, True], # change which column is used to trigger a position, low / close
-        'max_stop_pct':[None, 0.03, 0.07],
+        'vol_pct': [0, 0.1, 0.2],
+        'crossed_ma_low_high': [False, True],  # change which column is used to trigger a position, low / close
+        'max_stop_pct': [None, 0.03, 0.07],
         'support_ahead': [5, 10],
         'risk_reward': [1, 1.2, 1.5, 2.0]
     }
-    # n_jobs = 1
+    n_jobs = 1
     # 'tf': '90T'
     # 60T,300,30,10,0.05,20,2.0
-    # param = {'tf': '2H', 'ema_slow_lk': 200, 'ema_mid_lk': 50, "risk_reward": 1.5, "support_ahead": 5, "vol_pct": 0.00}
+    param = {'tf': '2H', 'ema_slow_lk': 200, 'ema_mid_lk': 50, "risk_reward": 1.5, "support_ahead": 5, "vol_pct": 0.00}
+    params = override_test_one_strategy(param)
+    return find_optimal_strategy(data_wrapper, start_date, strategy=strategy, optimized_params=params, n_jobs=n_jobs)
+
+
+def run_S3(data_wrapper, start_date, n_jobs):
+    strategy = "S3"
+    # n_jobs = 1
+    # self.ema_slow_lk = params.get('ema_slow_lk', 200)  # 150
+    #         self.ema_mid_lk = params.get('ema_mid_lk', 50)  # 150
+    #         self.crossed_ma_low_high = params.get('crossed_ma_low_high', True)
+    #         self.n_ema_soon = params.get('n_ema_soon', 4)
+    #         self.adx_use_smooth = params.get('adx_use_smooth', True)
+    #         self.adx_threshold = params.get('adx_threshold', 15)  # 0 will be not using it.
+    #         self.max_stop_pct = params.get('max_stop_pct', 0.06)
+    #         self.support_ahead = params.get('support_ahead', 10)
+    #         self.risk_reward = params.get('risk_reward', 1.2)  # Risk reward profit / lose
+    params = {
+        'tf': ['60T', '90T', '2H', '4H'],  # 30T
+        'ema_slow_lk': [200, 300, 400],
+        'ema_mid_lk': [30, 50, 75],
+        'n_ema_soon': [3, 7],
+        'crossed_ma_low_high': [False, True],  # change which column is used to trigger a position, low / close
+        'adx_use_smooth': [False, True],
+        'adx_threshold': [0, 15, 20],
+        'max_stop_pct': [None, 0.03, 0.07],
+        'support_ahead': [5, 10],
+        'risk_reward': [1, 1.2, 1.5, 2.0]
+    }
+    # param = {'tf': '2H', }
     # params = override_test_one_strategy(param)
     return find_optimal_strategy(data_wrapper, start_date, strategy=strategy, optimized_params=params, n_jobs=n_jobs)
 
@@ -87,8 +116,8 @@ def run_EMA3(data_wrapper, start_date, n_jobs):
 def run_optimizer():
     start_date = '2022-02-01'  # 22%!!
     # Todo: think about adding mulitiple TP -> (50%, 25%, 25%)
-    # start_date = '2022-03-05'
-    start_date = '2022-06-01'
+    start_date = '2022-03-05'
+    # start_date = '2022-02-01'
     # TODO: need to remember that indicators dont work well from start as it needs about 200 candles to operate correctly.
     n_jobs = os.cpu_count()
     data_wrapper = CryptoData.get_wrapper(live=False, start_date=start_date,
@@ -97,7 +126,8 @@ def run_optimizer():
     jobs = [
         # run_VOLEMA,
         # run_EMABB,
-        run_EMA3,
+        # run_EMA3,
+        run_S3,
     ]
     print(f'Test result for multiple strategies: starting={start_date}')
     from Backtesting.old.optimize import TIME_CONV

@@ -1,5 +1,5 @@
 from Indicators import BollingerBands, SupportResistanceLines2
-from .Strategy import Strategy
+from Backtesting.Strategies.Strategy import Strategy
 
 
 class BB(Strategy):

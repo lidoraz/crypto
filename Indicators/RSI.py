@@ -36,24 +36,21 @@ class RSI(Indicator):
 
     """
 
-    def __init__(self, lookahead, plot_loc=None, color='white'):
-        self.name = "RSI"
-        self.lookahead = lookahead
-        self.ra = None
-        self.ra_sma = None
+    def __init__(self, lookback, plot_loc=None, color='white'):
+        super(RSI, self).__init__(f"RSI{lookback}", "SUB_PLOT")
+        self.lookback = lookback
         self.plot_loc = (plot_loc, 1 if plot_loc else None)
         self.color = color
 
     def calc(self, ohlc) -> pd.DataFrame:
         prices = ohlc['close']
-        self.ra = calc_rsi(prices, self.lookahead)
-        self.ra.name = f"RSI_{self.lookahead}"
-        # self.ra_sma = SMA(self.lookahead).calc(self.ra)
-        return self.ra.to_frame()
+        ra = calc_rsi(prices, self.lookback)
+        ra.name = self.name
+        return ra.to_frame()
 
-    def plot(self, fig):
-        ra = self.ra
-        trace_rsi = go.Scatter(x=ra.index, y=ra, name=f'RSI({self.lookahead})', line_color=self.color, line_width=1.2)
+    def plot(self, df, fig):
+        ra = df[self.name]
+        trace_rsi = go.Scatter(x=ra.index, y=ra, name=self.name, line_color=self.color, line_width=1.2)
         # trace_smi = go.Scatter(x=ra.index, y=self.ra_sma, name=f'RSI_SMA({self.lookahead})', line_color="yellow", line_width=0.8)
         loc = dict(row=self.plot_loc[0], col=self.plot_loc[1])
         fig.add_trace(trace_rsi, **loc)

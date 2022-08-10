@@ -7,9 +7,9 @@ from . import SMA
 
 
 class StochRSI(Indicator):
-    def __init__(self, lookahead, smooth=5, plot_loc=None, color='white'):
-        self.name = "StochRSI"
-        self.lookahead = lookahead
+    def __init__(self, lookback, smooth=5, plot_loc=None, color='white'):
+        super(StochRSI, self).__init__(f"StochRSI({lookback})", "SUB_PLOT")
+        self.lookback = lookback
         self.stoch_rsi = None
         self.smooth_stock_rsi = None
         self.sma_smooth = smooth
@@ -18,16 +18,16 @@ class StochRSI(Indicator):
 
     def calc(self, ohlc) -> pd.DataFrame:
         prices = ohlc['close']
-        rsi = calc_rsi(prices, self.lookahead)
+        rsi = calc_rsi(prices, self.lookback)
 
         self.stoch_rsi = (rsi - rsi.min()) / (rsi.max() - rsi.min())
-        self.ra = SMA(lookahead=self.sma_smooth).calc(self.stoch_rsi) * 100
-        self.ra.name = f"StochRSI_{self.lookahead}"
-        return self.ra.to_frame()
+        ra = SMA(lookback=self.sma_smooth).calc(self.stoch_rsi) * 100
+        ra.name = self.name
+        return ra.to_frame()
 
-    def plot(self, fig):
-        ra = self.ra
-        trace = go.Scatter(x=ra.index, y=ra, name=f'StochRSI({self.lookahead},{self.sma_smooth})',
+    def plot(self, df, fig):
+        ra = df[self.name]
+        trace = go.Scatter(x=ra.index, y=ra, name=f'{self.name},{self.sma_smooth})',
                            line_color=self.color, line_width=1.2)
         loc = dict(row=self.plot_loc[0], col=self.plot_loc[1])
         fig.add_trace(trace, **loc)

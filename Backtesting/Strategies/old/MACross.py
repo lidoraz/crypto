@@ -1,6 +1,6 @@
 # TODO: For example, a simple trading strategy may be a moving average crossover whereby a short-term moving average
 # crosses above or below a long-term moving average.
-from .Strategy import Strategy
+from Backtesting.Strategies.Strategy import Strategy
 from Indicators import SMA, SupportResistanceLines2
 
 

@@ -41,14 +41,18 @@ def get_by_symbol(symbol, days_back=3):
     q = f"and text LIKE '%{symbol.upper()}%'"
     analyize_query(min_back, q)
 
+
 def get_all_last_12h():
     min_back = 60 * 12
     analyize_query(min_back)
 
+
 if __name__ == '__main__':
     # search_in_text("COIN")
     users = ['unusual_whales', 'cnbc']
-    get_all_last_12h()
-
-    symbol = 'META'
-    # get_by_symbol(symbol)
+    # get_all_last_12h()
+    print('-' * 60)
+    symbol = 'GILD'
+    # symbol = 'META'
+    # symbol = '🚨'
+    get_by_symbol(symbol)

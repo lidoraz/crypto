@@ -100,20 +100,17 @@ def recognize_candles(df):
 
 class CandleIdentification(Indicator):
     def __init__(self, normalize_detected_patterns=True, plot_loc=None):
+        super(CandleIdentification, self).__init__("PTRN", "SUB_PLOT")
         self.normalize_detected_patterns = normalize_detected_patterns
         self.plot_loc = (plot_loc, 1 if plot_loc else None)
         self.res = None
-        self.ohlc = None
 
     def calc(self, ohlc: pd.DataFrame) -> pd.DataFrame:
         self.res = recognize_candles(ohlc)
-
         # important candles:
-
-        self.ohlc = ohlc
         return self.res
 
-    def plot(self, fig):
+    def plot(self, df, fig):
         # workaround as talib is hard to installed
         if self.res is None:
             return fig
@@ -123,7 +120,7 @@ class CandleIdentification(Indicator):
             df_patterns['plot_value'] = df_patterns['plot_value'] * (1 / df_patterns['n_patterns'])
 
         #  match candle color to pattern color
-        marker_color = get_marker_color_candle(self.ohlc)
+        marker_color = get_marker_color_candle(df)
         # marker_color = ['Green' if x > 0 else 'Red' for x in df_patterns['plot_value']]
         text = df_patterns['best_pattern'] + '(' + df_patterns['n_patterns'].astype(str) + ')'
         trace = go.Bar(y=df_patterns['plot_value'], x=df_patterns.index, text=text,

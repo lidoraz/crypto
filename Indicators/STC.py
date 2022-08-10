@@ -12,9 +12,9 @@ class STC(Indicator):
     Simple EMA as it seems
     """
 
-    def __init__(self, lookahead, fast_len, slow_len, ratio=0.5, plot_loc=None, color='white'):
-        self.name = "RSI"
-        self.lookahead = lookahead
+    def __init__(self, lookback, fast_len, slow_len, ratio=0.5, plot_loc=None, color='white'):
+        super(STC, self).__init__(f"STC({lookback}", "SUB_PLOT")
+        self.lookahead = lookback
         self.fast_len = fast_len
         self.slow_len = slow_len
         self.ratio = ratio
@@ -47,19 +47,19 @@ class STC(Indicator):
         res = pd.Series(res, index=macd.index)
         # lo_macd.apply(lambda x: (macd - lo_macd) / hi_macd * 100 if x > 0 else 0)
         # ddd = t_macd if
-        self.ra = res
-        self.ra.name = f"STC_{self.lookahead}"
+        ra = res
+        ra.name = self.name
         # self.ra_sma = SMA(self.lookahead).calc(self.ra)
-        self.data = pd.DataFrame({'value': res, 'signal_buy': res > res.shift(1)})
-        return self.ra.to_frame()
+        data = pd.DataFrame({'value': res, 'signal_buy': res > res.shift(1)})
+        return ra.to_frame()
 
-    def plot(self, fig):
-        ra = self.data['value']
-        buy_signals = self.data[self.data['signal_buy']]['value']
-        sell_signals = self.data[~self.data['signal_buy']]['value']
-        trace_green = go.Scatter(x=buy_signals.index, y=buy_signals, name=f'STC({self.lookahead})', line_color='Green',
+    def plot(self, df, fig):
+        ra = df['value']
+        buy_signals = ra[ra['signal_buy']]['value']
+        sell_signals = ra[~ra['signal_buy']]['value']
+        trace_green = go.Scatter(x=buy_signals.index, y=buy_signals, name=self.name, line_color='Green',
                                  line_width=1.2)
-        trace_red = go.Scatter(x=sell_signals.index, y=sell_signals, name=f'STC({self.lookahead})', line_color='Red',
+        trace_red = go.Scatter(x=sell_signals.index, y=sell_signals, name=self.name, line_color='Red',
                                line_width=1.2)
         loc = dict(row=self.plot_loc[0], col=self.plot_loc[1])
         fig.add_trace(trace_green, **loc)

@@ -1,5 +1,5 @@
 from Indicators import RSI, MACD, SupportResistanceLines2, SMA, EMA
-from .Strategy import Strategy
+from Backtesting.Strategies.Strategy import Strategy
 
 
 class SMAMACD(Strategy):

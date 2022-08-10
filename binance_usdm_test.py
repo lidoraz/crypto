@@ -53,10 +53,17 @@ class BinanceFutures:
         if self.has_position(symbol):
             print(f'{symbol} Has active position...')
             return -2
-        code = self._create_order(symbol, side, amount, stop_loss_price, take_profit_price)
+        code = self._create_order(symbol, side, amount, stop_loss_price, None, take_profit_price)
         return code
 
-    def _create_order(self, symbol, amount_req, side, stop_loss, take_profit):
+    def create_order_trailing(self, symbol, amount, side, stop_loss_price, trailing_pct, take_profit_price):
+        if self.has_position(symbol):
+            print(f'{symbol} Has active position...')
+            return -2
+        code = self._create_order(symbol, side, amount, stop_loss_price, trailing_pct, take_profit_price)
+        return code
+
+    def _create_order(self, symbol, amount_req, side, stop_loss, trailing_pct, take_profit):
         assert side in ('buy', 'sell')
         amount = self.exchange.amount_to_precision(symbol, amount_req)
         print(amount_req, amount)
@@ -79,15 +86,30 @@ class BinanceFutures:
             inverted_side = 'sell' if side == 'buy' else 'buy'
             stop_loss = self.exchange.price_to_precision(symbol, stop_loss)
             take_profit = self.exchange.price_to_precision(symbol, take_profit)
+            if trailing_pct:
+                # https://binance-docs.github.io/apidocs/futures/en/#new-order-trade
+                # Used with TRAILING_STOP_MARKET orders, min 0.1, max 5 where 1 for 1%
+                # Trailing stop will only activate once position has passed trailing pct, and then it will become active
+                buy_act = price_exec + price_exec * (trailing_pct / 100)
+                sell_act = price_exec - price_exec * (trailing_pct / 100)
+                act_price = buy_act if side == 'buy' else sell_act
+                act_price = self.exchange.price_to_precision(symbol, act_price)
+                trailing_stop = self.exchange.create_order(symbol, 'TRAILING_STOP_MARKET', inverted_side, amount, None,
+                                                           {'activationPrice': act_price,
+                                                            'callbackRate': trailing_pct,
+                                                            "reduceOnly": True})
+                print('trailing_stop =>', trailing_stop)
+            else:
+                # print(symbol, 'STOP_MARKET', inverted_side, amount, price, stopLossParams)
+                takeProfitOrder = self.exchange.create_order(symbol, 'TAKE_PROFIT_MARKET', inverted_side, amount, None,
+                                                             {'stopPrice': take_profit,
+                                                              "reduceOnly": True})
+                print('takeProfitOrder =>', takeProfitOrder)
+
             stopLossOrder = self.exchange.create_order(symbol, 'STOP_MARKET', inverted_side, amount, None,
                                                        {'stopPrice': stop_loss,
                                                         "reduceOnly": True})
             print(stopLossOrder)
-            # print(symbol, 'STOP_MARKET', inverted_side, amount, price, stopLossParams)
-            takeProfitOrder = self.exchange.create_order(symbol, 'TAKE_PROFIT_MARKET', inverted_side, amount, None,
-                                                         {'stopPrice': take_profit,
-                                                          "reduceOnly": True})
-            print(takeProfitOrder)
             print('##--CREATED_ORDER--->', symbol, side, price_exec, stop_loss, take_profit)
             return 0
 
@@ -99,20 +121,31 @@ class BinanceFutures:
 def check_trading():
     # must check that stopPrice > price if sell, and stopPrice < price if buy.
     # usdt_amount / curr_price
-    symbol = 'BTC/USDT'
-    side = 'sell'  # 'sell'
-    amount = 0.001  # amount in bitcoin.
-    stop_price = 21000 if side == 'sell' else 19000
+    symbol = 'GMT/USDT'
+    side = 'buy'  # 'sell'
+    # amount = 0.001  # amount in bitcoin.
+    amount = 30
+    stop_price = 0.9592 if side == 'sell' else 0.9133
     rw_ratio = 1
     # TODO: Close position ->
     # close_position = binance.create_order(symbol=symbol, type="MARKET", side="buy", amount=pos['positionAmt'], params={"reduceOnly": True})
     # TODO: MUST TEST THAT STOPPRICE IS CORRECT CURR PRICE AND SIDE!!
     # Margin is set related to the symbol in the app, also can be set in the api, but not really needed.
 
-    trader = BinanceFutures(False)
+    trader = BinanceFutures(True)
+    trailing_pct = 1.5
+    # gmt_price = 0.9334
+    # buy_act = gmt_price + gmt_price * (trailing_pct / 100)
+    # sell_act = gmt_price - gmt_price * (trailing_pct / 100)
+    # activationPrice = buy_act if 'buy' else sell_act
+    # trader.exchange.create_order('GMT/USDT', 'TRAILING_STOP_MARKET', 'SELL', amount, None,
+    #                              {'activationPrice': activationPrice,
+    #                               'callbackRate': trailing_pct,
+    #                               "reduceOnly": True})
 
     if not trader.has_position(symbol):
-        trader._create_order(symbol, side, amount, stop_price, rw_ratio)
+        trader.create_order_trailing(symbol, side, amount, stop_price, trailing_pct, 1.5)
+        # trader._create_order(symbol, side, amount, stop_price, rw_ratio)
     else:
         print('Has active position...')
 

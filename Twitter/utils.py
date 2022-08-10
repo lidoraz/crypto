@@ -1,5 +1,6 @@
 import pandas as pd
 
+
 def print_from_db(df):
     dt_tz = pd.to_datetime(df['ts'], unit='ms', utc=True).dt.tz_convert('Israel')
     df = df.set_index(dt_tz).drop(columns='ts')
@@ -14,8 +15,14 @@ def get_latest_from_db(db, min_back):
     return df
 
 
-def get_lastest_from_db_postgres(con, minback:int, free_text_filter=None):
-    epoch_from = f"(cast(extract(epoch from now()) as BIGINT) - {minback} * 60) * 1000"
-    q = f"Select * from tweets where ts > {epoch_from} {free_text_filter if free_text_filter else ''} order by ts"
+def get_lastest_from_db_postgres(con, min_back:int, free_text_filter=None):
+    import time
+    # Should take 1 min before + few seconds prior to that, could be 6 but needs to check.
+    # time_now = (int(time.time()) - min_back * 60 + 12) * 1000
+    time_now = (int(time.time()) - min_back * 60) * 1000
+    # print(pd.to_datetime(time_now, unit='ms'), time_now)
+    q = f'Select * from tweets where ts >= {time_now} order by ts'
+    # epoch_from = f"(cast(extract(epoch from now()) as BIGINT) - {minback} * 60) * 1000"
+    # q = f"Select * from tweets where ts > {epoch_from} {free_text_filter if free_text_filter else ''} order by ts"
     df = pd.read_sql(q, con)
     return df

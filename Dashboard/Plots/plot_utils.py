@@ -5,14 +5,15 @@ import pandas as pd
 TIME_CONV = "%Y-%m-%dT%H:%M:%S"  # strftime
 INTERVAL_UPDATE_SECONDS = 30  # 5
 # 1 -> not limit , 0.5 -> display half data
-INTERVAL_CANDLE_LOOKBACK_DISPLAY_DIVIDED = 0.4  # start display from this relative value (pct)
+INTERVAL_CANDLE_LOOKBACK_DISPLAY_DIVIDED = 0.3  # start display from this relative value (pct)
 # loading multiplier
-LOAD_DATA_MUL = 4  # 4  # 3.5 # 40 # TODO: this needs to be fixed, as a parameter for dashboard not a constant
+LOAD_DATA_MUL = 6  # 4  # 3.5 # 40 # TODO: this needs to be fixed, as a parameter for dashboard not a constant
 INTERVAL_CANDLE_LOOKBACK_TABLE = {
     '1T': timedelta(hours=0.5 * LOAD_DATA_MUL),
     '5T': timedelta(hours=5 * LOAD_DATA_MUL),
     '15T': timedelta(hours=15 * LOAD_DATA_MUL),
     '1H': timedelta(hours=60 * LOAD_DATA_MUL),
+    '90T': timedelta(hours=90 * LOAD_DATA_MUL),
     '2H': timedelta(hours=60 * 2 * LOAD_DATA_MUL),
     '4H': timedelta(hours=60 * 4 * LOAD_DATA_MUL),
     '12H': timedelta(hours=60 * 4 * 3 * LOAD_DATA_MUL),

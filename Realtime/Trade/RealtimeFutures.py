@@ -1,7 +1,7 @@
 from binance_usdm_test import BinanceFutures
 # from Realtime.realtime_utils import handle_args
 from Data import CryptoData
-from Backtesting.Strategies import RSIBB, BB, MACross, SMAStochRSI, EMAVol, EMA3
+from Backtesting.Strategies import All_STRATEGIES
 from Realtime.realtime_utils import get_latest_buy_sell_futures, handle_args_1min
 from Utils.notify import TelegramBot
 from Utils.utils import WaitToMinEveryHour, format_num
@@ -9,7 +9,7 @@ from tqdm import tqdm
 import time
 
 
-def handle_futures(buy_lst, sell_lst, trader):
+def handle_futures(buy_lst, sell_lst, trader, use_trailing=False):
     res = {'buy': [], 'sell': []}
     # BTC TRADE MUST BE HIGHER THAN 30
     # TODO: INSERT THIS TO CODE, Some coins have less amount after precision check
@@ -23,9 +23,16 @@ def handle_futures(buy_lst, sell_lst, trader):
             skip_coins.append(coin)
             continue
         coin_amount_to_buy = TRADE_USDT_AMOUNT / sell_details['sell_price']
-        code = trader.create_order(symbol, 'sell', coin_amount_to_buy,
-                                   sell_details['buy_price_lose_stop'],
-                                   sell_details['buy_price_win_stop'])
+        if use_trailing:
+            code = trader.create_order_trailing(symbol, 'sell', coin_amount_to_buy,
+                                                sell_details['buy_price_lose_stop'],
+                                                1.5,
+                                                sell_details['buy_price_win_stop'])
+        else:
+
+            code = trader.create_order(symbol, 'sell', coin_amount_to_buy,
+                                       sell_details['buy_price_lose_stop'],
+                                       sell_details['buy_price_win_stop'])
         print(f"Trader:: SHORT - {coin} {code}")
         sell_details['trade_code'] = code
         res['sell'].append(sell_details)
@@ -129,14 +136,29 @@ def realtime_long_short():
     # TODO: add tf and strategy name into the configuration for easy changing strategies.
     # timeframe = '5T'
     # strategy_params = {"ema_ahead": 200, "n_ema_soon": 3, "ema_fast_ahead": 14, "vol_ema": 20, "support_ahead": 20, "risk_reward": 1.2}
-    strategy_params = {"tf": "1H", "ema_slow_lk": 30, "ema_mid_lk": 50, "risk_reward": 1.6, "support_ahead": 5, "vol_pct": 0.00}
+    ########3####3####3####3####3####3####3####3####3####3####3####3####3####3####3####3####3####3####3####3
+    # This was before on binance.
+    # strategy = All_STRATEGIES['EMA3']
+    # strategy_params = {"tf": "1H", "ema_slow_lk": 30, "ema_mid_lk": 50, "risk_reward": 1.6, "support_ahead": 5,
+    #                    "vol_pct": 0.00}
+    # timeframe = strategy_params['tf']
+
+    ####3####3####3####3####3####3####3####3####3####3####3####3####3####3####3####3####3####3####3####3####3####3####3####3
+    # ,tf,ema_slow_lk,ema_mid_lk,n_ema_soon,crossed_ma_low_high,adx_use_smooth,adx_threshold,max_stop_pct,support_ahead,risk_reward,
+    # S3 60T,200,50,3,True,False,20,0.07,10,1.5
+    strategy = All_STRATEGIES['S3']
+    strategy_params = {"tf": "1H", "ema_slow_lk": 200, "ema_mid_lk": 50, "n_ema_soon": 3,
+                       "crossed_ma_low_high": True, "adx_use_smooth": False,
+                       "adx_threshold": 20, "max_stop_pct": 0.07, "support_ahead": 10, "risk_reward": 1.5}
     # {"name": "EMA3", "ema_slow_lk": 200, "ema_mid_lk": 30, "risk_reward": 2.0, "support_ahead": 5, "vol_pct": 0.00}
     # TEST THIS
     # {"name": "EMA3", "n_ema_soon":5, "ema_slow_lk": 200, "ema_mid_lk": 50, "risk_reward": 1.5, "support_ahead": 5, "vol_pct": 0.12}
-    timeframe = strategy_params['tf']
 
-    strategy = EMA3(strategy_params)
-    trigger_minutes = get_trigger_minutes(timeframe)
+    timeframe = strategy_params['tf']
+    strategy = strategy(strategy_params)
+    trigger_minutes = list(range(0, 60, 15))
+    # trigger_minutes = get_trigger_minutes(timeframe)
+    use_trailing = True
 
     print(f'-----> Strategy {strategy}, Trading every {timeframe}, at {trigger_minutes} min every hour')
     print(repr(strategy))
@@ -159,7 +181,7 @@ def realtime_long_short():
             wait.wait()
         buy_details_lst, sell_details_lst = get_latest_buy_sell_futures(data_wrapper, symbols,
                                                                         strategy, tf=timeframe, n_candles_to_get=201)
-        res = handle_futures(buy_details_lst, sell_details_lst, trader)
+        res = handle_futures(buy_details_lst, sell_details_lst, trader, use_trailing)
         broadcast_text = get_broadcast_buy_sell(res, strategy)
         if broadcast_text:
             tb_notify.send(broadcast_text)
