@@ -144,7 +144,7 @@ def choose_strategy(strategy_params_text):
     return strategy, strategy_params
 
 
-def get_data_with_adjusted_dt(coin, resample, n_lookback_ratio, start_date):
+def get_data_with_adjusted_dt(coin, resample, n_lookback_ratio, start_date, localize=None):
     end_date = None
     lookback_candles = 200
     if len(start_date):
@@ -155,10 +155,13 @@ def get_data_with_adjusted_dt(coin, resample, n_lookback_ratio, start_date):
         time_delta = pd.to_timedelta(resample) * lookback_candles + INTERVAL_CANDLE_LOOKBACK_TABLE[
             resample] * n_lookback_ratio
         start_ts = int((datetime.utcnow() - time_delta).timestamp())
-    df_ohlcv = get_candles_from_db(db, coin, resample, start_ts=start_ts)
+    df_ohlcv = get_candles_from_db(db, coin, resample, start_ts=start_ts, localize=localize)
     if end_date:
-        df_ohlcv = df_ohlcv[df_ohlcv.index <= pd.to_datetime(end_date, utc=True).tz_convert('Israel')]
+        df_ohlcv = df_ohlcv[df_ohlcv.index <= pd.to_datetime(end_date, utc=True)]
+        if localize:
+            df_ohlcv = df_ohlcv.tz_convert(localize)
     return df_ohlcv
+
 
 @app.callback(Output('live-update-graph', 'figure'),
               Output('live-update-text', 'children'),
@@ -187,16 +190,20 @@ def update_graph_live(start_date, coin, resample, n_lookback_ratio, strategy_par
 
     if not strategy:
         strategy = All_STRATEGIES['S3']
+        strategy = All_STRATEGIES['THESTRAT']
         # strategy = EMABB()
         # strategy = EMA3()
         # strategy = ADXRSI()
-        strategy_params = {"tf": "1H", "ema_slow_lk": 200, "ema_mid_lk": 50, "n_ema_soon": 3,
+        strategy_params = {"tf": resample, "symbol": coin, 'start_date':start_date, 'db': db, "ema_slow_lk": 200, "ema_mid_lk": 50, "n_ema_soon": 3,
                            "crossed_ma_low_high": True, "adx_use_smooth": False,
                            "adx_threshold": 20, "max_stop_pct": 0.07, "support_ahead": 10, "risk_reward": 1.5}
+        # strategy_params = {"tf": "1H", "ema_slow_lk": 200, "ema_mid_lk": 50, "n_ema_soon": 3,
+        #                    "crossed_ma_low_high": True, "adx_use_smooth": False,
+        #                    "adx_threshold": 20, "max_stop_pct": 0.07, "support_ahead": 10, "risk_reward": 1.5}
     " # ------------------------------------------------------------------------------------------------ "
     strategy, main_plot_indicators, sub_plots = get_indicators(strategy, strategy_params)
-
-    df = get_data_with_adjusted_dt(coin, resample, n_lookback_ratio, start_date)
+    localize = None  # 'Israel'
+    df = get_data_with_adjusted_dt(coin, resample, n_lookback_ratio, start_date, localize)
     df = strategy.add_indicators(df)
     fig = get_updated_fig(df, main_plot_indicators, sub_plots, xy_limit=False, calc_ind=False)
     show_resistance_supports = True

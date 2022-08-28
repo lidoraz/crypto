@@ -94,6 +94,8 @@ class BinanceFutures:
                 sell_act = price_exec - price_exec * (trailing_pct / 100)
                 act_price = buy_act if side == 'buy' else sell_act
                 act_price = self.exchange.price_to_precision(symbol, act_price)
+                # TODO: HAVE SOME ISSUES WITH TRAILING STOP MARKET NOT MOVING, CHECK it maybe need
+                #  to change workingType =  "MARK_PRICE", also, can use closePosition = True
                 trailing_stop = self.exchange.create_order(symbol, 'TRAILING_STOP_MARKET', inverted_side, amount, None,
                                                            {'activationPrice': act_price,
                                                             'callbackRate': trailing_pct,

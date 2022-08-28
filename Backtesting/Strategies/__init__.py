@@ -13,6 +13,7 @@ from .EMA3 import EMA3
 from .S1 import S1
 from .S2 import S2
 from .S3 import S3
+from .TheStrat import TheStrat
 
 # TODO: Can calculate trend maybe better if taking this thing: over past 200 candles in 2 h period, get last value and first value, calculate their dervative, this is the trend.
 
@@ -29,4 +30,5 @@ All_STRATEGIES = dict(
     EMA3=EMA3,
     S1=S1,
     S2=S2,
-    S3=S3)
+    S3=S3,
+    THESTRAT=TheStrat)

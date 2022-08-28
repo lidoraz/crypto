@@ -13,6 +13,7 @@ from .TrendTrader import TrendTrader
 from .STC import STC
 from .ADX import ADX
 from .MFI import MFI
+from .TheStratInd import TheStratInd
 
 # TODO: Add PCT change, maybe volume.
 # TODO:  The ADX Indicator

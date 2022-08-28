@@ -9,12 +9,11 @@ from tqdm import tqdm
 import time
 
 
-def handle_futures(buy_lst, sell_lst, trader, use_trailing=False):
+def handle_futures(buy_lst, sell_lst, trader, trailing_pct=None):
     res = {'buy': [], 'sell': []}
     # BTC TRADE MUST BE HIGHER THAN 30
     # TODO: INSERT THIS TO CODE, Some coins have less amount after precision check
     TRADE_USDT_AMOUNT = 40
-    trail_pct_amount = 1.5 if use_trailing else None
     # coins_in_stable = trader.get_assets_holding(filter_min_trade=True)
     skip_coins = []
     for sell_details in sell_lst:
@@ -26,7 +25,7 @@ def handle_futures(buy_lst, sell_lst, trader, use_trailing=False):
         coin_amount_to_buy = TRADE_USDT_AMOUNT / sell_details['sell_price']
         code = trader.create_order_trailing(symbol, 'sell', coin_amount_to_buy,
                                             sell_details['buy_price_lose_stop'],
-                                            trail_pct_amount,
+                                            trailing_pct,
                                             sell_details['buy_price_win_stop'])
         print(f"Trader:: SHORT - {coin} {code}")
         sell_details['trade_code'] = code
@@ -44,7 +43,7 @@ def handle_futures(buy_lst, sell_lst, trader, use_trailing=False):
         coin_amount_to_buy = TRADE_USDT_AMOUNT / buy_details['buy_price']
         code = trader.create_order_trailing(symbol, 'buy', coin_amount_to_buy,
                                             buy_details['sell_price_lose_stop'],
-                                            trail_pct_amount,
+                                            trailing_pct,
                                             buy_details['sell_price_win_stop'])
         print(f"Trader:: BUY - {coin} {code}")
         buy_details['trade_code'] = code
@@ -155,7 +154,7 @@ def realtime_long_short():
     strategy = strategy(strategy_params)
     trigger_minutes = list(range(0, 60, 15))
     # trigger_minutes = get_trigger_minutes(timeframe)
-    use_trailing = True
+    trailing_pct = 2.5  # None if not used but regular take profit.
 
     print(f'-----> Strategy {strategy}, Trading every {timeframe}, at {trigger_minutes} min every hour')
     print(repr(strategy))
@@ -178,7 +177,7 @@ def realtime_long_short():
             wait.wait()
         buy_details_lst, sell_details_lst = get_latest_buy_sell_futures(data_wrapper, symbols,
                                                                         strategy, tf=timeframe, n_candles_to_get=201)
-        res = handle_futures(buy_details_lst, sell_details_lst, trader, use_trailing)
+        res = handle_futures(buy_details_lst, sell_details_lst, trader, trailing_pct)
         broadcast_text = get_broadcast_buy_sell(res, strategy)
         if broadcast_text:
             tb_notify.send(broadcast_text)
