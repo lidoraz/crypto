@@ -21,8 +21,12 @@ def get_lastest_from_db_postgres(con, min_back:int, free_text_filter=None):
     # time_now = (int(time.time()) - min_back * 60 + 12) * 1000
     time_now = (int(time.time()) - min_back * 60) * 1000
     # print(pd.to_datetime(time_now, unit='ms'), time_now)
-    q = f'Select * from tweets where ts >= {time_now} order by ts'
+    if free_text_filter:
+        q = f'Select * from tweets where ts >= {time_now} {free_text_filter} order by ts'
+    else:
+        q = f'Select * from tweets where ts >= {time_now} order by ts'
     # epoch_from = f"(cast(extract(epoch from now()) as BIGINT) - {minback} * 60) * 1000"
     # q = f"Select * from tweets where ts > {epoch_from} {free_text_filter if free_text_filter else ''} order by ts"
+    print(q)
     df = pd.read_sql(q, con)
     return df

@@ -46,14 +46,15 @@ def get_combos(ohlc):
     combos = dict(
         # reversal
         is_212RS=(col_b2 == 'G') & (num_b2 == 2) & (num_b1 == 1) & (num_b0 == 2) & (col_b0 == 'R'),
-        is_212RL=(col_b2 == 'R') & (num_b2 == 2) & (num_b1 == 1) & (num_b0 == 2) & (num_b0 == 'G'),
+        is_212RL=(col_b2 == 'R') & (num_b2 == 2) & (num_b1 == 1) & (num_b0 == 2) & (col_b0 == 'G'),
+        # reversal22, b1 candle low must be above next candle if L
         is_22RS=(col_b1 == 'G') & (num_b1 == 2) & (num_b0 == 2) & (col_b0 == 'R'),
         is_22RL=(col_b1 == 'B') & (num_b1 == 2) & (num_b0 == 2) & (col_b0 == 'B'),
         # Continuations
         is_212CS=(col_b2 == 'R') & (num_b2 == 2) & (num_b1 == 1) & (num_b0 == 2) & (col_b0 == 'R'),
-        is_212CL=(col_b2 == 'G') & (num_b2 == 2) & (num_b1 == 1) & (num_b0 == 2) & (num_b0 == 'G'),
-        is_22CS=(col_b2 == 'R') & (num_b2 == 2) & (col_b1 == 'R') & (num_b1 == 2) & (num_b0 == 2) & (col_b0 == 'R'),
-        is_22CL=(col_b2 == 'G') & (num_b2 == 2) & (col_b1 == 'G') & (num_b1 == 2) & (num_b0 == 2) & (num_b0 == 'G'),
+        is_212CL=(col_b2 == 'G') & (num_b2 == 2) & (num_b1 == 1) & (num_b0 == 2) & (col_b0 == 'G'),
+        is_222CS=(col_b2 == 'R') & (num_b2 == 2) & (col_b1 == 'R') & (num_b1 == 2) & (num_b0 == 2) & (col_b0 == 'R'),
+        is_222CL=(col_b2 == 'G') & (num_b2 == 2) & (col_b1 == 'G') & (num_b1 == 2) & (num_b0 == 2) & (col_b0 == 'G'),
         # 322
         is_322RS=(col_b2 == 'G') & (num_b2 == 3) & (col_b1 == 'R') & (num_b1 == 2) & (num_b0 == 2) & (col_b0 == 'R'),
         is_322RL=(col_b2 == 'R') & (num_b2 == 3) & (col_b1 == 'G') & (num_b1 == 2) & (num_b0 == 2) & (col_b0 == 'G'),
@@ -109,10 +110,10 @@ class TheStratInd(Indicator):
     def get_other_timeframes(self, ohlc):
         from Data.Crypto.ccxt_utils import get_candles_from_db
         from tqdm import tqdm
-        tfs_default = ['1T', '3T', '5T', '15T', '1H', '2H', '4H', '12H', '1D', '1W', '4W', '12W']
+        tfs_default = ['1T', '3T', '5T', '15T', '30H', '1H', '2H', '4H', '12H', '1D', '1W', '4W', '12W']
         tfs_to_check = tfs_default[1 + tfs_default.index(self._tf):]
         self._tfs_to_check = []
-        data_1m = get_candles_from_db(self._db, self._symbol, '1T', self._start_date, localize=None)
+        data_1m = get_candles_from_db(self._db, self._symbol, '1T', self._start_date, localize=ohlc.index.tz)
         # Calculate using fixed TF windows
         # for tf_check in tqdm(tfs_to_check):
         #     tf_check_str = _tf_check_str.format(tf_check)
@@ -129,7 +130,7 @@ class TheStratInd(Indicator):
             index_minus_tf = ohlc.index - pd.to_timedelta(tf_check)
             index_minus_tf = np.where(index_minus_tf >= data_1m.index.min(), index_minus_tf, data_1m.index.min())
             open_tf_values = data_1m.loc[index_minus_tf]['open'].values
-            ohlc[tf_check_str] = ohlc['close'] / open_tf_values - 1
+            ohlc[tf_check_str] = ohlc['close'] / open_tf_values - 1  # new / old , calculate change in various TFs
             self._tfs_to_check.append(tf_check_str)
 
         return ohlc
@@ -154,20 +155,29 @@ class TheStratInd(Indicator):
         ra = df[self.name]
         # Add Strat numbers to candlestick (currently in display on hover)
         import random
-        time_cont = []
-        for idx, row in df.iterrows():
+        time_conts = []
+        tfs_cont_str = df[self._tfs_to_check].applymap(lambda x: '▲' if x > 0 else '▼').apply(lambda x: ','.join(x), axis=1).tolist()
+        print(df[self._tfs_to_check].tail(1).to_dict())
+        for idx, row in df[-50:].iterrows():
             if not len(row['thestrat_combo']):
-                time_cont.append('')
+                time_conts.append('')
                 continue
             combo = max(row['thestrat_combo'])
-            tfs_cont = row[self._tfs_to_check]
-            tfs_cont_str = ','.join(tfs_cont.apply(lambda x: '▲' if x > 0 else '▼'))
-            time_cont.append(tfs_cont_str)
+            # tfs_cont = row[self._tfs_to_check]
+            # tfs_cont_str = ','.join(tfs_cont.apply(lambda x: '▲' if x > 0 else '▼'))
+            # time_conts.append(tfs_cont_str)
             if 'RL' in combo:
                 color = 'Green'
+                # continue
+            elif 'CL' in combo:
+                color = '#094201'
             elif 'RS' in combo:
                 color = 'Red'
+                # continue
+            elif 'CS' in combo:
+                color = '#420101'
             else:
+                continue
                 color = 'gray'
             # tfs_cont = f'pos:{sum(tfs_cont > 0)}/{len(tfs_cont)}'
             # tfs_cont = ''
@@ -180,8 +190,9 @@ class TheStratInd(Indicator):
                                arrowhead=1
                                )
         assert fig.data[0].name == 'Candle'
-        fig.data[0].text = [f'Strat: {num}, {combo}' for num, combo in zip(df['thestrat_num'].values.tolist(),
-                                                                           time_cont)
+        fig.data[0].text = [f'Strat: {num}, {combo}, {time_cont}' for num, combo, time_cont in zip(df['thestrat_num'].values.tolist(),
+                                                                           df['thestrat_combo'].values.tolist(),
+                                                                           tfs_cont_str)
                             # df['thestrat_combo'].values.tolist())
                             ]
 

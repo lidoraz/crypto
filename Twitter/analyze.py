@@ -42,6 +42,12 @@ def get_by_symbol(symbol, days_back=3):
     analyize_query(min_back, q)
 
 
+def get_by_free_text(txt, days_back=3):
+    min_back = 60 * 24 * days_back
+    q = f"and text LIKE '%{txt}%'"
+    analyize_query(min_back, q)
+
+
 def get_all_last_12h():
     min_back = 60 * 12
     analyize_query(min_back)
@@ -53,6 +59,9 @@ if __name__ == '__main__':
     # get_all_last_12h()
     print('-' * 60)
     symbol = 'GILD'
+    symbol = 'AMD'
+    txt = 'Top Ticker flow'
     # symbol = 'META'
     # symbol = '🚨'
-    get_by_symbol(symbol)
+    # get_by_symbol(symbol, days_back=5)
+    get_by_free_text(txt, days_back=60)

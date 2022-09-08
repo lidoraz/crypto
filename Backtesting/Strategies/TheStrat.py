@@ -1,4 +1,4 @@
-from Indicators import EMA, Volume, SupportResistanceLines2, ADX, TheStratInd
+from Indicators import SMA, Volume, SupportResistanceLines2, ADX, TheStratInd, MACD
 from .Strategy import *
 
 
@@ -8,7 +8,7 @@ class TheStrat(Strategy):
     """
 
     def __init__(self, params=None):
-        super().__init__('EMA3')
+        super().__init__('THESTRAT')
         if params is None:
             params = {}
 
@@ -16,17 +16,17 @@ class TheStrat(Strategy):
         self._tf = params.get('tf')
         self._start_date = params.get('start_date')
         self._db = params.get('db')
-        self.ema_slow_lk = params.get('ema_slow_lk', 200)  # 150
-        self.ema_mid_lk = params.get('ema_mid_lk', 50)  # 150
-        self.crossed_ma_low_high = params.get('crossed_ma_low_high', True)
-        self.ema_fast_lk = params.get('ema_fast_lk', 14)  # 50
+        self.ema_slow_lk = params.get('sma_slow_lk', 200)  # 150
+        self.ema_mid_lk = params.get('sma_mid_lk', 50)  # 150
+        # self.crossed_ma_low_high = params.get('crossed_ma_low_high', True)
+        # self.ema_fast_lk = params.get('sma_fast_lk', 14)  # 50
         self.n_ema_soon = params.get('n_ema_soon', 3)
         self.max_stop_pct = params.get('max_stop_pct', 0.06)
         self.support_ahead = params.get('support_ahead', 10)
         self.risk_reward = params.get('risk_reward', 1.2)  # Risk reward profit / lose
         # Can back test this before going live, just need to add short
-        self._ind_ema_slow = EMA(self.ema_slow_lk, color='white')  # long ema
-        self._ind_ema_mid = EMA(self.ema_mid_lk, color='orange')  # trend
+        self._ind_ema_slow = SMA(self.ema_slow_lk, color='white')  # long ema
+        self._ind_ema_mid = SMA(self.ema_mid_lk, color='orange')  # trend
         # TODO: Think about using 3 emas, SLOW to MID cross will indicate SHORT / LONG trend change
         #  While corssing fast EMA to MID EMA will indicate if open a position or not.
         #  Looks good, still need some calibration, and, there is a major thing is that in realtime,
@@ -36,7 +36,7 @@ class TheStrat(Strategy):
         # support resistance levels should be about 0.25% to 0.10%, really minor as the change in 1min small, disable fix_if, use different numbers if not found.
         self._ind_lines = SupportResistanceLines2(self.support_ahead, fix_if_too_close=False)
         self._ind_thestrat = TheStratInd(self._symbol, self._tf, self._start_date, self._db)
-        # self._ind_rsi = StochRSI(14)
+        self._ind_rsi = MACD(14, display_signal=False)
         self._ind_vol = Volume(vol_ema=14)
         self._ind_adx = ADX()
 
@@ -55,13 +55,10 @@ class TheStrat(Strategy):
         # buy condition
         df['green_candle_L'] = df['open'] < df['close']  # can use wick as well, to signal hammers
         df['uptrend'] = df['close'] > df[ema_slow_col]
-        # low #close
-        if self.crossed_ma_low_high:
-            crossed_col_long = 'low'
-            crossed_col_short = 'high'
-        else:
-            crossed_col_long = 'close'
-            crossed_col_short = 'close'
+
+        crossed_col_long = 'low'
+        crossed_col_short = 'high'
+
         df['crossed_above'] = crossed_above(df[crossed_col_long], df[ema_mid_col], self.n_ema_soon)
         # df['crossed_trend_above'] = crossed_above(df['close'], df[ema_slow_col], self.n_ema_soon)
         # df['fast_above_mid_L'] = df[ema_fast_col] > df[ema_mid_col]

@@ -1,18 +1,17 @@
 import yfinance as yf
 import time
-import pandas as pd
+from datetime import datetime,  timedelta
 
-
-def get_daily_data(symbols, n_months=6):
+def get_daily_data(symbols, days_before, group_by='column'):
     t0 = time.time()
-
-    months_before = 30 * n_months
-    start = int(t0) - 60 * 60 * 24 * months_before  # 1 day before
-    start = str(pd.to_datetime(start, unit='s', utc=True).date())
-    print('Starting From:', start)
+    # start = int(t0) - 60 * 60 * 24 * days_before  # 1 day before
+    # start = str(pd.to_datetime(start, unit='s', utc=True).date())
+    curr_date = datetime.now().date()
+    start = str(curr_date - timedelta(days_before))
+    # print('Starting From:', start)
     data = yf.download(' '.join(symbols), start=start, end=None,
                        rounding=True,
-                       # group_by='ticker',  # default is on columns. ticker is easier to iterate
+                       group_by=group_by,  # default is on columns. ticker is easier to iterate
                        auto_adjust=False,  # false on default, what does it do?
                        show_errors=True,
                        interval='1d', threads=True, progress=False)
@@ -24,6 +23,8 @@ def get_daily_data(symbols, n_months=6):
 all_etf_longname = {
     'SPY': 'S&P500',
     'QQQ': 'Nasdaq100',
+    'IWM': 'Russel2000',
+    'DJI': 'DowJones',
     'XLE': 'Enregy(XOM,CVX..)',
     'XLF': 'Finance(BRK.B,JPM..)',
     'XLB': 'Materials(LIN,SHW..)',
@@ -33,13 +34,15 @@ all_etf_longname = {
     'XLU': 'Utilities(NEE,DOK..)',
     'XLV': 'Healthcare(JJ,PFE..)',
     'XLY': 'Consumer(AMZN,TSLA..)',
-    'XLC': 'Communications(META,GOOGL..)',
+    # 'XLC': 'Communications(META,GOOGL..)',
     'XLRE': 'Real Estate',
     'SMH': 'SemiConductor vaneck',
+    'BATT': 'BatteryETF',
     # 'XSD': 'SemiConductor iShares',
     'UNG': 'NaturalGas',
     'USO': 'CrudeOil',
-    'GLD': 'Gold',
+    'TAN': 'GreenEnergy',
+    # 'GLD': 'Gold',
     'JETS': 'Airlines',
     'URTH': 'ACWI World',
     'ARKK': 'Innovation',
@@ -55,7 +58,7 @@ def visualize(data, norm=True):
     data = data.resample('1W').last()
     # for c in data.columns:
     for c in all_etf_longname.keys():
-        print(c)
+        # print(c)
         c_data = data[c]
         if norm:
             c_data = c_data / c_data[0] - 1
@@ -68,7 +71,7 @@ def visualize(data, norm=True):
     #                  )
     since = (data.index[-1] - data.index[0]).days / 30
     fig.update_layout(title_text=f'ETFs, since: {data.index[0].date()}, norm={norm}, {since: 0.1f} Months ago')
-    fig.update_layout(hovermode="x unified")
+    # fig.update_layout(hovermode="x unified")
     fig.update_layout(template="plotly_dark", )
     fig.layout.yaxis.tickformat = ',.0%'
     # fig.show()
@@ -78,14 +81,14 @@ def get_etf_stats():
     tf = [3, 6, 12, 24, 48, 96]
     # tf = [48]
     for n_months in tf:
-        data = get_daily_data(list(all_etf_longname.keys()), n_months=n_months)
+        data = get_daily_data(list(all_etf_longname.keys()), days_before=n_months * 30)
         visualize(data, norm=True)
     # print(data.head())
 
 
 def save_to_html():
     n_months = 48
-    data = get_daily_data(list(all_etf_longname.keys()), n_months=n_months)
+    data = get_daily_data(list(all_etf_longname.keys()), days_before=n_months * 30)
     fig = visualize(data, norm=True)
 
     fig.write_html(f'etfs_{n_months}.html')

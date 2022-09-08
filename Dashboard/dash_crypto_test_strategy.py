@@ -72,6 +72,7 @@ app.layout = html.Div([
     ),
     html.Div(id='graph-container', children=[
         dcc.Graph(id='live-update-graph', config={'scrollZoom': True,
+                                                  'modeBarButtonsToRemove': ['select2d', 'lasso2d',],
                                                   # 'modeBarButtonsToRemove': ['toImage', 'select2d', 'lasso2d', 'pan2d',
                                                   #                            'zoom2d', 'autoScale2d'],
                                                   'displaylogo': False},
@@ -202,7 +203,7 @@ def update_graph_live(start_date, coin, resample, n_lookback_ratio, strategy_par
         #                    "adx_threshold": 20, "max_stop_pct": 0.07, "support_ahead": 10, "risk_reward": 1.5}
     " # ------------------------------------------------------------------------------------------------ "
     strategy, main_plot_indicators, sub_plots = get_indicators(strategy, strategy_params)
-    localize = None  # 'Israel'
+    localize = 'Israel' # None  # 'Israel'
     df = get_data_with_adjusted_dt(coin, resample, n_lookback_ratio, start_date, localize)
     df = strategy.add_indicators(df)
     fig = get_updated_fig(df, main_plot_indicators, sub_plots, xy_limit=False, calc_ind=False)

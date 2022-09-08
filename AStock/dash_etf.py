@@ -93,7 +93,7 @@ def update_graph_live(n_months):
         return dash.no_update
     # Input('symbol', 'value'),
     print(n_months)
-    data = get_daily_data(list(all_etf_longname.keys()), n_months=n_months)
+    data = get_daily_data(list(all_etf_longname.keys()), days_before=30*n_months)
     fig = visualize(data, norm=True)
     fig.update_layout(template="plotly_dark",)
     # text = [html.Span('{} months ago'.format(n_months))]  # {0:.2f} #
