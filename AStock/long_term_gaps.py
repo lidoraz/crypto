@@ -3,28 +3,7 @@ import time
 import pandas as pd
 
 from AStock.gaps import snp500_stocks, selected_stocks
-
-
-def get_daily_data(symbols, days_before):
-    t0 = time.time()
-    end = int(time.time())
-    # days_before = 720  # 2 years
-    start = end - 60 * 60 * 24 * days_before
-    start = pd.to_datetime(start, unit='s', utc=True)
-
-    data = yf.download(' '.join(symbols), start=start, end=None,
-                       # prepost=True,  # include pre/post market data
-                       rounding=True,
-                       actions=True,  # dividend + stock splits data
-                       group_by='ticker',  # default is on columns. ticker is easier to iterate
-                       auto_adjust=False,  # false on default, what does it do?
-                       show_errors=True,
-                       interval='1d', threads=True, progress=False)
-    print(f"start={start}, data: {str(data.index[-1])} took: {time.time() - t0:0.2f}")
-    data['DT'] = data.index
-    data['Date'] = data.index.date
-    # data['Type'] = data['DT'].apply(extract_market_type)
-    return data
+from AStock.util import get_daily_data
 
 
 def find_gaps_daily(symbol, data, show_old_gaps=False):
@@ -71,7 +50,7 @@ def find_gaps_daily(symbol, data, show_old_gaps=False):
 
 
 def find_daily_gaps(symbols, days_before, show_old_gaps):
-    data = get_daily_data(symbols, days_before)
+    data = get_daily_data(symbols, days_before, group_by="ticker")
     total_gaps = 0
     total_closed = 0
     # Check on all snp500 /

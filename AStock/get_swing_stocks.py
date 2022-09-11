@@ -32,6 +32,16 @@ def check_ticker(data, day_shift=1):
     return res
 
 
+def print_pct_html(df):
+    pct_cols = [c for c in df.columns if c.endswith('_pct')]
+    out_df = df
+    out_df = out_df.style.background_gradient(subset=pct_cols, cmap='RdYlGn', vmin=-0.3, vmax=.3, axis=0)
+    out_df = out_df.format({c: '{:.2%}' for c in pct_cols})
+    out_df.to_html('check.html',
+                   classes=["table-bordered", "table-striped",
+                            "table-hover"])
+
+
 def get_swings():
     crypto = ['MARA', 'HUT', 'MSTR', 'RIOT', 'COIN']
     # FILTER GROWTH VS VALUE STOCK
@@ -62,27 +72,39 @@ def get_swings():
 
     print('-> Indexes')
 
-    def print_pct(df):
-        pct_cols = [c for c in df.columns if c.endswith('_pct')]
-        out_df = df
-        out_df = out_df.style.background_gradient(subset=pct_cols, cmap='RdYlGn', vmin=-0.3, vmax=.3, axis=0)
-        out_df = out_df.format({c: '{:.2%}' for c in pct_cols})
-        out_df.to_html('check.html',
-                       classes=["table-bordered", "table-striped",
-                                "table-hover"])
-
     res_indexes = res[res.index.isin(indexes)]
     # print_pct(res_indexes.sort_values('sma20_pct', ascending=False))
-    print(res_indexes.sort_values('sma20_pct', ascending=False))
+    pprint_screener(res_indexes)
     print('-> Stocks')
     res = res[~res.index.isin(indexes)]
     # LONG - should be far from sma20, SHORT- higher than sma 20.
     res = res.sort_values('sma20_pct', ascending=False)  # check long potentials
     # CHECK RSI, and CCI, check also for volume decrease for sells.
     # check that close price is not far from open, look for doji, or bullish, also can use thestrat for indicator.
-    print(res)
+    pprint_screener(res)
 
-    print_pct(res)
+    # print_pct_html(res)
+
+
+def pprint_screener(df):
+    df = df.copy()
+    df['Volume'] = df['Volume'].apply(lambda x: f'{x / 1e6:0.1f}M')
+    pct_cols = [c for c in df.columns if c.endswith('_pct')]
+    df = df.sort_values('sma20_pct', ascending=False)
+    df[pct_cols] = df[pct_cols].applymap(lambda x: f'{x:.2%}')
+    # out_df = out_df.style.format({c: '{:.2%}' for c in pct_cols})
+    # df = df.format()
+    print(df)
+
+
+def get_short_interset():
+    url = "https://www.benzinga.com/short-interest/most-shorted"
+    import requests
+    # import beatifulsoup # not installed
+    res = requests.get(url)
+    # import
+    table_class = "ant-table-body"
+    last_updated_class = "last-updated"
 
 
 if __name__ == '__main__':
