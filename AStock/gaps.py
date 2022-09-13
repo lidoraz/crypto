@@ -55,17 +55,17 @@ def add_addional_cols_to_symbol(symbol, data):
 # Take last row not null from POST
 # Take last row not null from PRE,
 # Compare them.
-def get_post_to_pre_gap(df_symbol, curr_date):
+def get_post_to_pre_gap(df_symbol, curr_dt):
     ## compare post to pre POST -> PRE in order to find large gaps. higher than 3% is intersting.
-    curr_date = curr_date.date()
-    df_symbol = df_symbol[df_symbol['Date'] <= curr_date]
+    # curr_date = curr_date.date()
+    df_symbol = df_symbol[df_symbol.index <= curr_dt]
     #     print(df_symbol.index[-1])
     df_g = df_symbol.groupby(['Date', 'Type'])['Adj Close'].agg(['last']).reset_index()
     closing_row = df_g[df_g['Type'] == 'MARKET'].sort_values('Date').iloc[-1]
     today_row = df_g[df_g['Type'] == 'PRE'].sort_values('Date').iloc[-1]
     closing_price = closing_row['last']
     today_pre_price = today_row['last']
-    assert today_row['Date'] == curr_date, 'sanity for currdate'
+    assert str(today_row['Date']) == str(curr_dt.date()), 'sanity for currdate'
     #     display(df_g[-6:])  # DEBUG
     meta = dict(today_pre_price=today_pre_price, closing_price=closing_price)
     return today_pre_price / closing_price - 1, meta
@@ -115,6 +115,7 @@ def df_to_dict_lst(df):
 
 def find_gaps(symbols, add_info=False):
     dt_now = pd.to_datetime(int(time.time()), unit='s', utc=True)
+    dt_now = min(dt_now, pd.to_datetime(dt_now.date(), utc=True) + pd.to_timedelta(13*60 + 29, unit='minute'))
     dt_now_broker = dt_now.tz_convert('America/New_York')
     # dt_now_broker = pd.to_datetime('2022-06-28')
     print('dt_now_broker', dt_now_broker)
@@ -208,7 +209,7 @@ if __name__ == '__main__':
     symbols = set(symbols + selected_stocks())
     # FILTER STOCKS WITH VOLUME HIGHER THAN 1M STOCKS PER DAY.
     pd.set_option('display.max_rows', 500)
-    find_gaps(symbols, add_info=True)
+    find_gaps(symbols, add_info=False)
     # TODO: Add If there is a calndar special thing, like earnings
     # TODO: Add IPO, splits, Earnings, dividends, options etc... prior to market
     # TODO: P/E, anaylsis, something that could attracts other investors.

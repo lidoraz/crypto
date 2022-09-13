@@ -87,21 +87,27 @@ def get_combos(ohlc):
     comb = pd.concat(list(map(lambda x: x[0] * x[1], zip(combos_lst, combos_names_idx))), axis=1)
     _combos = comb.sum(axis=1)
     _combos = comb.apply(lambda xx: [x for x in xx if x != 0], axis=1)
-    ohlc['thestrat_combo'] = _combos.apply(lambda xx: [combos_names[x] for x in xx])
+    _combos = _combos.apply(lambda xx: [combos_names[x] for x in xx])
+    _combos = _combos.apply(lambda lst: max(lst) if len(lst) > 0 else '')  # take only strongest combo by string length
+    ohlc['thestrat_combo'] = _combos
     # ohlc['thestrat_combo'] = is_one * 1 + is_two * 2 + is_three * 3
     # ohlc = pd.concat([ohlc, combos], axis=1)
     return ohlc
 
 
-_tf_check_str = 'thestratTF_{}'
+_other_tf_ratio_str = 'thestratTF_{}'
+_other_tf_number_str = 'thestratNUMBER_{}'
+_other_tf_color_str = 'thestratCOLOR_{}'
+_other_tf_combo_str = 'thestratCOMBO_{}'
+
 
 
 class TheStratInd(Indicator):
     def __init__(self, symbol, tf, start_date, db, lookback=1, plot_loc=None, color='Brown'):
         super(TheStratInd, self).__init__(f"TheStratInd{lookback}", "MAIN_PLOT")
         self.lookahead = lookback
-        self._symbol = symbol
-        self._tf = tf
+        # self._symbol = symbol
+        # self._tf = tf
         self._start_date = start_date
         self._db = db
         self.plot_loc = (plot_loc, 1 if plot_loc else None)
@@ -110,10 +116,12 @@ class TheStratInd(Indicator):
     def get_other_timeframes(self, ohlc):
         from Data.Crypto.ccxt_utils import get_candles_from_db
         from tqdm import tqdm
+        tf = ohlc.attrs['interval']
+        symbol = ohlc.attrs['symbol'].split('/')[0]
         tfs_default = ['1T', '3T', '5T', '15T', '30H', '1H', '2H', '4H', '12H', '1D', '1W', '4W', '12W']
-        tfs_to_check = tfs_default[1 + tfs_default.index(self._tf):]
+        tfs_to_check = tfs_default[1 + tfs_default.index(tf):]
         self._tfs_to_check = []
-        data_1m = get_candles_from_db(self._db, self._symbol, '1T', self._start_date, localize=ohlc.index.tz)
+        data_1m = get_candles_from_db(self._db, symbol, '1T', self._start_date, localize=ohlc.index.tz)
         # Calculate using fixed TF windows
         # for tf_check in tqdm(tfs_to_check):
         #     tf_check_str = _tf_check_str.format(tf_check)
@@ -126,13 +134,24 @@ class TheStratInd(Indicator):
         print('tfs_to_check', tfs_to_check)
         # Calculate using moving window TF
         for tf_check in tqdm(tfs_to_check):
-            tf_check_str = _tf_check_str.format(tf_check)
+            # Get ratio
+            tf_check_str = _other_tf_ratio_str.format(tf_check)
             index_minus_tf = ohlc.index - pd.to_timedelta(tf_check)
             index_minus_tf = np.where(index_minus_tf >= data_1m.index.min(), index_minus_tf, data_1m.index.min())
             open_tf_values = data_1m.loc[index_minus_tf]['open'].values
             ohlc[tf_check_str] = ohlc['close'] / open_tf_values - 1  # new / old , calculate change in various TFs
             self._tfs_to_check.append(tf_check_str)
-
+            # Get Number # ohlc.merge(ohlc_t['cnd_color'])
+            # ohlc.join(ohlc_t['cnd_color'].rename(_other_tf_color_str.format(tf_check)))
+            # _other_tf_number_str
+            # NOT GOOD CALCULATION WAY
+            # should be done calculating each day start, to every timestamp in the dataset, ending every 24H
+            ohlc_t = _resample_from_ohlcv(data_1m, symbol, '1D')
+            ohlc_t = get_numbers(ohlc_t)
+            ohlc_t = get_color(ohlc_t)
+            ohlc_t = get_combos(ohlc_t)
+            print()
+            #
         return ohlc
 
     def calc(self, ohlc, to_frame=False):
@@ -141,7 +160,6 @@ class TheStratInd(Indicator):
         ohlc = get_color(ohlc)
         ohlc = get_combos(ohlc)
         ohlc = self.get_other_timeframes(ohlc)
-
         # GET MORE TIME FRAMES from upper TFS,
         # Configure entry, stoploss, targets.
 

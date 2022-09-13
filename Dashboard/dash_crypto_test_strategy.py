@@ -4,6 +4,8 @@ from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
 from datetime import datetime
 import json
+import sys
+
 
 from Backtesting.Strategies import All_STRATEGIES, EMAVol, EMATrendSTC, EMABB
 from Data.Crypto.ccxt_utils import get_candles_from_db
@@ -26,7 +28,7 @@ db = Persistence(db_path, check_same_thread=False)
 
 title = 'Crypto Test Strategy'
 
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.CYBORG],
+app = dash.Dash("foo", external_stylesheets=[dbc.themes.CYBORG],
                 meta_tags=[{'name': 'viewport', 'content': 'width=device-width, initial-scale=1'}])
 server = app.server  # needed for deployment
 app.title = title
@@ -195,7 +197,7 @@ def update_graph_live(start_date, coin, resample, n_lookback_ratio, strategy_par
         # strategy = EMABB()
         # strategy = EMA3()
         # strategy = ADXRSI()
-        strategy_params = {"tf": resample, "symbol": coin, 'start_date':start_date, 'db': db, "ema_slow_lk": 200, "ema_mid_lk": 50, "n_ema_soon": 3,
+        strategy_params = {"tf": None, "symbol": None, 'start_date':start_date, 'db': db, "ema_slow_lk": 200, "ema_mid_lk": 50, "n_ema_soon": 3,
                            "crossed_ma_low_high": True, "adx_use_smooth": False,
                            "adx_threshold": 20, "max_stop_pct": 0.07, "support_ahead": 10, "risk_reward": 1.5}
         # strategy_params = {"tf": "1H", "ema_slow_lk": 200, "ema_mid_lk": 50, "n_ema_soon": 3,
@@ -219,10 +221,7 @@ def update_graph_live(start_date, coin, resample, n_lookback_ratio, strategy_par
     return fig, text, None, False
 
 
-import sys
-
 if __name__ == '__main__':
-
     args = sys.argv[1:]
     print('args:', args)
     if len(args) == 2 and args[0] == '-port':

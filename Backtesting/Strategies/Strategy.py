@@ -21,13 +21,13 @@ class Strategy(ABC):
         pass
 
     def calc_indicators(self, df, dropna=True):
-        attrs = df.attrs
         indicators = [ind for ind in dir(self) if ind.startswith('_ind_')]
         for ind in indicators:
+            attrs = df.attrs
             df = df.join(getattr(self, ind).calc(df))
+            df.attrs = attrs
         if dropna:
             df = df.dropna()
-        df.attrs = attrs
         return df
 
     def __repr__(self):
