@@ -14,11 +14,12 @@ import time
 def get_todays(tz=None):
     try:
         df = scrape_data()
-        print('Got table')
-        df['dt'] = df['dt'].dt.tz_localize('UTC').dt.tz_convert(tz)
-        df = df[df['dt'].dt.date == datetime.now().date()]
-        print('Todays:')
-        print(df.to_string())
+        print(f"Got table with {len(df)} rows, from {df['dt'].min()} -> {df['dt'].max()} (UTC)")
+        # df['dt'] = df['dt'].dt.tz_localize('UTC').dt.tz_convert(tz)
+        curr_date = datetime.now().date()
+        df = df[df['dt'].dt.date == curr_date]
+        print(f'Today\'s: {curr_date} total {len(df)}')
+        # print(df.to_string())
         return df
     except Exception as e:
         print('Something went wrong..', e)
@@ -44,6 +45,9 @@ def build_str(df, convert_tz=None):
     df['dt'] = df['dt'].dt.tz_localize('UTC').dt.tz_convert(convert_tz)
     today = str(df['dt'].dt.date[0])
     str_build = f'<u><b>Todays ({today})</b></u>\n'
+    if len(df) == 0:
+        str_build += 'Nothing..'
+        return str_build
     for _, row in df.iterrows():
         importance = row['importance']
         hour = row['dt'].hour
@@ -70,7 +74,7 @@ def job_that_executes_once(hour, minute):
         if len(df):
             str_build = build_str(df, convert_tz='Israel')
             publish(str_build, prod=True)
-            # broadcast only results from that specifiec task
+            # broadcast only results from that specific task
         else:
             print('job_that_executes_once got empty Dataframe after filtering!')
         return schedule.CancelJob
@@ -109,8 +113,8 @@ def get_local_tz():
 def run_forever():
     # at_time = '18:00'
     at_time = '07:00'  # UTC
-    print('Running forever...')
-    publish("Test", prod=True)
+    print(f'Running forever... everyday at: {at_time}')
+    # publish("Test", prod=True)
     schedule.every().day.at(at_time).do(job)
 
     while True:
@@ -122,4 +126,3 @@ def run_forever():
 if __name__ == '__main__':
     job()  # do it once, and then go to loop
     run_forever()
-

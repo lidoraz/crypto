@@ -79,7 +79,7 @@ def scrape_data():
             consensus = entry[7]
             #         forecast = entry[8]
             dt = pd.to_datetime(f'{date} {time}')
-            print(actual, consensus)
+            # print(actual, consensus)
             _compare = None
             try:
                 _compare = compare(actual, consensus) if len(actual) else None
