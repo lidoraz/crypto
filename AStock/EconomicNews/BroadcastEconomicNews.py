@@ -7,8 +7,8 @@ import requests
 import os
 import time
 
-
-# df = df['dt'].dt.date
+_PROD = True
+print('PROD IS:', _PROD)
 
 
 def get_todays(tz=None):
@@ -31,8 +31,8 @@ def publish(msg, prod):
         url = "https://api.telegram.org/bot{token}/sendMessage?chat_id={group_id}&text={msg}&parse_mode=HTML"
         token = os.environ.get('TELEGRAM_TOKEN')
         group_id = os.environ.get('TELEGRAM_GROUP_NEWS')
-        print('token:', token)
-        print('group_id', group_id)
+        # print('token:', token)
+        # print('group_id', group_id)
         print(url.format(token=token, group_id=group_id, msg=msg))
         res = requests.get(url.format(token=token, group_id=group_id, msg=msg))
         print(res.status_code)
@@ -43,8 +43,8 @@ def publish(msg, prod):
 
 def build_str(df, convert_tz=None):
     df['dt'] = df['dt'].dt.tz_localize('UTC').dt.tz_convert(convert_tz)
-    today = str(df['dt'].dt.date[0])
-    str_build = f'<u><b>Todays ({today})</b></u>\n'
+    today = str(datetime.now().date())
+    str_build = f"<u><b>Today's ({today})</b></u>\n"
     if len(df) == 0:
         str_build += 'Nothing..'
         return str_build
@@ -57,7 +57,7 @@ def build_str(df, convert_tz=None):
         actual = row['actual']
         importance_icon = {'1': '1', '2': '🛎️', '3': '🚨'}
         importance = importance_icon.get(importance, '')
-        compare_icon = {True: '⬆️', False: '⬇️'}
+        compare_icon = {'+': '⬆️', '-': '⬇️', '=': '🟰️'}
         compare = compare_icon.get(row['compare'], '')
 
         actual_str = f', act:{actual}{compare}' if actual != 'NOTYET' else ''
@@ -67,19 +67,19 @@ def build_str(df, convert_tz=None):
 
 
 def job_that_executes_once(hour, minute):
-    def run():
+    def _job_that_executes_once():
         print('Do once', hour, minute, datetime.now())
         df = get_todays()
         df = df[(df['dt'].dt.hour == hour) & (df['dt'].dt.minute == minute)]
         if len(df):
             str_build = build_str(df, convert_tz='Israel')
-            publish(str_build, prod=True)
+            publish(str_build, prod=_PROD)
             # broadcast only results from that specific task
         else:
             print('job_that_executes_once got empty Dataframe after filtering!')
         return schedule.CancelJob
 
-    return run
+    return _job_that_executes_once
 
 
 def create_tasks(df):
@@ -93,7 +93,7 @@ def create_tasks(df):
             minute = dt.minute
             # schedule does not support timezone, must make sure the trigger time is UTC!
             # hour = hour + 3
-            print('Registering a job to trigger today at time:', dt, f'{hour:02d}:{minute:02d}')
+            print(f"Registering a job to trigger {(df['dt'] == dt).sum()} events, Today at: {hour:02d}:{minute:02d}, ({dt})")
             schedule.every().day.at(f'{hour:02d}:{minute:02d}:01').do(job_that_executes_once(hour, minute))
 
 
@@ -102,7 +102,7 @@ def job():
 
     create_tasks(df)  # Make this work, later....
     str_build = build_str(df, convert_tz='Israel')
-    publish(str_build, prod=True)
+    publish(str_build, prod=_PROD)
     # Build a task to  get data at correct timing
 
 
@@ -120,7 +120,7 @@ def run_forever():
     while True:
         schedule.run_pending()
         time.sleep(1)
-        # schedule.get_jobs()
+        # print(schedule.get_jobs())
 
 
 if __name__ == '__main__':

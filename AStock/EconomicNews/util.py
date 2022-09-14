@@ -30,17 +30,25 @@ def parse(val):
 def compare(val1, val2):
     val1 = parse(val1)
     val2 = parse(val2)
-    return val1 > val2
+    if val1 > val2:
+        return '+'
+    elif val1 < val2:
+        return '-'
+    else:
+        return '='
 
 
 headers = {
     'User-Agent': 'My User Agent 1.0',
     'From': 'youremail@domain.example',  # This is another valid field
+    # ### WORKING COOKIE:
+    'cookie': 'calendar-countries=usa, eu; calendar-importance=2; calendar-range=1;  TEServer=TEIIS'
+    ####
     # 'cookie': 'calendar-countries=usa,tun; calendar-importance=3; ASP.NET_SessionId=d; cal-timezone-offset=180; TEServer=TEIIS'
     # ASP.NET_SessionId=pdl0gpiioeziec4ezsg5pgui
     # calendar-range=3;
-    # WORKING
-    'cookie': 'calendar-countries=usa, eu; calendar-importance=2; calendar-range=1;  TEServer=TEIIS'
+    # Get whole Week
+    # 'cookie': 'calendar-countries=usa, eu; calendar-importance=2; calendar-range=3;  TEServer=TEIIS'
     # last week: calendar-range=-2; ## THIS WEEK: calendar-range=3;
 }
 
@@ -52,7 +60,7 @@ def strip_and_clean(x):
 
 def scrape_data():
     r = requests.get(url, headers=headers)
-    soup = bs(r.content)
+    soup = bs(r.content, features="lxml")
     table = soup.find('table', {'id': 'calendar'})
     # cols = ['dt', 'country', 'title', 'actual', 'previous', 'consensus', 'forecast', 'compare']
     cols = ['importance', 'dt', 'country', 'title', 'actual', 'consensus', 'compare']
