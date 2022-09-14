@@ -79,7 +79,7 @@ def job_that_executes_once(hour, minute):
 
 
 def create_tasks(df):
-    df = df[df['importance'] == '2']
+    # df = df[df['importance'] == '3']
     time_now = datetime.utcnow()
     dts = df.dt.unique()
     for dt in dts:
@@ -120,5 +120,6 @@ def run_forever():
 
 
 if __name__ == '__main__':
+    job()  # do it once, and then go to loop
     run_forever()
-    # job()
+
