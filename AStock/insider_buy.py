@@ -26,7 +26,7 @@ def get_insiders():
 
 
 def filter_stocks(df_i, avg_volume_m=2, minimum_price=10):
-    # filter to get out penny stocks with no volume,
+    # filter out penny stocks with no volume,
     # more chance for institutional traders to buy and get it to the moon
     avg_volume_m = avg_volume_m * 1e6
     tickers = df_i.Ticker.to_list()

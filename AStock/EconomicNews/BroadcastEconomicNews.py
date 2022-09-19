@@ -7,7 +7,9 @@ import requests
 import os
 import time
 
-_PROD = True
+_PROD = False
+_sec_offset = 5
+
 print('PROD IS:', _PROD)
 
 
@@ -57,7 +59,8 @@ def build_str(df, convert_tz=None):
         actual = row['actual']
         importance_icon = {'1': '1', '2': '🛎️', '3': '🚨'}
         importance = importance_icon.get(importance, '')
-        compare_icon = {'+': '⬆️', '-': '⬇️', '=': '🟰️'}
+        compare_icon = {'+': '⬆️', '-': '⬇️', '=': '⬅️'}
+        # compare_icon = {'+': '🟢️', '-': '🔴️', '=': '⚪'}
         compare = compare_icon.get(row['compare'], '')
 
         actual_str = f', act:{actual}{compare}' if actual != 'NOTYET' else ''
@@ -94,15 +97,17 @@ def create_tasks(df):
             # schedule does not support timezone, must make sure the trigger time is UTC!
             # hour = hour + 3
             print(f"Registering a job to trigger {(df['dt'] == dt).sum()} events, Today at: {hour:02d}:{minute:02d}, ({dt})")
-            schedule.every().day.at(f'{hour:02d}:{minute:02d}:01').do(job_that_executes_once(hour, minute))
+            schedule.every().day.at(f'{hour:02d}:{minute:02d}:{_sec_offset:02d}').do(job_that_executes_once(hour, minute))
 
 
 def job():
     df = get_todays(None)
-
-    create_tasks(df)  # Make this work, later....
-    str_build = build_str(df, convert_tz='Israel')
-    publish(str_build, prod=_PROD)
+    if len(df):
+        create_tasks(df)  # Make this work, later....
+        str_build = build_str(df, convert_tz='Israel')
+        publish(str_build, prod=_PROD)
+    else:
+        print('get_todays, df is empty')
     # Build a task to  get data at correct timing
 
 

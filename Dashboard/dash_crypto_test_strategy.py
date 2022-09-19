@@ -158,6 +158,7 @@ def get_data_with_adjusted_dt(coin, resample, n_lookback_ratio, start_date, loca
         time_delta = pd.to_timedelta(resample) * lookback_candles + INTERVAL_CANDLE_LOOKBACK_TABLE[
             resample] * n_lookback_ratio
         start_ts = int((datetime.utcnow() - time_delta).timestamp())
+    # Small bug, using utcnow above, will cause empty dataframe if crawler was not working for a while, better solution is to take latest datapoint available in the database instead.
     df_ohlcv = get_candles_from_db(db, coin, resample, start_ts=start_ts, localize=localize)
     if end_date:
         df_ohlcv = df_ohlcv[df_ohlcv.index <= pd.to_datetime(end_date, utc=True)]
@@ -197,8 +198,8 @@ def update_graph_live(start_date, coin, resample, n_lookback_ratio, strategy_par
         # strategy = EMABB()
         # strategy = EMA3()
         # strategy = ADXRSI()
-        strategy_params = {"tf": None, "symbol": None, 'start_date':start_date, 'db': db, "ema_slow_lk": 200, "ema_mid_lk": 50, "n_ema_soon": 3,
-                           "crossed_ma_low_high": True, "adx_use_smooth": False,
+        strategy_params = {'db': db,
+                           "adx_use_smooth": False,
                            "adx_threshold": 20, "max_stop_pct": 0.07, "support_ahead": 10, "risk_reward": 1.5}
         # strategy_params = {"tf": "1H", "ema_slow_lk": 200, "ema_mid_lk": 50, "n_ema_soon": 3,
         #                    "crossed_ma_low_high": True, "adx_use_smooth": False,
@@ -227,7 +228,7 @@ if __name__ == '__main__':
     if len(args) == 2 and args[0] == '-port':
         app.run_server(port=args[1], host='0.0.0.0')
     else:
-        app.run_server(debug=True)  # , dev_tools_ui=True
+        app.run_server(debug=False)  # , dev_tools_ui=True
     # https://dash.plotly.com/live-updates
     # live-updates keep the plot intact:
     # https://stackoverflow.com/questions/63876187/plotly-dash-how-to-show-the-same-selected-area-of-a-figure-between-callbacks

@@ -60,8 +60,9 @@ if __name__ == '__main__':
     print('-' * 60)
     symbol = 'GILD'
     symbol = 'AMD'
-    txt = 'Top Ticker flow'
-    # symbol = 'META'
+    # txt = 'Top Ticker flow'   # Get unusual_whales
+    # txt =
+    symbol = 'META'
     # symbol = '🚨'
-    # get_by_symbol(symbol, days_back=5)
-    get_by_free_text(txt, days_back=60)
+    get_by_symbol(symbol, days_back=5)
+    # get_by_free_text(txt, days_back=60)

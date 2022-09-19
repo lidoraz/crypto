@@ -1,10 +1,10 @@
 import pandas as pd
-
+from datetime import datetime
 from AStock.sectors import get_daily_data, all_etf_longname
-from Indicators import RSI
+from Indicators import RSI, TheStratInd
 
 
-def check_ticker(data, day_shift=1):
+def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
     print('Relative to date: ', data.index[-day_shift].date())
     tickers = set([x[0] for x in data.columns.tolist()])
 
@@ -14,24 +14,44 @@ def check_ticker(data, day_shift=1):
         return new / old - 1
 
     def add_sma_pct(ohlc, len):
-        close = ohlc['Close']
+        close = ohlc['close']
         return change_pct(close.rolling(len).mean(), close).rename(f'sma{len}_pct')
 
     res = pd.DataFrame()
 
+    # x = list(df_t['Volume'].rolling(5))[-1]
+    def calc_volume_change(df):
+        n = 5
+        # vol_pct = df['Volume'].rolling(n).pct_change()
+        # price_pct = df['Close'].rolling(n).pct_change()
+        # Calculating only last 5 rows, needs to join them to the main table, this currently does not work.
+        last_row_vol = [x.pct_change().values for x in list(df['volume'][-n:].rolling(n))][-1][1:]
+        last_row_price = df['change_pct'][-n + 1:].values
+        return pd.Series(zip(last_row_vol, last_row_price)).rename('vol_price_trend')
+
     for ticker in tickers:
         df_t = data[ticker]
-        df_t = df_t.join((df_t['Close'] / df_t['Close'].shift(1) - 1).rename('change_pct'))
+        df_t.columns = [c.lower() for c in df_t.columns]
+        # minimum volume req:
+        if df_t['volume'].rolling(14).mean()[-1] < minimum_volume:
+            print(f'Filtered out ticker: {ticker} due to low avg volume')
+            continue
+        # df_tdf_t.rename(columns={'Close': 'close', 'Open': 'open', 'High': 'high', 'Low': 'low'}))
+        df_t = df_t.join((df_t['close'] / df_t['close'].shift(1) - 1).rename('change_pct'))
+        # df_t = df_t.join(calc_volume_change(df_t)) # TEST THIS
         df_t = df_t.join(add_sma_pct(df_t, 20))
         df_t = df_t.join(add_sma_pct(df_t, 50))
         df_t = df_t.join(add_sma_pct(df_t, 150))
         df_t = df_t.join(add_sma_pct(df_t, 200))
         df_t = df_t.join(add_cci(df_t, 14))
-        df_t = df_t.join(RSI(14).calc(df_t.rename(columns={'Close': 'close'})))
+        # org_columns = df_t.columns
+        # df_t = [c.lower() for c in df_t.columns]
+        df_t = df_t.join(RSI(14).calc(df_t))
+        df_t = df_t.join(TheStratInd(False).calc(df_t[-5:]).fillna(''))
         # add_sma_pct(df_t, 200)
         # dist to sma, if below, will be positive, if above, should be negative
         curr_row = df_t.iloc[-day_shift].rename(ticker)
-        curr_row = curr_row.drop(['Adj Close', 'Open', 'High', 'Low'])  # 'High', 'Low'
+        curr_row = curr_row.drop(['adj close', 'open', 'high', 'low'])  # 'High', 'Low'
         # curr_row = curr_row # [['Close', 'Volume']]
         # curr_row.name = ticker
         res = pd.concat([res, curr_row.to_frame()], axis=1)
@@ -41,14 +61,14 @@ def check_ticker(data, day_shift=1):
 
 
 def add_cci(ohlc, length):
-    src = ohlc[['High', 'Low', 'Close']].sum(axis=1) / 3
-    ma = ohlc['Close'].rolling(length).mean()
-    dev = ohlc['Close'].rolling(length).std()
+    src = ohlc[['high', 'low', 'close']].sum(axis=1) / 3
+    ma = ohlc['close'].rolling(length).mean()
+    dev = ohlc['close'].rolling(length).std()
     cci = (src - ma) / (0.015 * dev)
     return pd.Series(cci).rename(f'cci_{length}').round(2)
 
 
-def print_pct_html(df):
+def print_apply_html_formats(df):
     pct_cols = [c for c in df.columns if c.endswith('pct')]
     cci_cols = [c for c in df.columns if c.startswith('cci_')]
     # df = df.round(2)
@@ -57,18 +77,42 @@ def print_pct_html(df):
     out_df = df.style
     out_df = out_df.background_gradient(subset=pct_cols, cmap='RdYlGn', vmin=-0.25, vmax=.25, axis=0)
     out_df = out_df.background_gradient(subset='change_pct', cmap='RdYlGn', vmin=-0.07, vmax=.07, axis=0)
-    out_df = out_df.background_gradient(subset=cci_cols, cmap='RdYlGn', vmin=-101, vmax=101, axis=0)
-    out_df = out_df.background_gradient(subset='RSI14', cmap='RdYlGn', vmin=30, vmax=70, axis=0)
-    formatters = {c: '{:.2f}' for c in df.columns}
-    formatters['Volume'] = lambda x: "{:.1f}M".format(x * 1e-6)
+    out_df = out_df.background_gradient(subset=cci_cols, cmap='RdYlGn_r', vmin=-101, vmax=101, axis=0)
+    out_df = out_df.background_gradient(subset='RSI14', cmap='RdYlGn_r', vmin=30, vmax=70, axis=0)
+    strat_cols = ['thestrat_num', 'cnd_color', 'thestrat_combo']
+    # out_df.applymap(subset=['cnd_color' , 'thestrat_combo'], func=lambda v: "color:pink;" if v>4 else "color:darkblue;")
+    formatters = {c: '{:.2f}' for c in df.columns if c not in strat_cols}
+    formatters['volume'] = lambda x: "{:.1f}M".format(x * 1e-6)
     formatters.update({c: '{:.2%}' for c in pct_cols})
-    formatters['Close'] = '${:.2f}'
-    # lambda x: "$ {:,.1f}".format(x*-1e6)
+    formatters['close'] = '${:.2f}'
     out_df = out_df.format(formatters)
-    # out_df = out_df.format({c: '{:.2%}' for c in pct_cols})
-    out_df.to_html('check.html',
-                   classes=["table-bordered", "table-striped",
-                            "table-hover"])
+    return out_df
+
+
+def print_pct_html(df_index, df_stocks, data_date):
+    out_df1 = print_apply_html_formats(df_index)
+    out_df2 = print_apply_html_formats(df_stocks)
+    out_df1 = out_df1.set_caption(f'<h1>Selected tickers, Relevant to date: {data_date}</h1>')
+    out_df1_html = out_df1.to_html()
+    out_df2_html = out_df2.to_html()
+    # out_df.to_html('check.html',
+    #                classes=["table-bordered", "table-striped",
+    #                         "table-hover"])
+    # highlighted = out_df.set_caption(f'<h1>Selected tickers, Relevant to date: {data_date}</h1>')
+    # # render() generates the HTML for the Styler object
+    with open('check.html', 'w') as f:
+        out = out_df1_html + '\n' + out_df2_html
+        f.write(out)
+
+
+def filter_nulls(data):
+    null_tickers = data.isnull().sum(axis=0) != 0
+    null_tickers = null_tickers[null_tickers].index.tolist()
+    null_tickers = set([t[0] for t in null_tickers])
+    if len(null_tickers):
+        print('Couldnt fetch these tickers:', null_tickers)
+        data = data.drop(columns=null_tickers)
+    return data
 
 
 def get_swings():
@@ -84,7 +128,7 @@ def get_swings():
     semi = ['NVDA', 'AMD', 'MU', 'TXN', 'TSM']  # 'ASML', 'AMAT'
     cyber = ['CRWD', 'S', 'PANW', 'CYBR']
     saas = ['MNDY', 'DDOG', 'DASH', 'PATH', 'SNOW', 'CRM', 'VEEV']
-    internet_software = ['META', 'GOOGL', 'PINS', 'TWTR']
+    internet_software = ['META', 'GOOGL', 'PINS', 'TWTR', 'ADBE']
     chinese = ['BABA', 'NIO', 'JD', ]
     other = ['RBLX', 'ROKU', 'DIS', 'NFLX', 'BA', ]
     green = ['SEDG', 'ENPH']
@@ -96,37 +140,39 @@ def get_swings():
     customer_service = ['WING', 'CROX', 'LOVE', 'UBER']
     # all_etf_longname
     tickers = crypto + fintech + big_tech + semi + cyber + internet_software + saas + chinese + internet_retail + other + green + consumer + medical + customer_service + indexes
-    tickers = high_growth + indexes
+    tickers = high_growth + indexes + tickers
     tickers = list(set(tickers))
     data = get_daily_data(tickers, days_before=300, group_by='ticker')
+    time_now = datetime.utcnow()
+    if data.iloc[-1].isna().all():
+        # if time_now.hour < 11 or time_now.hour == 13 and time_now.minute < 31:
+        data = data[:-1]
+        print(f'Calculating for date: {data.index[-1].date()}')
+    data_date = str(data.index[-1].date())
+    # data = filter_nulls(data)
 
-    null_tickers = data.isnull().sum(axis=0) != 0
-    null_tickers = null_tickers[null_tickers].index.tolist()
-    if len(null_tickers):
-        print('Couldnt fetch these tickers:', null_tickers)
-    import pandas as pd
-
-    res = check_ticker(data)
+    df = check_ticker(data)
 
     print('-> Indexes')
 
-    res_indexes = res[res.index.isin(indexes)]
+    df_index = df[df.index.isin(indexes)]
     # print_pct(res_indexes.sort_values('sma20_pct', ascending=False))
-    pprint_screener(res_indexes)
+    pprint_screener(df_index)
     print('-> Stocks')
-    res = res[~res.index.isin(indexes)]
+    df_stocks = df[~df.index.isin(indexes)]
     # LONG - should be far from sma20, SHORT- higher than sma 20.
-    res = res.sort_values('sma20_pct', ascending=False)  # check long potentials
+    # df_stocks = df_stocks.sort_values('sma20_pct', ascending=False)  # check long potentials
+    df_stocks = df_stocks.sort_values(['sma20_pct', 'cnd_color', ], ascending=[False, True,])  # check long potentials
     # CHECK RSI, and CCI, check also for volume decrease for sells.
     # check that close price is not far from open, look for doji, or bullish, also can use thestrat for indicator.
-    pprint_screener(res)
+    pprint_screener(df_stocks)
 
-    print_pct_html(res)
+    print_pct_html(df_index, df_stocks, data_date)
 
 
 def pprint_screener(df):
     df = df.copy()
-    df['Volume'] = df['Volume'].apply(lambda x: f'{x / 1e6:0.1f}M')
+    df['volume'] = df['volume'].apply(lambda x: f'{x / 1e6:0.1f}M')
     pct_cols = [c for c in df.columns if c.endswith('_pct')]
     df = df.sort_values('sma20_pct', ascending=False)
     df[pct_cols] = df[pct_cols].applymap(lambda x: f'{x:.2%}')
