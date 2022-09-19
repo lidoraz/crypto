@@ -7,7 +7,7 @@ import requests
 import os
 import time
 
-_PROD = False
+_PROD = True
 _sec_offset = 5
 
 print('PROD IS:', _PROD)
@@ -102,12 +102,12 @@ def create_tasks(df):
 
 def job():
     df = get_todays(None)
-    if len(df):
+    if df is not None and len(df):
         create_tasks(df)  # Make this work, later....
         str_build = build_str(df, convert_tz='Israel')
         publish(str_build, prod=_PROD)
     else:
-        print('get_todays, df is empty')
+        print('get_todays, df is empty, or having a problem')
     # Build a task to  get data at correct timing
 
 
