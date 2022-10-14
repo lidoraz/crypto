@@ -25,6 +25,22 @@ def get_numbers(ohlc):
     return pd.Series(is_one * 1 + is_two_up * 2.1 + is_two_down * 2.2 + is_three * 3).rename('thestrat_num')
 
 
+def add_candle_type(ohlc, cnd_num,  wick_percent=0.75):
+    def getActionalbeWickHeight(wick_percent):
+        return (ohlc['high'] - ohlc['low']) * wick_percent
+
+    getShooterTop = ohlc['high'] - getActionalbeWickHeight(wick_percent)
+    getHammerBottom = ohlc['low'] + getActionalbeWickHeight(wick_percent)
+    isInsideBar = cnd_num == 1
+    is_shooter = (ohlc['open'] < getShooterTop) & (ohlc['close'] < getShooterTop) & ~(isInsideBar)
+    is_hammer = (ohlc['open'] > getHammerBottom) & (ohlc['close'] > getHammerBottom) & ~(isInsideBar)
+    # is_doji = (ohlc['open'] > getHammerBottom) & (ohlc['close'] > getHammerBottom) & ~(isInsideBar)
+    res = pd.Series(is_shooter * 1 + is_hammer * 2).rename('thestrat_cnd_type')
+    mapper = {1: 'Shooter', 2: 'Hammer'}
+    res = res.apply(lambda x: mapper.get(x, ''))
+    return res
+
+
 def get_combos(ohlc):
     # 212 Bear R, 212 Bull R
     # 22 Bear R, 22 Bull R
@@ -72,8 +88,8 @@ def get_combos(ohlc):
         is_32RS=(col_b1 == 'G') & (num_b1 == 3) & (num_b0 == 2.2),
         is_32RL=(col_b1 == 'R') & (num_b1 == 3) & (num_b0 == 2.1),
         # 1 Bar
-        is_1RS=(col_b0 == 'R') & (num_b0 == 3),
-        is_1RL=(col_b0 == 'G') & (num_b0 == 3),
+        is_3RS=(col_b0 == 'R') & (num_b0 == 3),
+        is_3RL=(col_b0 == 'G') & (num_b0 == 3),
         # 2-2-2
         is_222RS=(num_b3 == 2.2) & (num_b2 == 2.2) &
                  (num_b1 == 2.1) & (num_b0 == 2.2),
@@ -158,7 +174,8 @@ class TheStratInd(Indicator):
         tfs_default = ['1T', '3T', '5T', '15T', '30H', '1H', '2H', '4H', '12H', '1D', '1W', '4W', '12W']
         tfs_to_check = tfs_default[1 + tfs_default.index(tf):]
         self._tfs_to_check = []
-        data_1m = get_candles_from_db(self._db, symbol, '1T', start_date=str(ohlc.index[0].date()), localize=ohlc.index.tz)
+        data_1m = get_candles_from_db(self._db, symbol, '1T', start_date=str(ohlc.index[0].date()),
+                                      localize=ohlc.index.tz)
         # Calculate using fixed TF windows
         # for tf_check in tqdm(tfs_to_check):
         #     tf_check_str = _tf_check_str.format(tf_check)
@@ -195,10 +212,13 @@ class TheStratInd(Indicator):
     def calc(self, ohlc):
         # TODO: TF CONTINUITY - CHECK ON HIGHER LEVELS - IF BEAR / BULL by simply checking on candle color
         s_numbers = get_numbers(ohlc)
+        s_cnd_type = add_candle_type(ohlc, s_numbers)
         s_color = get_color(ohlc)
-        res = pd.concat([s_numbers, s_color], axis=1)
+        res = pd.concat([s_numbers, s_color, s_cnd_type], axis=1)
         s_combos = get_combos(res)
         res = pd.concat([res, s_combos], axis=1)
+        num_map = {1: 1, 2.1: '2U', 2.2: '2D', 3: 3}
+        res['thestrat_num'] = res['thestrat_num'].apply(lambda x: str(num_map.get(x, '')))
         # ohlc = get_combos(ohlc)
         if self._calc_other_tf:
             # TODO: FIX HERE, also in the function itself
@@ -258,14 +278,17 @@ class TheStratInd(Indicator):
             tfs_cont_str = converted_df.apply(lambda x: ','.join(x), axis=1).tolist()
             # tfs_cont_str = df[self._tfs_to_check].applymap(lambda x: '▲' if x > 0 else '▼').apply(lambda x: ','.join(x),
             #                                                                                       axis=1).tolist()
-            fig.data[0].text = [f'Strat: {num} | {combo if len(combo) else "-"} | {time_cont}' for num, combo, time_cont in
+            fig.data[0].text = [f'Strat: {num} | {combo if len(combo) else "-"} | {time_cont}, {cnd_type}' for num, combo, time_cont, cnd_type
+                                in
                                 zip(df['thestrat_num'].values.tolist(),
                                     df['thestrat_combo'].values.tolist(),
-                                    tfs_cont_str)]
+                                    tfs_cont_str,
+                                    df['thestrat_cnd_type'].values.tolist())]
         else:
-            fig.data[0].text = [f'Strat: {num}, {combo}' for num, combo, time_cont in
+            fig.data[0].text = [f'Strat: {num}, {combo}, {cnd_type}' for num, combo, cnd_type in
                                 zip(df['thestrat_num'].values.tolist(),
-                                    df['thestrat_combo'].values.tolist())
+                                    df['thestrat_combo'].values.tolist(),
+                                    df['thestrat_cnd_type'].values.tolist())
                                 # df['thestrat_combo'].values.tolist())
                                 ]
 

@@ -7,8 +7,8 @@ import requests
 import os
 import time
 
-_PROD = True
-_sec_offset = 5
+_PROD = False
+_sec_offset = 1
 
 print('PROD IS:', _PROD)
 
@@ -70,17 +70,33 @@ def build_str(df, convert_tz=None):
 
 
 def job_that_executes_once(hour, minute):
+    def check_is_all_filled(df):
+        for idx, row in df.iterrows():
+            if row['previous'] != '' and row['actual'] == 'NOTYET':  # graceful, this forces all rows to be filled before publishing
+                return False
+            # TODO: REMOVE HOUR MIN before, and better to push notification new events.
+        return True
+
     def _job_that_executes_once():
         print('Do once', hour, minute, datetime.now())
-        df = get_todays()
-        df = df[(df['dt'].dt.hour == hour) & (df['dt'].dt.minute == minute)]
-        if len(df):
-            str_build = build_str(df, convert_tz='Israel')
-            publish(str_build, prod=_PROD)
-            # broadcast only results from that specific task
-        else:
-            print('job_that_executes_once got empty Dataframe after filtering!')
-        return schedule.CancelJob
+        tried = 0
+        tries = 30
+        while tried < tries:
+            tried += 1
+            df = get_todays()
+            df = df[(df['dt'].dt.hour == hour) & (df['dt'].dt.minute == minute)]
+            if len(df):
+                is_all_filled = check_is_all_filled(df)
+                if is_all_filled:
+                    str_build = build_str(df, convert_tz='Israel')
+                    publish(str_build, prod=_PROD)
+                    return schedule.CancelJob
+                else:
+                    print(f'Still not filled {tried}/{tries}')
+                # broadcast only results from that specific task
+            else:
+                print(f'job_that_executes_once got empty Dataframe after filtering! {tried}/{tries}')
+            time.sleep(1.0)
 
     return _job_that_executes_once
 
@@ -129,5 +145,6 @@ def run_forever():
 
 
 if __name__ == '__main__':
+    # job_that_executes_once(12, 30)()
     job()  # do it once, and then go to loop
     run_forever()

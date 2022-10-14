@@ -18,3 +18,34 @@ def get_daily_data(symbols, days_before, group_by='column'):
                        interval='1d', threads=True, progress=False)
     print(f"start={start}, data: {str(data.index[-1])} took: {time.time() - t0:0.2f}")
     return data
+
+
+def plot_ohlc_daily(ohlc):
+    import matplotlib.pyplot as plt
+    fig = plt.figure(figsize=(3, 1))
+    ohlc.index = range(len(ohlc.index))
+    up = ohlc[ohlc.close >= ohlc.open]
+    down = ohlc[ohlc.close < ohlc.open]
+    col1 = 'green'
+    col2 = 'red'
+
+    # Setting width of candlestick elements
+    width = .3
+    width2 = .03
+    # width = .8
+    # width2 = .08
+    up_index = up.index
+    # Plotting up prices of the stock
+    plt.bar(up_index, up.close - up.open, width, bottom=up.open, color=col1, align='center')
+    plt.bar(up_index, up.high - up.close, width2, bottom=up.close, color=col1, align='center')
+    plt.bar(up_index, up.low - up.open, width2, bottom=up.open, color=col1, align='center')
+    down_index = down.index
+    # Plotting down prices of the stock
+    plt.bar(down_index, down.close - down.open, width, bottom=down.open, color=col2, align='center')
+    plt.bar(down_index, down.high - down.open, width2, bottom=down.open, color=col2, align='center')
+    plt.bar(down_index, down.low - down.close, width2, bottom=down.close, color=col2, align='center')
+
+    # rotating the x-axis tick labels at 30degree
+    # towards right
+    plt.xticks(rotation=30, ha='right')
+    return fig

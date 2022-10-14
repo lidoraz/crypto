@@ -15,7 +15,7 @@ class TheStrat(Strategy):
         self.ema_slow_lk = params.get('sma_slow_lk', 150)  # 150
         self.ema_mid_lk = params.get('sma_mid_lk', 50)  # 150
         # self.crossed_ma_low_high = params.get('crossed_ma_low_high', True)
-        # self.ema_fast_lk = params.get('sma_fast_lk', 14)  # 50
+        self.ema_fast_lk = params.get('sma_fast_lk', 20)  # 50
         self.n_ema_soon = params.get('n_ema_soon', 3)
         self.max_stop_pct = params.get('max_stop_pct', 0.06)
         self.support_ahead = params.get('support_ahead', 10)
@@ -28,7 +28,7 @@ class TheStrat(Strategy):
         #  Looks good, still need some calibration, and, there is a major thing is that in realtime,
         #  It might be better to look on NOT FULL candles, so if there is a start of a trend, we want to catch it
         #  BEFORE the trend ends.
-        # self._ind_ema_fast = EMA(self.ema_fast_lk, color='purple')
+        self._ind_ema_fast = SMA(self.ema_fast_lk, color='cyan')
         # support resistance levels should be about 0.25% to 0.10%, really minor as the change in 1min small, disable fix_if, use different numbers if not found.
         self._ind_lines = SupportResistanceLines2(self.support_ahead, fix_if_too_close=False)
         self._ind_thestrat = TheStratInd(True, self._db)

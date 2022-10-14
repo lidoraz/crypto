@@ -36,9 +36,10 @@ class ADX(Indicator):
     SIGNAL = SMA(MACD, 9)
     """
 
-    def __init__(self, lookback=14, plot_loc=None):
+    def __init__(self, lookback=14, display_both=False, plot_loc=None):
         super(ADX, self).__init__(f"ADX({lookback}", "SUB_PLOT")
         self.lookback = lookback
+        self._display_both = display_both
         self.plot_loc = (plot_loc, 1 if plot_loc else None)
 
     def calc(self, ohlc) -> pd.DataFrame:
@@ -50,16 +51,19 @@ class ADX(Indicator):
         plus_di = df['plus_di']
         minus_di = df['minus_di']
         adx = df['adx_smooth']  # adx_smooth # smooth is lagging, but more precise
-        t_di_plus = go.Scatter(x=plus_di.index, y=plus_di,
-                               line_color="#4CAF50",
-                               line_width=1, legendgroup=self.name, name="DI+")
-        t_di_minus = go.Scatter(x=minus_di.index, y=minus_di,
-                                line_color="#FF5252",
-                                line_width=1, legendgroup=self.name, name="DI-")
-        t_adx = go.Scatter(x=adx.index, y=adx, line_width=1.5,
-                           line_color="white", legendgroup=self.name, name=self.name)
-        fig.add_trace(t_di_plus, row=self.plot_loc[0], col=self.plot_loc[1])
-        fig.add_trace(t_di_minus, row=self.plot_loc[0], col=self.plot_loc[1])
+        # t = 20
+        # adx_color = adx.apply(lambda x: 'white' if x > t else 'green').tolist()
+        t_adx = go.Scatter(x=adx.index, y=adx, line_width=1.5, line_color="white",  #
+                           legendgroup=self.name, name=self.name)
+        if self._display_both:
+            t_di_plus = go.Scatter(x=plus_di.index, y=plus_di,
+                                   line_color="#4CAF50",
+                                   line_width=1, legendgroup=self.name, name="DI+")
+            t_di_minus = go.Scatter(x=minus_di.index, y=minus_di,
+                                    line_color="#FF5252",
+                                    line_width=1, legendgroup=self.name, name="DI-")
+            fig.add_trace(t_di_plus, row=self.plot_loc[0], col=self.plot_loc[1])
+            fig.add_trace(t_di_minus, row=self.plot_loc[0], col=self.plot_loc[1])
         fig.add_trace(t_adx, row=self.plot_loc[0], col=self.plot_loc[1])
         fig.add_hline(y=20, row=self.plot_loc[0], col=self.plot_loc[1], line_width=1, line_dash="dash",
                       line_color='#ffa726')

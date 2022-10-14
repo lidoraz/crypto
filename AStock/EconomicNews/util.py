@@ -63,7 +63,7 @@ def scrape_data():
     soup = bs(r.content, features="lxml")
     table = soup.find('table', {'id': 'calendar'})
     # cols = ['dt', 'country', 'title', 'actual', 'previous', 'consensus', 'forecast', 'compare']
-    cols = ['importance', 'dt', 'country', 'title', 'actual', 'consensus', 'compare']
+    cols = ['importance', 'dt', 'country', 'title', 'actual', 'previous', 'consensus', 'compare']
     res_lst = []
     for child in table.children:
         if isinstance(child, str):
@@ -72,8 +72,8 @@ def scrape_data():
             #         print([strip_and_clean(x) for x in child.find_all(['th'])])
             date = strip_and_clean(child.find_all(['th'])[0])
         if child.has_attr('data-category'):
-            entry = [strip_and_clean(x) for x in
-                     child.find_all(['td'])]  # # [x for x in child.find_all(['td']) if x.attrs]
+            # # [x for x in child.find_all(['td']) if x.attrs]
+            entry = [strip_and_clean(x) for i, x in enumerate(child.find_all(['td']))]
             try:
                 importance = child.find_all(['td'])[0].contents[1].attrs['class'][0].split('-')[-1]
             except:
@@ -83,7 +83,7 @@ def scrape_data():
             country = entry[1]
             title = entry[4]  # .strip()
             actual = entry[5]
-            #         previous = entry[6]
+            previous = entry[6]
             consensus = entry[7]
             #         forecast = entry[8]
             dt = pd.to_datetime(f'{date} {time}')
@@ -93,7 +93,11 @@ def scrape_data():
                 _compare = compare(actual, consensus) if len(actual) else None
             except Exception as e:
                 print(f'Could not compare: {actual, consensus}', e)
-            res = importance, dt, country, title, actual if len(actual) > 0 else 'NOTYET', consensus, _compare
+            if len(previous):
+                actual_str = actual if len(actual) > 0 else 'NOTYET'
+            else:
+                actual_str = 'NULL'
+            res = importance, dt, country, title, actual_str, previous, consensus, _compare
             res_lst.append(res)
     #         print(','.join(res))
     #         print([strip_and_clean(x) for x in child.find_all(['td'])])

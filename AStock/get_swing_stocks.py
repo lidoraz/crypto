@@ -1,8 +1,11 @@
 import pandas as pd
 from datetime import datetime
 from AStock.sectors import get_daily_data, all_etf_longname
+from AStock.util import plot_ohlc_daily
 from Indicators import RSI, TheStratInd
-
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
     print('Relative to date: ', data.index[-day_shift].date())
@@ -17,6 +20,7 @@ def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
         close = ohlc['close']
         return change_pct(close.rolling(len).mean(), close).rename(f'sma{len}_pct')
 
+
     res = pd.DataFrame()
 
     # x = list(df_t['Volume'].rolling(5))[-1]
@@ -29,6 +33,22 @@ def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
         last_row_price = df['change_pct'][-n + 1:].values
         return pd.Series(zip(last_row_vol, last_row_price)).rename('vol_price_trend')
 
+    def volume_thumbnail(df_t, lk):
+        lat_df = df_t[-lk:]
+        color_bars = ['green' if x['close'] > x['open'] else 'red' for _, x in lat_df.iterrows()]
+        plt.bar(range(lk), lat_df['volume'], color=color_bars)
+        plt.axis('off')
+        plt.savefig(f'img/{ticker}.png')
+        plt.clf()
+
+    def candle_stick_thumbnail(df, lk):
+        df_t = df[-lk:]
+        fig = plot_ohlc_daily(df_t)
+        plt.axis('off')
+        plt.savefig(f'img/{ticker}_ohlc.png')
+        plt.clf()
+
+
     for ticker in tickers:
         df_t = data[ticker]
         df_t.columns = [c.lower() for c in df_t.columns]
@@ -37,23 +57,26 @@ def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
             print(f'Filtered out ticker: {ticker} due to low avg volume')
             continue
         # df_tdf_t.rename(columns={'Close': 'close', 'Open': 'open', 'High': 'high', 'Low': 'low'}))
-        df_t = df_t.join((df_t['close'] / df_t['close'].shift(1) - 1).rename('change_pct'))
+        df_t = df_t.join((df_t['close'] / df_t['close'].shift(1) - 1).rename('d_chg_pct'))
+        df_t = df_t.join((df_t['close'] / df_t['close'].shift(7) - 1).rename('w_chg_pct'))
         # df_t = df_t.join(calc_volume_change(df_t)) # TEST THIS
         df_t = df_t.join(add_sma_pct(df_t, 20))
         df_t = df_t.join(add_sma_pct(df_t, 50))
         df_t = df_t.join(add_sma_pct(df_t, 150))
-        df_t = df_t.join(add_sma_pct(df_t, 200))
+        # df_t = df_t.join(add_sma_pct(df_t, 200))
         df_t = df_t.join(add_cci(df_t, 14))
-        # org_columns = df_t.columns
-        # df_t = [c.lower() for c in df_t.columns]
         df_t = df_t.join(RSI(14).calc(df_t))
         df_t = df_t.join(TheStratInd(False).calc(df_t[-5:]).fillna(''))
         # add_sma_pct(df_t, 200)
         # dist to sma, if below, will be positive, if above, should be negative
-        curr_row = df_t.iloc[-day_shift].rename(ticker)
-        curr_row = curr_row.drop(['adj close', 'open', 'high', 'low'])  # 'High', 'Low'
+
         # curr_row = curr_row # [['Close', 'Volume']]
         # curr_row.name = ticker
+        volume_thumbnail(df_t, 5)
+        # candle_stick_thumbnail(df_t, 10)
+        curr_row = df_t.iloc[-day_shift].rename(ticker)
+        curr_row = curr_row.drop(['adj close', 'open', 'high', 'low'])  # 'High', 'Low'
+        curr_row['profile_volume'] = f'<img src="img/{ticker}.png" height="27px"/>'
         res = pd.concat([res, curr_row.to_frame()], axis=1)
     # [['Close', 'Volume']]
     res = res.T
@@ -73,15 +96,31 @@ def print_apply_html_formats(df):
     cci_cols = [c for c in df.columns if c.startswith('cci_')]
     # df = df.round(2)
     # df['Volume'] = df['Volume'].apply(lambda x: f'{x / 1e6:0.1f}M')
-
     out_df = df.style
     out_df = out_df.background_gradient(subset=pct_cols, cmap='RdYlGn', vmin=-0.25, vmax=.25, axis=0)
-    out_df = out_df.background_gradient(subset='change_pct', cmap='RdYlGn', vmin=-0.07, vmax=.07, axis=0)
+    out_df = out_df.background_gradient(subset=['d_chg_pct', 'w_chg_pct'], cmap='RdYlGn', vmin=-0.07, vmax=.07, axis=0)
     out_df = out_df.background_gradient(subset=cci_cols, cmap='RdYlGn_r', vmin=-101, vmax=101, axis=0)
     out_df = out_df.background_gradient(subset='RSI14', cmap='RdYlGn_r', vmin=30, vmax=70, axis=0)
-    strat_cols = ['thestrat_num', 'cnd_color', 'thestrat_combo']
+    def color_combo(combo):
+        color = 'White'
+        if 'RL' in combo:
+            color = '#006837'
+        elif 'CL' in combo:
+            color = '#1a9850'
+        elif 'RS' in combo:
+            color = '#a50026'
+        elif 'CS' in combo:
+            color = '#d73027'
+        return f'background-color: {color}; color: white'
+    out_df = out_df.applymap(subset=['thestrat_combo'], func=color_combo)
+
+
+    out_df = out_df.set_properties(**{'text-align': 'center'})
+    strat_cols = ['thestrat_num', 'cnd_color', 'thestrat_combo', 'thestrat_cnd_type', 'profile_volume']
+
     # out_df.applymap(subset=['cnd_color' , 'thestrat_combo'], func=lambda v: "color:pink;" if v>4 else "color:darkblue;")
     formatters = {c: '{:.2f}' for c in df.columns if c not in strat_cols}
+
     formatters['volume'] = lambda x: "{:.1f}M".format(x * 1e-6)
     formatters.update({c: '{:.2%}' for c in pct_cols})
     formatters['close'] = '${:.2f}'
@@ -116,7 +155,7 @@ def filter_nulls(data):
 
 
 def get_swings():
-    high_growth = ['AFRM', 'AMD', 'BTCUSD', 'CFLT', 'CRWD', 'DDOG', 'DLO', 'GLBE', 'GTLB', 'MELI', 'NET', 'NVDA',
+    high_growth = ['AFRM', 'AMD', 'CFLT', 'CRWD', 'DDOG', 'DLO', 'GLBE', 'GTLB', 'MELI', 'NET', 'NVDA',
                    'OKTA', 'OPEN', 'RBLX', 'S', 'SHOP', 'SNOW', 'SOFI', 'TOST', 'TSLA', 'TWLO', 'ZI', 'ARKK', 'WOLF',
                    'MNDY', 'BILL', 'ENPH', 'ASAN', 'ESTC', 'TEAM', 'IOT', 'HCP', 'ZS', 'U', 'MDB', 'SEDG', 'DAVA',
                    'ENTG', 'FSLR', 'GLOB', 'PLTR', 'TTD', 'HUBS', 'NOW', 'PATH', 'PCOR', 'EPAM', 'PAYC', 'FIVN', 'CYBR',
@@ -143,6 +182,7 @@ def get_swings():
     tickers = high_growth + indexes + tickers
     tickers = list(set(tickers))
     data = get_daily_data(tickers, days_before=300, group_by='ticker')
+    # data = data[:-days_before]
     time_now = datetime.utcnow()
     if data.iloc[-1].isna().all():
         # if time_now.hour < 11 or time_now.hour == 13 and time_now.minute < 31:
@@ -192,4 +232,5 @@ def get_short_interset():
 
 
 if __name__ == '__main__':
+    days_before = 0 #  11
     get_swings()

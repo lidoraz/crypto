@@ -37,7 +37,7 @@ def filter_stocks(df_i, avg_volume_m=2, minimum_price=10):
         df_i = df_i[df_i['avg_volume'] > avg_volume_m]
         df_i['avg_volume'] = ((df_i['avg_volume'] / 1e6).round(1))
     if minimum_price is not None:
-        price = df_i['Price'].str.replace('$', '').apply(float)
+        price = df_i['Price'].str.slice(1).apply(float)
         price_cond = price > minimum_price
         df_i = df_i[price_cond]
     # filtered_tickers = avg_volume[avg_volume > avg_volume_m]
