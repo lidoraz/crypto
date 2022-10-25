@@ -14,7 +14,7 @@ def get_insiders():
     # insider_url_group_buy_and_sell_over100k = "http://openinsider.com/screener?s=&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=14&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=100&vh=&ocl=&och=&sic1=-1&sicl=100&sich=9999&isofficer=1&iscob=1&isceo=1&ispres=1&iscoo=1&iscfo=1&isgc=1&isvp=1&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=100&v2h=&oc2l=&oc2h=&sortcol=0&cnt=1000&page=1"
     # not good as the filling date gets aggregated by last trade
     insider_url_group_buy_and_sell_over100k_last_week = "http://openinsider.com/screener?s=&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=7&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=100&vh=&ocl=&och=&sic1=-1&sicl=100&sich=9999&isofficer=1&iscob=1&isceo=1&ispres=1&iscoo=1&iscfo=1&isgc=1&isvp=1&grp=2&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=100&v2h=&oc2l=&oc2h=&sortcol=0&cnt=1000&page=1"
-
+    print('Getting Data from relevant to last week')
     res = requests.get(insider_url_group_buy_and_sell_over100k_last_week)
     soup = BeautifulSoup(res.text, 'html.parser')
 
@@ -59,12 +59,15 @@ def display(df_i):
     is_sell = df_i['Trade Type'] == 'S - Sale'
     is_oe = df_i['Trade Type'] == 'S - Sale+OE'
 
+    def _sort_df(df):
+        return df.sort_values('Trade Date', ascending=False)
     print('-> Buy')
-    print(df_i[is_buy][columns])
+    print(_sort_df(df_i[is_buy][columns]))
     print('-> Sale')
-    print(df_i[is_sell][columns])
+    print(_sort_df(df_i[is_sell][columns]))
     print('-> Sale + Option exercise ')
-    print(df_i[is_oe][columns])
+    print(_sort_df(df_i[is_oe][columns]))
+
 
 if __name__ == '__main__':
     run()

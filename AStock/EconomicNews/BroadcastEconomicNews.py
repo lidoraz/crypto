@@ -7,7 +7,7 @@ import requests
 import os
 import time
 
-_PROD = False
+_PROD = True
 _sec_offset = 1
 
 print('PROD IS:', _PROD)
@@ -30,13 +30,18 @@ def get_todays(tz=None):
 
 def publish(msg, prod):
     if prod:
-        url = "https://api.telegram.org/bot{token}/sendMessage?chat_id={group_id}&text={msg}&parse_mode=HTML"
+        # url = "https://api.telegram.org/bot{token}/sendMessage?chat_id={group_id}&text={msg}&parse_mode=HTML"
+        url = "https://api.telegram.org/bot{}/sendMessage"
         token = os.environ.get('TELEGRAM_TOKEN')
         group_id = os.environ.get('TELEGRAM_GROUP_NEWS')
-        # print('token:', token)
-        # print('group_id', group_id)
-        print(url.format(token=token, group_id=group_id, msg=msg))
-        res = requests.get(url.format(token=token, group_id=group_id, msg=msg))
+        params = {
+            "chat_id": group_id,
+            "text": msg,
+            "parse_mode": "HTML",
+        }
+        # print(url.format(token=token, group_id=group_id, msg=msg))
+        res = requests.get(url.format(token),
+                           params=params)
         print(res.status_code)
         print(res.content)
     else:
@@ -72,7 +77,8 @@ def build_str(df, convert_tz=None):
 def job_that_executes_once(hour, minute):
     def check_is_all_filled(df):
         for idx, row in df.iterrows():
-            if row['previous'] != '' and row['actual'] == 'NOTYET':  # graceful, this forces all rows to be filled before publishing
+            if row['previous'] != '' and row[
+                'actual'] == 'NOTYET':  # graceful, this forces all rows to be filled before publishing
                 return False
             # TODO: REMOVE HOUR MIN before, and better to push notification new events.
         return True
@@ -112,8 +118,10 @@ def create_tasks(df):
             minute = dt.minute
             # schedule does not support timezone, must make sure the trigger time is UTC!
             # hour = hour + 3
-            print(f"Registering a job to trigger {(df['dt'] == dt).sum()} events, Today at: {hour:02d}:{minute:02d}, ({dt})")
-            schedule.every().day.at(f'{hour:02d}:{minute:02d}:{_sec_offset:02d}').do(job_that_executes_once(hour, minute))
+            print(
+                f"Registering a job to trigger {(df['dt'] == dt).sum()} events, Today at: {hour:02d}:{minute:02d}, ({dt})")
+            schedule.every().day.at(f'{hour:02d}:{minute:02d}:{_sec_offset:02d}').do(
+                job_that_executes_once(hour, minute))
 
 
 def job():
