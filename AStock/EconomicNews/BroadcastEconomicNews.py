@@ -8,7 +8,7 @@ import os
 import time
 
 _PROD = True
-_sec_offset = 1
+_sec_offset = 1  # always 1 as there is a retry mechanism
 
 print('PROD IS:', _PROD)
 
@@ -77,32 +77,44 @@ def build_str(df, convert_tz=None):
 def job_that_executes_once(hour, minute):
     def check_is_all_filled(df):
         for idx, row in df.iterrows():
-            if row['previous'] != '' and row[
-                'actual'] == 'NOTYET':  # graceful, this forces all rows to be filled before publishing
+            # graceful, this forces all rows to be filled before publishing
+            if row['previous'] != '' and row['actual'] == 'NOTYET':
                 return False
             # TODO: REMOVE HOUR MIN before, and better to push notification new events.
         return True
 
+    def filter_not_filled(df, rows_got):
+        use_rows = []
+        for idx, row in df.iterrows():
+            if row['previous'] == '' or row['actual'] != 'NOTYET':  # filled or not having previous
+                if row['title'] not in rows_got:
+                    use_rows.append(idx)
+                    rows_got.append(row['title'])
+        return df.loc[use_rows], rows_got
+
     def _job_that_executes_once():
         print('Do once', hour, minute, datetime.now())
         tried = 0
-        tries = 30
+        tries = 45
+        rows_got = []
         while tried < tries:
             tried += 1
             df = get_todays()
             df = df[(df['dt'].dt.hour == hour) & (df['dt'].dt.minute == minute)]
             if len(df):
-                is_all_filled = check_is_all_filled(df)
-                if is_all_filled:
+                # if is_all_filled:
+                # is_all_filled = check_is_all_filled(df)
+                df, total_got = filter_not_filled(df, rows_got)
+                if len(df):
                     str_build = build_str(df, convert_tz='Israel')
                     publish(str_build, prod=_PROD)
                     return schedule.CancelJob
                 else:
-                    print(f'Still not filled {tried}/{tries}')
+                    print(f'Still not filled {tried}/{tries}, but published rows: {rows_got}')
                 # broadcast only results from that specific task
             else:
                 print(f'job_that_executes_once got empty Dataframe after filtering! {tried}/{tries}')
-            time.sleep(1.0)
+            time.sleep(1.5)
 
     return _job_that_executes_once
 
@@ -153,6 +165,6 @@ def run_forever():
 
 
 if __name__ == '__main__':
-    # job_that_executes_once(12, 30)()
-    job()  # do it once, and then go to loop
-    run_forever()
+    job_that_executes_once(12, 30)()
+    # job()  # do it once, and then go to loop
+    # run_forever()
