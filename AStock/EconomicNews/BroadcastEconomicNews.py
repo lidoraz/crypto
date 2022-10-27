@@ -165,6 +165,6 @@ def run_forever():
 
 
 if __name__ == '__main__':
-    job_that_executes_once(12, 30)()
-    # job()  # do it once, and then go to loop
-    # run_forever()
+    # job_that_executes_once(12, 30)()
+    job()  # do it once, and then go to loop
+    run_forever()
