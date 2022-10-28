@@ -108,13 +108,13 @@ def job_that_executes_once(hour, minute):
                 if len(df):
                     str_build = build_str(df, convert_tz='Israel')
                     publish(str_build, prod=_PROD)
-                    return schedule.CancelJob
                 else:
                     print(f'Still not filled {tried}/{tries}, but published rows: {rows_got}')
                 # broadcast only results from that specific task
             else:
                 print(f'job_that_executes_once got empty Dataframe after filtering! {tried}/{tries}')
             time.sleep(1.5)
+        return schedule.CancelJob
 
     return _job_that_executes_once
 
