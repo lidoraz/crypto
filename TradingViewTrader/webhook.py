@@ -23,5 +23,5 @@ def webhook():
         return {"status:": "Webhook received!"}
 
 
-assert os.environ.get('BINANCE_API') and os.environ.get('BINANCE_SECRET')
+# assert os.environ.get('BINANCE_API') and os.environ.get('BINANCE_SECRET')
 app.run(host='0.0.0.0', port=8080)

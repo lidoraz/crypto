@@ -3,10 +3,10 @@ import json
 from TradingViewTrader.trader import Exchange
 
 
-def logic(res):
+def logic(order):
     # res = '{"timeout": "2022-10-29T18:22:00Z", "ticker": "BTCUSDT", "action": "buy", "inteval": "1", "orderID": "LONG", "orderContracts": "0.47966", "posSize": "0", "price": "20821.16", "comment": "SELL-LONG"}'
 
-    order = json.loads(res)
+    # order = json.loads(res)
     print('GOT ORDER::', order)
     timeout = order['timeout']
     symbol = order['ticker'].upper()
