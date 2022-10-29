@@ -1,4 +1,5 @@
 from flask import Flask, request
+import os
 
 from TradingViewTrader.logic import logic
 
@@ -22,4 +23,5 @@ def webhook():
         return {"status:": "Webhook received!"}
 
 
+assert os.environ.get('BINANCE_API') and os.environ.get('BINANCE_SECRET')
 app.run(host='0.0.0.0', port=8080)
