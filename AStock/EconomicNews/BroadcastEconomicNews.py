@@ -101,7 +101,7 @@ def job_that_executes_once(hour, minute):
             tried += 1
             df = get_todays()
             df = df[(df['dt'].dt.hour == hour) & (df['dt'].dt.minute == minute)]
-            if len(df):
+            if len(df):  # should nt have
                 # if is_all_filled:
                 # is_all_filled = check_is_all_filled(df)
                 df, total_got = filter_not_filled(df, rows_got)
@@ -114,6 +114,7 @@ def job_that_executes_once(hour, minute):
             else:
                 print(f'job_that_executes_once got empty Dataframe after filtering! {tried}/{tries}')
             time.sleep(1.5)
+
         return schedule.CancelJob
 
     return _job_that_executes_once
