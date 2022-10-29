@@ -53,14 +53,12 @@ class Exchange:
         amount = usdt_amount / curr_price
 
         amount_p = self.exchange.amount_to_precision(symbol, amount)
-        print(amount_p, amount)
         if not self.prod:
             print('called create_order, but (prod = False), returning')
             return
-        print(f'-> Order Request {symbol}, {side}, {amount}')
-        print(f'AMOUNTS: Req vs pre_amount:, {amount_p} -> {amount}')
         res = self.exchange.create_order(symbol, "MARKET", side, amount_p)
-        print('--> Filled MARKET order', res)
+        print(f'----> Order MARKET filled {symbol}@{side}, qty={amount_p}, (org_qty={amount})')
+        # print('--> Filled MARKET order', res)
 
 
 if __name__ == '__main__':

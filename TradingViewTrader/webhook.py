@@ -15,11 +15,12 @@ app = Flask(__name__)
 def webhook():
     if request.method == 'POST':
         res = request.json
-        print("Data received from Webhook is: ", res)
+        # print("Data received from Webhook is: ", res)
         if res['key'] == os.environ.get("WEBHOOK_KEY"):
             logic(res)
         with open('orders.txt', 'a') as f:
             print(request.json, file=f)
+        print('*'*100)
         return {"status:": "Webhook received!"}
 
 
