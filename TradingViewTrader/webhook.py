@@ -11,13 +11,13 @@ from TradingViewTrader.logic import logic
 
 app = Flask(__name__)
 
-
 @app.route('/webhook', methods=['POST'])
 def webhook():
     if request.method == 'POST':
         res = request.json
         print("Data received from Webhook is: ", res)
-        logic(res)
+        if res['key'] == os.environ.get("WEBHOOK_KEY"):
+            logic(res)
         with open('orders.txt', 'a') as f:
             print(request.json, file=f)
         return {"status:": "Webhook received!"}
