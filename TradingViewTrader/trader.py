@@ -40,7 +40,8 @@ class Exchange:
         if '/' not in symbol:
             symbol = f'{symbol[: -4]}/{symbol[-4:]}'
         res = next(filter(lambda x: x['symbol'] == symbol, self.exchange.fetchPositions()))
-        print('has_position', res)
+        # print('has_position', res)
+        print('has_position', symbol, res['side'], res['contracts'])
         if res['contracts']:
             return res['side'], res['contracts']
         else:
