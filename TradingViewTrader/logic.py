@@ -7,6 +7,7 @@ def logic(order):
     # res = '{"timeout": "2022-10-29T18:22:00Z", "ticker": "BTCUSDT", "action": "buy", "inteval": "1", "orderID": "LONG", "orderContracts": "0.47966", "posSize": "0", "price": "20821.16", "comment": "SELL-LONG"}'
 
     # order = json.loads(res)
+    print('*' * 60)
     print('GOT ORDER::', order)
     timeout = order['timeout']
     symbol = order['ticker'].upper()
@@ -18,7 +19,7 @@ def logic(order):
     # TODO: Temp fix:
     if orderID not in ["LONG", "SHORT"]:
         # currently only support sell and buy without as TW does not allow to do close SELL options.
-        return
+        return -1
     ex = Exchange(prod=True)
     curr_side, contracts = ex.has_position(symbol)
     # close positions if needed.
@@ -35,6 +36,8 @@ def logic(order):
     # Create order
     amount_udst = 40
     ex.market_order(symbol, action, amount_udst)
+    with open('orders.txt', 'a') as f:
+        print(order, file=f)
 
 
 if __name__ == '__main__':
