@@ -41,6 +41,7 @@ class Exchange:
             symbol = f'{symbol[: -4]}/{symbol[-4:]}'
         res = next(filter(lambda x: x['symbol'] == symbol, self.exchange.fetchPositions()))
         # print('has_position', res)
+        # res = dict(side='long', contracts=0.001)
         print('has_position', symbol, res['side'], res['contracts'])
         if res['contracts']:
             return res['side'], res['contracts']
@@ -57,7 +58,7 @@ class Exchange:
             print('called create_order, but (prod = False), returning')
             return
         res = self.exchange.create_order(symbol, "MARKET", side, amount_p)
-        print(f'----> Order MARKET filled {symbol}@{side}, qty={amount_p}, (org_qty={amount})')
+        print(f'----> Order MARKET filled {side}@{symbol}, qty={amount_p}, (org_qty={amount})')
         # print('--> Filled MARKET order', res)
 
 

@@ -4,8 +4,6 @@ from TradingViewTrader.trader import Exchange
 
 
 def logic(order):
-    # res = '{"timeout": "2022-10-29T18:22:00Z", "ticker": "BTCUSDT", "action": "buy", "inteval": "1", "orderID": "LONG", "orderContracts": "0.47966", "posSize": "0", "price": "20821.16", "comment": "SELL-LONG"}'
-
     # order = json.loads(res)
     print('*' * 60)
     print('GOT ORDER::', order)
@@ -24,7 +22,7 @@ def logic(order):
     curr_side, contracts = ex.has_position(symbol)
     # close positions if needed.
     if curr_side is not None:  # cant close if the order is on the same side
-        print('Attempting to close current position')
+        print(f'current in position: {curr_side}, Attempting to close...')
         # curr_side long/short
         close_side = 'sell' if curr_side == 'long' else 'buy'
         if close_side == action:
@@ -41,4 +39,5 @@ def logic(order):
 
 
 if __name__ == '__main__':
-    logic(None)
+    res = '{"timeout": "2022-10-29T18:22:00Z", "ticker": "BTCUSDT", "action": "buy", "inteval": "1", "orderID": "SHORT", "orderContracts": "0.47966", "posSize": "0", "price": "20821.16", "comment": "SELL-LONG"}'
+    logic(json.loads(res))

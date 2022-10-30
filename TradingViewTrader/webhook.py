@@ -11,6 +11,7 @@ from TradingViewTrader.logic import logic
 
 app = Flask(__name__)
 
+
 @app.route('/webhook', methods=['POST'])
 def webhook():
     if request.method == 'POST':
@@ -18,7 +19,7 @@ def webhook():
         # print("Data received from Webhook is: ", res)
         if res['key'] == os.environ.get("WEBHOOK_KEY"):
             logic(res)
-        print('*'*100)
+        print('*' * 100)
         return {"status:": "Webhook received!"}
 
 
