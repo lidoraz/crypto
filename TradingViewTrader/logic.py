@@ -24,7 +24,7 @@ def logic(order):
     if curr_side is not None:  # cant close if the order is on the same side
         print(f'current in position: {curr_side}, Attempting to close...')
         # curr_side long/short
-        opp_current_side = 'sell' if curr_side == 'long' else 'sell'
+        opp_current_side = 'sell' if curr_side == 'long' else 'buy'
         if opp_current_side == action:
             ex.exchange.create_order(symbol=symbol, type="MARKET", side=opp_current_side, amount=contracts,
                                      params={"reduceOnly": True})
