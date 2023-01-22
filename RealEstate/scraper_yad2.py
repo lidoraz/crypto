@@ -48,7 +48,7 @@ def update_today(con):
 def _preprocess(df, today_str):
     df = df[df['type'] == 'ad'].copy()
     df['processing_date'] = today_str
-    process_price = lambda x: None if x == 'לא צוין מחיר' else x.replace(',', '').replace(' ₪', '')
+    process_price = lambda x: None if x == 'לא צוין מחיר' else x.replace(',', '').replace(' ₪', '').replace(' $', '')
     df['price'] = df['price'].apply(process_price).astype(float)
     df = df.drop(columns=redundant_cols)
     return df
