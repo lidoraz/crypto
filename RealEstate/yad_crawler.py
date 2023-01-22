@@ -20,7 +20,7 @@ def _scraper():
 
 def routine_daily_yad2_to_db():
     _scraper()
-    schedule.every().day.at("00:00").do(_scraper)
+    schedule.every().day.at("18:00").do(_scraper) # should be 20:00 ISR time
     while True:
         schedule.run_pending()
         time.sleep(1)
