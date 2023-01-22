@@ -19,10 +19,10 @@ def _scraper():
 
 
 def routine_daily_yad2_to_db():
-    print("Sleeping for 1min before starting to fetch...")
-    time.sleep(60)
+    time_fetch = "18:00"
+    print(f"Will fetch every day at: {time_fetch} UTC")
     # _scraper()
-    schedule.every().day.at("18:00").do(_scraper)  # should be 20:00 ISR time
+    schedule.every().day.at(time_fetch).do(_scraper)  # should be 20:00 ISR time
     while True:
         schedule.run_pending()
         time.sleep(1)
