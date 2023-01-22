@@ -3,7 +3,7 @@ import time
 from datetime import datetime, timedelta
 
 
-def get_daily_data(symbols, days_before, group_by='column'):
+def get_daily_data(symbols, days_before, group_by='column', progress=False):
     t0 = time.time()
     # start = int(t0) - 60 * 60 * 24 * days_before  # 1 day before
     # start = str(pd.to_datetime(start, unit='s', utc=True).date())
@@ -15,7 +15,7 @@ def get_daily_data(symbols, days_before, group_by='column'):
                        group_by=group_by,  # default is on columns. ticker is easier to iterate
                        auto_adjust=False,  # false on default, what does it do?
                        show_errors=True,
-                       interval='1d', threads=True, progress=False)
+                       interval='1d', threads=True, progress=progress)
     print(f"start={start}, data: {str(data.index[-1])} took: {time.time() - t0:0.2f}")
     return data
 

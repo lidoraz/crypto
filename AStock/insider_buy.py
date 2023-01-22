@@ -25,48 +25,49 @@ def get_insiders():
     return df_i
 
 
-def filter_stocks(df_i, avg_volume_m=2, minimum_price=10):
+def filter_stocks(df, avg_volume_m=2, minimum_price=10):
     # filter out penny stocks with no volume,
     # more chance for institutional traders to buy and get it to the moon
     avg_volume_m = avg_volume_m * 1e6
-    tickers = df_i.Ticker.to_list()
+    tickers = df.Ticker.to_list()
     if avg_volume_m is not None:
         daily_volume = get_daily_data(tickers, days_before=60, group_by='column')['Volume']
         avg_volume = daily_volume.rolling(20).mean().iloc[-1].rename('avg_volume')
-        df_i = df_i.merge(avg_volume, left_on='Ticker', right_on=avg_volume.index)
-        df_i = df_i[df_i['avg_volume'] > avg_volume_m]
-        df_i['avg_volume'] = ((df_i['avg_volume'] / 1e6).round(1))
+        df = df.merge(avg_volume, left_on='Ticker', right_on=avg_volume.index)
+        df = df[df['avg_volume'] > avg_volume_m]
+        df['avg_volume'] = ((df['avg_volume'] / 1e6).round(1))
     if minimum_price is not None:
-        price = df_i['Price'].str.slice(1).apply(float)
+        price = df['Price'].str.slice(1).apply(float)
         price_cond = price > minimum_price
-        df_i = df_i[price_cond]
+        df = df[price_cond]
     # filtered_tickers = avg_volume[avg_volume > avg_volume_m]
     # df_i = df_i[df_i['Ticker'].isin(filtered_tickers.index)]
-    return df_i
+    return df
 
 
-def run():
-    df_i = get_insiders()
-    df_i = filter_stocks(df_i, avg_volume_m=2, minimum_price=5)
-    display(df_i)
+def run(minimum_price=5, avg_volume_m=2):
+    df = get_insiders()
+    df = filter_stocks(df, avg_volume_m=avg_volume_m, minimum_price=minimum_price)
+    display(df)
 
 
-def display(df_i):
+def display(df):
     # 'Owned',
     columns = ['Trade Date', 'Ticker', 'Ins', 'Price', 'Qty', 'ΔOwn', 'Value', 'avg_volume']
     type_col = 'Trade Type'
-    is_buy = df_i['Trade Type'].str.slice(0, 1) == 'P'  # P - Purchase
-    is_sell = df_i['Trade Type'] == 'S - Sale'
-    is_oe = df_i['Trade Type'] == 'S - Sale+OE'
+    is_buy = df['Trade Type'].str.slice(0, 1) == 'P'  # P - Purchase
+    is_sell = df['Trade Type'] == 'S - Sale'
+    is_oe = df['Trade Type'] == 'S - Sale+OE'
+    df['Trade Date'] = pd.to_datetime(df['Trade Date'])
 
     def _sort_df(df):
         return df.sort_values('Trade Date', ascending=False)
     print('-> Buy')
-    print(_sort_df(df_i[is_buy][columns]))
+    print(_sort_df(df[is_buy][columns]))
     print('-> Sale')
-    print(_sort_df(df_i[is_sell][columns]))
+    print(_sort_df(df[is_sell][columns]))
     print('-> Sale + Option exercise ')
-    print(_sort_df(df_i[is_oe][columns]))
+    print(_sort_df(df[is_oe][columns]))
 
 
 if __name__ == '__main__':

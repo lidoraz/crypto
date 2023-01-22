@@ -4,8 +4,10 @@ from AStock.sectors import get_daily_data, all_etf_longname
 from AStock.util import plot_ohlc_daily
 from Indicators import RSI, TheStratInd
 import matplotlib
+
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+
 
 def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
     print('Relative to date: ', data.index[-day_shift].date())
@@ -19,7 +21,6 @@ def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
     def add_sma_pct(ohlc, len):
         close = ohlc['close']
         return change_pct(close.rolling(len).mean(), close).rename(f'sma{len}_pct')
-
 
     res = pd.DataFrame()
 
@@ -47,7 +48,6 @@ def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
         plt.axis('off')
         plt.savefig(f'img/{ticker}_ohlc.png')
         plt.clf()
-
 
     for ticker in tickers:
         df_t = data[ticker]
@@ -101,6 +101,7 @@ def print_apply_html_formats(df):
     out_df = out_df.background_gradient(subset=['d_chg_pct', 'w_chg_pct'], cmap='RdYlGn', vmin=-0.07, vmax=.07, axis=0)
     out_df = out_df.background_gradient(subset=cci_cols, cmap='RdYlGn_r', vmin=-101, vmax=101, axis=0)
     out_df = out_df.background_gradient(subset='RSI14', cmap='RdYlGn_r', vmin=30, vmax=70, axis=0)
+
     def color_combo(combo):
         color = 'White'
         if 'RL' in combo:
@@ -112,8 +113,8 @@ def print_apply_html_formats(df):
         elif 'CS' in combo:
             color = '#d73027'
         return f'background-color: {color}; color: white'
-    out_df = out_df.applymap(subset=['thestrat_combo'], func=color_combo)
 
+    out_df = out_df.applymap(subset=['thestrat_combo'], func=color_combo)
 
     out_df = out_df.set_properties(**{'text-align': 'center'})
     strat_cols = ['thestrat_num', 'cnd_color', 'thestrat_combo', 'thestrat_cnd_type', 'profile_volume']
@@ -159,7 +160,7 @@ def get_swings():
                    'OKTA', 'OPEN', 'RBLX', 'S', 'SHOP', 'SNOW', 'SOFI', 'TOST', 'TSLA', 'TWLO', 'ZI', 'ARKK', 'WOLF',
                    'MNDY', 'BILL', 'ENPH', 'ASAN', 'ESTC', 'TEAM', 'IOT', 'HCP', 'ZS', 'U', 'MDB', 'SEDG', 'DAVA',
                    'ENTG', 'FSLR', 'GLOB', 'PLTR', 'TTD', 'HUBS', 'NOW', 'PATH', 'PCOR', 'EPAM', 'PAYC', 'FIVN', 'CYBR',
-                   'MNDT', 'DT', 'FTNT', 'PCTY', 'ZEN', 'APP', 'PANW', 'AVLR', 'PAGS']
+                   'DT', 'FTNT', 'PCTY', 'ZEN', 'APP', 'PANW', 'AVLR', 'PAGS']
     crypto = ['MARA', 'HUT', 'MSTR', 'RIOT', 'COIN']
     # FILTER GROWTH VS VALUE STOCK
     fintech = ['AFRM', 'SOFI', 'PYPL', 'SQ', 'UPST', 'LMND']
@@ -167,7 +168,7 @@ def get_swings():
     semi = ['NVDA', 'AMD', 'MU', 'TXN', 'TSM']  # 'ASML', 'AMAT'
     cyber = ['CRWD', 'S', 'PANW', 'CYBR']
     saas = ['MNDY', 'DDOG', 'DASH', 'PATH', 'SNOW', 'CRM', 'VEEV']
-    internet_software = ['META', 'GOOGL', 'PINS', 'TWTR', 'ADBE']
+    internet_software = ['META', 'GOOGL', 'PINS', 'ADBE']
     chinese = ['BABA', 'NIO', 'JD', ]
     other = ['RBLX', 'ROKU', 'DIS', 'NFLX', 'BA', ]
     green = ['SEDG', 'ENPH']
@@ -175,7 +176,7 @@ def get_swings():
     internet_retail = ['AMZN', 'CHWY', 'LULU']
 
     medical = ['TDOC', 'MRNA']
-    indexes = ['SPY', 'QQQ', 'IWM', 'DIA', 'SOXX']  # 'RTY=F'
+    indexes = ['SPY', 'QQQ', 'IWM', 'DIA', 'SOXX', 'ARKK']  # 'RTY=F'
     customer_service = ['WING', 'CROX', 'LOVE', 'UBER']
     # all_etf_longname
     tickers = crypto + fintech + big_tech + semi + cyber + internet_software + saas + chinese + internet_retail + other + green + consumer + medical + customer_service + indexes
@@ -202,7 +203,7 @@ def get_swings():
     df_stocks = df[~df.index.isin(indexes)]
     # LONG - should be far from sma20, SHORT- higher than sma 20.
     # df_stocks = df_stocks.sort_values('sma20_pct', ascending=False)  # check long potentials
-    df_stocks = df_stocks.sort_values(['sma20_pct', 'cnd_color', ], ascending=[False, True,])  # check long potentials
+    df_stocks = df_stocks.sort_values(['sma20_pct', 'cnd_color', ], ascending=[False, True, ])  # check long potentials
     # CHECK RSI, and CCI, check also for volume decrease for sells.
     # check that close price is not far from open, look for doji, or bullish, also can use thestrat for indicator.
     pprint_screener(df_stocks)
@@ -232,5 +233,5 @@ def get_short_interset():
 
 
 if __name__ == '__main__':
-    days_before = 0 #  11
+    days_before = 0  # 11
     get_swings()

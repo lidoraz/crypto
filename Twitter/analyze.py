@@ -62,7 +62,7 @@ if __name__ == '__main__':
     symbol = 'AMD'
     # txt = 'Top Ticker flow'   # Get unusual_whales
     # txt =
-    symbol = 'META'
+    symbol = 'BTC'
     # symbol = '🚨'
     get_by_symbol(symbol, days_back=5)
     # get_by_free_text(txt, days_back=60)
