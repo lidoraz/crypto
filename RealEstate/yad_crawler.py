@@ -6,7 +6,7 @@ import time
 import schedule
 from datetime import datetime
 import psycopg2 as pg
-from forsale.scraper_yad2 import scraper_yad2
+from RealEstate.scraper_yad2 import scraper_yad2
 
 
 def _scraper():
