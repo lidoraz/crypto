@@ -41,8 +41,8 @@ def insert_today_temp(df, con):
 
 def update_today(df, con):
     con.execute("DROP table if exists yad2_today")
-    df.sample(0).to_sql(name='today', con=con, index=False)
-    con.execute("INSERT INTO today SELECT * FROM yad2_today_temp;")
+    df.sample(0).to_sql(name='yad2_today', con=con, index=False)
+    con.execute("INSERT INTO yad2_today SELECT * FROM yad2_today_temp;")
     con.execute("DROP table if exists yad2_today_temp")
 
 
