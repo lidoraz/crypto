@@ -40,13 +40,12 @@ def insert_today_temp(df, con):
 
 
 def update_today(df, con):
-    cur = con.cursor()
-    cur.execute("DROP table if exists yad2_today")
+    con.execute("DROP table if exists yad2_today")
     con.commit()
     df.sample(0).to_sql(name='today', con=con, index=False)
-    cur.execute("INSERT INTO today SELECT * FROM yad2_today_temp;")
+    con.execute("INSERT INTO today SELECT * FROM yad2_today_temp;")
     con.commit()
-    cur.execute("DROP table if exists yad2_today_temp")
+    con.execute("DROP table if exists yad2_today_temp")
     con.commit()
 
 
@@ -58,8 +57,7 @@ def _preprocess(df, today_str):
 
 
 def scraper_yad2(con):
-    cur = con.cursor()
-    cur.execute("DROP table if exists yad2_today_temp")
+    con.execute("DROP table if exists yad2_today_temp")
     con.commit()
     res = _get_retry_json(1)
     last_page = res['data']['pagination']['last_page']
