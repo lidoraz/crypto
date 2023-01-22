@@ -48,6 +48,8 @@ def update_today(con):
 def _preprocess(df, today_str):
     df = df[df['type'] == 'ad'].copy()
     df['processing_date'] = today_str
+    process_price = lambda x: None if x == 'לא צוין מחיר' else x.replace(',', '').replace(' ₪', '')
+    df['price'] = df['price'].apply(process_price).astype(float)
     df = df.drop(columns=redundant_cols)
     return df
 
@@ -88,8 +90,6 @@ def _check_exists(today_str, con):
 def log_history(df, con):
     minimum_cols = ['id', 'price', 'date', 'date_added', 'processing_date']
     df_price = df[minimum_cols].copy()
-    process_price = lambda x: None if x == 'לא צוין מחיר' else x.replace(',', '').replace(' ₪', '')
-    df_price['price'] = df_price[minimum_cols]['price'].apply(process_price)
     df_price.to_sql(name='yad2_history', con=con, if_exists='append', index=False)
 
 
