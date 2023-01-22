@@ -64,8 +64,8 @@ def scraper_yad2(con):
         data = _get_retry_json(p)
         df = pd.DataFrame.from_dict(data['data']['feed']['feed_items'])
         df = _preprocess(df, today_str)
-        insert_today_temp(df, con)
         log_history(df, con)
+        insert_today_temp(df, con)
     if df is not None:
         update_today(con)
 
@@ -95,7 +95,7 @@ def log_history(df, con):
 
 def daily_logic():
     try:
-        con = sqlite3.connect('resources/yad2.db')
+        con = sqlite3.connect('yad2.db')
         scraper_yad2(con)
         print(f"FINIHSED!")
     except Exception as e:
