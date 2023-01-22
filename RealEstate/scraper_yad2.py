@@ -39,10 +39,9 @@ def insert_today_temp(df, con):
     df.to_sql(name='yad2_today_temp', con=con, if_exists='append', index=False)
 
 
-def update_today(df, con):
+def update_today(con):
     con.execute("DROP table if exists yad2_today")
-    df.sample(0).to_sql(name='yad2_today', con=con, index=False)
-    con.execute("INSERT INTO yad2_today SELECT * FROM yad2_today_temp;")
+    con.execute("CREATE TABLE yad2_today AS TABLE yad2_today_temp")
     con.execute("DROP table if exists yad2_today_temp")
 
 
@@ -66,7 +65,7 @@ def scraper_yad2(con):
         insert_today_temp(df, con)
         log_history(df, con)
     if df is not None:
-        update_today(df, con)
+        update_today(con)
 
 
 def save_current(df):
