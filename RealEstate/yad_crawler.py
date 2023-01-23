@@ -16,6 +16,7 @@ def _scraper():
         print(f"{datetime.today()} Starting to fetch!")
         scraper_yad2(conn)
         print(f"{datetime.today()} Finished !")
+    engine.dispose()
 
 
 def routine_daily_yad2_to_db():
