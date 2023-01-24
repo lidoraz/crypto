@@ -51,6 +51,7 @@ def _preprocess(df, today_str):
     process_price = lambda x: None if x == 'לא צוין מחיר' else x.replace(',', '').replace(' ₪', '').replace(' $', '')
     df['price'] = df['price'].apply(process_price).astype(float)
     df = df.drop(columns=redundant_cols)
+    df.columns = [c.lower() for c in df.columns]
     return df
 
 
