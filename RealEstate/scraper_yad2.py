@@ -49,17 +49,24 @@ def _preprocess(df, today_str):
     df = df[df['type'] == 'ad'].copy()
     df['processing_date'] = today_str
     process_price = lambda x: None if x == 'לא צוין מחיר' else x.replace(',', '').replace(' ₪', '').replace(' $', '')
+    # TODO: Process rooms, חדר אחד , too, info text, cordinates, etc.. according to requirement, but not critical.
     df['price'] = df['price'].apply(process_price).astype(float)
     df = df.drop(columns=redundant_cols)
     df.columns = [c.lower() for c in df.columns]
     return df
 
 
-def scraper_yad2(con):
+def create_tables(con):
     con.execute("DROP table if exists yad2_today_temp")
+    con.execute(
+        "CREATE TABLE IF NOT EXISTS yad2_history(id VARCHAR(255) not null, price float, processing_date DATE not null)")
+
+
+def scraper_yad2(con):
+    create_tables(con)
     res = _get_retry_json(1)
     last_page = res['data']['pagination']['last_page']
-    today_str = datetime.today().strftime('%Y%m%d')
+    today_str = datetime.today().date()
     df = None
     for p in tqdm(range(1, last_page + 1)):
         data = _get_retry_json(p)
@@ -89,9 +96,17 @@ def _check_exists(today_str, con):
 
 
 def log_history(df, con):
+    # will dump only if a price of an id has changed from its current logged price, to save space and efficiency
     minimum_cols = ['id', 'price', 'date', 'date_added', 'processing_date']
-    df_price = df[minimum_cols].copy()
-    df_price.to_sql(name='yad2_history', con=con, if_exists='append', index=False)
+    df = df[minimum_cols].copy()
+    id_str = ','.join([f"'{x}'" for x in df['id'].to_list()])
+    df_found_ids = pd.read_sql(
+        f"SELECT id, price as last_price from (select id, price, processing_date, ROW_NUMBER() over (partition by id order by processing_date desc)"
+        f" as rn from yad2_history where id in ({id_str})) where rn=1", con)
+    merged = df[['id', 'price']].merge(df_found_ids, left_on='id', right_on='id', how='left')
+    ids_not_changed = merged[merged['price'] == merged['last_price'].astype(float)]['id'].to_list()
+    df = df[~df['id'].isin(ids_not_changed)]
+    df.to_sql(name='yad2_history', con=con, if_exists='append', index=False)
 
 
 def daily_logic():
