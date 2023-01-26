@@ -102,7 +102,7 @@ def log_history(df, con):
     id_str = ','.join([f"'{x}'" for x in df['id'].to_list()])
     df_found_ids = pd.read_sql(
         f"SELECT id, price as last_price from (select id, price, processing_date, ROW_NUMBER() over (partition by id order by processing_date desc)"
-        f" as rn from yad2_history where id in ({id_str})) a where rn=1", con)
+        f" as rn from yad2_forsale_history where id in ({id_str})) a where rn=1", con)
     merged = df[['id', 'price']].merge(df_found_ids, left_on='id', right_on='id', how='left')
     ids_not_changed = merged[merged['price'] == merged['last_price'].astype(float)]['id'].to_list()
     df = df[~df['id'].isin(ids_not_changed)]
