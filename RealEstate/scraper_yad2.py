@@ -7,6 +7,13 @@ import pandas as pd
 from datetime import datetime
 import sqlite3
 
+import sqlalchemy
+
+history_dtype = {
+    "price": sqlalchemy.Integer,
+    "processing_date": sqlalchemy.Date
+}
+
 url_forsale_apartments_houses = "https://gw.yad2.co.il/feed-search-legacy/realestate/forsale?propertyGroup=apartments,houses&page={}&forceLdLoad=true"
 TRIES = 5
 redundant_cols = ['images', 'default_layout', 'can_change_layout', 'ad_type', 'IsVisibleForReco',
@@ -106,7 +113,7 @@ def log_history(df, con):
     merged = df[['id', 'price']].merge(df_found_ids, left_on='id', right_on='id', how='left')
     ids_not_changed = merged[merged['price'] == merged['last_price'].astype(float)]['id'].to_list()
     df = df[~df['id'].isin(ids_not_changed)]
-    df.to_sql(name='yad2_forsale_history', con=con, if_exists='append', index=False)
+    df.to_sql(name='yad2_forsale_history', con=con, if_exists='append', index=False, dtype= history_dtype)
 
 
 def daily_logic():
