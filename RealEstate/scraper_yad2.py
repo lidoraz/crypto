@@ -59,19 +59,19 @@ def _preprocess(df, today_str):
 def create_tables(con):
     con.execute("DROP table if exists yad2_today_temp")
     con.execute(
-        "CREATE TABLE IF NOT EXISTS yad2_history(id VARCHAR(255) not null, price float, processing_date DATE not null)")
+        "CREATE TABLE IF NOT EXISTS yad2_forsale_history(id VARCHAR(255) not null, price float, processing_date DATE not null)")
 
 
 def scraper_yad2(con):
     create_tables(con)
     res = _get_retry_json(1)
     last_page = res['data']['pagination']['last_page']
-    today_str = datetime.today().date()
+    today_dt = datetime.today()
     df = None
     for p in tqdm(range(1, last_page + 1)):
         data = _get_retry_json(p)
         df = pd.DataFrame.from_dict(data['data']['feed']['feed_items'])
-        df = _preprocess(df, today_str)
+        df = _preprocess(df, today_dt)
         log_history(df, con)
         insert_today_temp(df, con)
     if df is not None:
@@ -90,7 +90,7 @@ def check_exists():
 
 
 def _check_exists(today_str, con):
-    cnt_today = pd.read_sql(f"SELECT count(*) from yad2_history where processing_date = '{today_str}'", con).squeeze()
+    cnt_today = pd.read_sql(f"SELECT count(*) from yad2_forsale_history where processing_date = '{today_str}'", con).squeeze()
     if cnt_today > 0:
         raise ValueError(f"Data from {today_str} already saved in db, total {cnt_today} rows")
 
@@ -106,7 +106,7 @@ def log_history(df, con):
     merged = df[['id', 'price']].merge(df_found_ids, left_on='id', right_on='id', how='left')
     ids_not_changed = merged[merged['price'] == merged['last_price'].astype(float)]['id'].to_list()
     df = df[~df['id'].isin(ids_not_changed)]
-    df.to_sql(name='yad2_history', con=con, if_exists='append', index=False)
+    df.to_sql(name='yad2_forsale_history', con=con, if_exists='append', index=False)
 
 
 def daily_logic():
