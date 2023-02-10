@@ -22,6 +22,20 @@ redundant_cols = ['images', 'default_layout', 'can_change_layout', 'ad_type', 'I
                   'uid', 'priority', 'background_type', 'title', 'row_5', 'deal_info', 'currency_text',
                   'mp4_video_url', 'broker_avatar']
 
+today_cols = ['line_1', 'line_2', 'line_3', 'row_1', 'row_2', 'row_3', 'row_4',
+       'search_text', 'title_1', 'title_2', 'images_count', 'img_url',
+       'images_urls', 'video_url', 'primaryarea', 'primaryareaid',
+       'areaid_text', 'secondaryarea', 'area_id', 'city', 'city_code',
+       'street', 'coordinates', 'geohash', 'ad_highlight_type',
+       'background_color', 'highlight_text', 'order_type_id', 'ad_number',
+       'cat_id', 'customer_id', 'feed_source', 'id', 'link_token', 'merchant',
+       'contact_name', 'merchant_name', 'record_id', 'subcat_id', 'currency',
+       'price', 'date', 'date_added', 'updated_at', 'promotional_ad',
+       'address_more', 'hood_id', 'office_about', 'office_logo_url',
+       'square_meters', 'hometypeid_text', 'neighborhood',
+       'assetclassificationid_text', 'rooms_text', 'aboveprice', 'is_platinum',
+       'is_mobile_platinum', 'processing_date']
+
 
 def _get_retry_json(p):
     res = None
@@ -32,8 +46,11 @@ def _get_retry_json(p):
                 break
             else:
                 print(f"Status code err, retry {_}/{TRIES}")
+                print(res)
+                time.sleep(10)
         except Exception as e:
             print(f"Caught an exception in get retry {_}/{TRIES}")
+            time.sleep(10)
     if res:
         return res.json()
     return res
@@ -58,8 +75,9 @@ def _preprocess(df, today_str):
     process_price = lambda x: None if x == 'לא צוין מחיר' else x.replace(',', '').replace(' ₪', '').replace(' $', '')
     # TODO: Process rooms, חדר אחד , too, info text, cordinates, etc.. according to requirement, but not critical.
     df['price'] = df['price'].apply(process_price).astype(float)
-    df = df.drop(columns=redundant_cols)
+    # df = df.drop(columns=redundant_cols)
     df.columns = [c.lower() for c in df.columns]
+    df = df[today_cols]
     return df
 
 
@@ -77,23 +95,15 @@ def scraper_yad2(con):
     df = None
     for p in tqdm(range(1, last_page + 1)):
         data = _get_retry_json(p)
-        df = pd.DataFrame.from_dict(data['data']['feed']['feed_items'])
+        data = data.get('data')
+        if data is None:
+            print(f"CAUTION - Could not fetch data for part {p}")
+        df = pd.DataFrame.from_dict(data['feed']['feed_items'])
         df = _preprocess(df, today_dt)
         log_history(df, con)
         insert_today_temp(df, con)
     if df is not None:
         update_today(con)
-
-
-def save_current(df):
-    # images have double columns, prob for legacy
-    df.drop(columns=redundant_cols)
-    df.to_csv('resources/yad2_today.csv')
-
-
-def check_exists():
-    con = sqlite3.connect('resources/yad2.db')
-    _check_exists(datetime.today().strftime('%Y%m%d'), con)
 
 
 def _check_exists(today_str, con):

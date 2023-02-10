@@ -145,3 +145,4 @@ def update_table_view(page_current, page_size, sort_by, filter_string):
 
 if __name__ == '__main__':
     app.run_server(debug=True, port=8060)
+
