@@ -49,6 +49,16 @@ rent_today_cols = ['line_1', 'line_2', 'line_3', 'row_1', 'row_2', 'row_3', 'row
                    'square_meters', 'hometypeid_text', 'neighborhood',
                    'assetclassificationid_text', 'rooms_text', 'aboveprice', 'processing_date']
 
+q_history_last_price = """SELECT id, price as last_price from (select id, price, processing_date, ROW_NUMBER() over (partition by id order by processing_date desc)
+ as rn from {}) a where rn=1"""
+
+
+def _process_price(x):
+    if x == 'לא צוין מחיר':
+        return None
+    else:
+        return x.replace(',', '').replace(' ₪', '').replace(' $', '')
+
 
 class ScraperYad2:
     def __init__(self, url, use_cols, today_table, history_table):
@@ -89,11 +99,8 @@ class ScraperYad2:
     def _preprocess(self, df, today_str):
         df = df[df['type'] == 'ad'].copy()
         df['processing_date'] = today_str
-        process_price = lambda x: None if x == 'לא צוין מחיר' else x.replace(',', '').replace(' ₪', '').replace(' $',
-                                                                                                                '')
         # TODO: Process rooms, חדר אחד , too, info text, cordinates, etc.. according to requirement, but not critical.
-        df['price'] = df['price'].apply(process_price).astype(float)
-        # df = df.drop(columns=redundant_cols)
+        df['price'] = df['price'].apply(_process_price).astype(float)
         df.columns = [c.lower() for c in df.columns]
         df = df[self.use_cols]
         return df
@@ -108,6 +115,7 @@ class ScraperYad2:
         res = self._get_retry_json(1)
         last_page = res['data']['pagination']['last_page']
         today_dt = datetime.today()
+        df_today_history = pd.read_sql(q_history_last_price.format(self.history_table), con)
         df = None
         for p in tqdm(range(1, last_page + 1)):
             data = self._get_retry_json(p)
@@ -116,7 +124,7 @@ class ScraperYad2:
                 print(f"CAUTION - Could not fetch data for part {p}")
             df = pd.DataFrame.from_dict(data['feed']['feed_items'])
             df = self._preprocess(df, today_dt)
-            self.log_history(df, con)
+            self.log_history(df, df_today_history, con)
             self.insert_today_temp(df, con)
         if df is not None:
             self.update_today(con)
@@ -127,15 +135,11 @@ class ScraperYad2:
         if cnt_today > 0:
             raise ValueError(f"Data from {today_str} already saved in db, total {cnt_today} rows")
 
-    def log_history(self, df, con):
+    def log_history(self, df, df_today_history, con):
         # will dump only if a price of an id has changed from its current logged price, to save space and efficiency
         minimum_cols = ['id', 'price', 'date', 'date_added', 'processing_date']
         df = df[minimum_cols].copy()
-        id_str = ','.join([f"'{x}'" for x in df['id'].to_list()])
-        df_found_ids = pd.read_sql(
-            f"SELECT id, price as last_price from (select id, price, processing_date, ROW_NUMBER() over (partition by id order by processing_date desc)"
-            f" as rn from {self.history_table} where id in ({id_str})) a where rn=1", con)
-        merged = df[['id', 'price']].merge(df_found_ids, left_on='id', right_on='id', how='left')
+        merged = df[['id', 'price']].merge(df_today_history, left_on='id', right_on='id', how='left')
         ids_not_changed = merged[merged['price'] == merged['last_price'].astype(float)]['id'].to_list()
         df = df[~df['id'].isin(ids_not_changed)]
         df.to_sql(name=self.history_table, con=con, if_exists='append', index=False, dtype=history_dtype)
