@@ -83,7 +83,7 @@ class ScraperYad2:
 
     def update_today(self, con):
         con.execute(f"DROP table if exists {self.today_table}")
-        con.execute(f"CREATE TABLE yad2_today AS TABLE {self.today_table}_temp")
+        con.execute(f"CREATE TABLE {self.today_table} AS TABLE {self.today_table}_temp")
         con.execute(f"DROP table if exists {self.today_table}_temp")
 
     def _preprocess(self, df, today_str):
