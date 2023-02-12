@@ -5,8 +5,7 @@ import os
 import time
 import schedule
 from datetime import datetime
-import psycopg2 as pg
-from RealEstate.scraper_yad2 import scraper_yad2
+from RealEstate.scraper_yad2 import get_scraper_yad2_forsale, get_scraper_yad2_rent
 
 
 def _scraper():
@@ -14,8 +13,12 @@ def _scraper():
     engine = create_engine(f'postgresql://{os.getenv("DB_USER")}:{os.getenv("DB_PASS")}@localhost:5432/vsdatabase')
     with engine.connect() as conn:
         print(f"{datetime.today()} Starting to fetch!")
-        scraper_yad2(conn)
-        print(f"{datetime.today()} Finished !")
+        scraper = get_scraper_yad2_forsale()
+        scraper.scraper_yad2(conn)
+        print(f"{datetime.today()} Finished get_scraper_yad2_forsale!")
+        scraper = get_scraper_yad2_rent()
+        scraper.scraper_yad2(conn)
+        print(f"{datetime.today()} Finished!")
     engine.dispose()
 
 
