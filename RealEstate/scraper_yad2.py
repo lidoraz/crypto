@@ -205,7 +205,7 @@ class ScraperYad2:
         if not sqlalchemy.inspect(con).has_table(self.item_table):
             entry = pd.Series(_get_parse_item_add_info(ids[0])).to_frame()
             entry['processing_date'] = today
-            entry.to_sql(self.item_table, con)
+            entry.to_sql(self.item_table, con, index=False)
             con.execute(f"ALTER TABLE {self.item_table} ADD PRIMARY KEY (id);")
 
         ids_in_items = pd.read_sql(f"SELECT id from {self.item_table}", con)['id'].to_list()
