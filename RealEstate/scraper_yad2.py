@@ -216,7 +216,7 @@ class ScraperYad2:
         results = [i for i in results if i is not None]
         df_items = pd.DataFrame(results)
         df_items['processing_date'] = today
-        df_items.to_sql(self.item_table, con, index=False)
+        df_items.to_sql(self.item_table, con, if_exists='append', index=False)
         print(f"insert_to_items: Inserted to {self.item_table} {len(df_items)} items!")
 
     def scraper_yad2(self, con):
