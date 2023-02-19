@@ -1,10 +1,13 @@
 import os
 
+import numpy as np
 import requests
+import schedule
 from tqdm import tqdm
 import time
 import pandas as pd
 from datetime import datetime
+import sqlite3
 
 import sqlalchemy
 
@@ -16,7 +19,6 @@ history_dtype = {
 url_forsale_apartments_houses = "https://gw.yad2.co.il/feed-search-legacy/realestate/forsale?propertyGroup=apartments,houses&page={}&forceLdLoad=true"
 url_rent_apartments_houses = "https://gw.yad2.co.il/feed-search-legacy/realestate/rent?propertyGroup=apartments,houses&page={}&forceLdLoad=true"
 TRIES = 5
-N_THREADS_ADD_INFO = 6
 
 forsale_today_cols = ['line_1', 'line_2', 'line_3', 'row_1', 'row_2', 'row_3', 'row_4',
                       'search_text', 'title_1', 'title_2', 'images_count', 'img_url',
@@ -100,6 +102,7 @@ def _get_parse_item_add_info(item_id):
         return add_info
     except Exception as e:
         print(f"Failed to fetch for {item_id}")
+        raise e
     return None
 
 
@@ -196,20 +199,24 @@ class ScraperYad2:
             f"CREATE TABLE IF NOT EXISTS {self.history_table}(id VARCHAR(255) not null, price float, date TIMESTAMP, date_added TIMESTAMP not null, processing_date DATE not null)")
 
     def insert_to_items(self, con):
+        # item_table = "yad2_forsale_items_add"
         ids = pd.read_sql(f"SELECT id from {self.today_table}", con)['id'].to_list()
+        today = datetime.today().date()
         if not sqlalchemy.inspect(con).has_table(self.item_table):
-            df_items = pd.Series(self._get_parse_item_add_info(ids[0])).to_frame()
-            df_items.to_sql(self.item_table, con)
+            entry = pd.Series(_get_parse_item_add_info(ids[0])).to_frame()
+            entry['processing_date'] = today
+            entry.to_sql(self.item_table, con)
             con.execute(f"ALTER TABLE {self.item_table} ADD PRIMARY KEY (id);")
 
         ids_in_items = pd.read_sql(f"SELECT id from {self.item_table}", con)['id'].to_list()
         ids_to_insert = list(set(ids_in_items) - set(ids_in_items))
         from concurrent.futures import ThreadPoolExecutor
-        with ThreadPoolExecutor(N_THREADS_ADD_INFO) as executor:
+        with ThreadPoolExecutor(12) as executor:
             futures_to_id = [executor.submit(_get_parse_item_add_info, item) for item in ids_to_insert]
             results = [f.result() for f in futures_to_id]
         results = [i for i in results if i is not None]
         df_items = pd.DataFrame(results)
+        df_items['processing_date'] = today
         df_items.to_sql(self.item_table, con, index=False)
         print(f"insert_to_items: Inserted to {self.item_table} {len(df_items)} items!")
 
@@ -261,7 +268,7 @@ def get_scraper_yad2_forsale():
                           "yad2_forsale_today",
                           "yad2_forsale_history",
                           'yad2_forsale_log',
-                          "yad2_forsale_items")
+                          "yad2_forsale_items_add")
     return scraper
 
 
@@ -270,7 +277,7 @@ def get_scraper_yad2_rent():
                           "yad2_rent_today",
                           "yad2_rent_history",
                           'yad2_rent_log',
-                          "yad2_rent_items")
+                          "yad2_rent_items_add")
     return scraper
 
 
