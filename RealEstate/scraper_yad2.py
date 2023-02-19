@@ -102,7 +102,6 @@ def _get_parse_item_add_info(item_id):
         return add_info
     except Exception as e:
         print(f"Failed to fetch for {item_id}")
-        raise e
     return None
 
 
@@ -203,7 +202,7 @@ class ScraperYad2:
         ids = pd.read_sql(f"SELECT id from {self.today_table}", con)['id'].to_list()
         today = datetime.today().date()
         if not sqlalchemy.inspect(con).has_table(self.item_table):
-            entry = pd.Series(_get_parse_item_add_info(ids[0])).to_frame()
+            entry = pd.Series(_get_parse_item_add_info(ids[0])).to_frame().T
             entry['processing_date'] = today
             entry.to_sql(self.item_table, con, index=False)
             con.execute(f"ALTER TABLE {self.item_table} ADD PRIMARY KEY (id);")
