@@ -19,6 +19,7 @@ history_dtype = {
 url_forsale_apartments_houses = "https://gw.yad2.co.il/feed-search-legacy/realestate/forsale?propertyGroup=apartments,houses&page={}&forceLdLoad=true"
 url_rent_apartments_houses = "https://gw.yad2.co.il/feed-search-legacy/realestate/rent?propertyGroup=apartments,houses&page={}&forceLdLoad=true"
 TRIES = 5
+N_THREADS_ITEM_ADD = 10
 
 forsale_today_cols = ['line_1', 'line_2', 'line_3', 'row_1', 'row_2', 'row_3', 'row_4',
                       'search_text', 'title_1', 'title_2', 'images_count', 'img_url',
@@ -208,11 +209,11 @@ class ScraperYad2:
             con.execute(f"ALTER TABLE {self.item_table} ADD PRIMARY KEY (id);")
 
         ids_in_items = pd.read_sql(f"SELECT id from {self.item_table}", con)['id'].to_list()
-        ids_to_insert = list(set(ids_in_items) - set(ids_in_items))
+        ids_to_insert = list(set(ids) - set(ids_in_items))
+        print(f"Preparing to insert: {len(ids_to_insert)} items")
         from concurrent.futures import ThreadPoolExecutor
-        with ThreadPoolExecutor(12) as executor:
-            futures_to_id = [executor.submit(_get_parse_item_add_info, item) for item in ids_to_insert]
-            results = [f.result() for f in futures_to_id]
+        with ThreadPoolExecutor(N_THREADS_ITEM_ADD) as executor:
+            results = list(tqdm(executor.map(_get_parse_item_add_info, ids_to_insert), total=len(ids_to_insert)))
         results = [i for i in results if i is not None]
         df_items = pd.DataFrame(results)
         df_items['processing_date'] = today
