@@ -53,15 +53,21 @@ rent_today_cols = ['line_1', 'line_2', 'line_3', 'row_1', 'row_2', 'row_3', 'row
 q_history_last_price = """SELECT id, price as last_price from (select id, price, processing_date, ROW_NUMBER() over (partition by id order by processing_date desc)
  as rn from {}) a where rn=1"""
 
-q_today_remove_duplicates = """
-DELETE FROM {table}
-WHERE ctid IN(
-    SELECT ctid
-    FROM (SELECT ctid,
-    ROW_NUMBER() OVER (PARTITION BY id) AS rn
-    FROM {table}) t
-    WHERE rn > 1)
-"""
+
+def remove_dup(table, partitions, con):
+    partitions = [partitions] if not isinstance(partitions, list) else partitions
+    partitions_str = ', '.join(partitions)
+    q_today_remove_duplicates = f"""
+    DELETE FROM {table}
+    WHERE ctid IN(
+        SELECT ctid
+        FROM (SELECT ctid,
+        ROW_NUMBER() OVER (PARTITION BY {partitions_str}) AS rn
+        FROM {table}) t
+        WHERE rn > 1)
+    """
+    con.execute(q_today_remove_duplicates)
+
 
 
 def _process_price(x):
@@ -182,7 +188,8 @@ class ScraperYad2:
         # - -----#- -----
         con.execute(f"CREATE TABLE {self.today_table} AS TABLE {self.today_table}_temp")
         con.execute(f"DROP table {self.today_table}_temp")
-        con.execute(q_today_remove_duplicates.format(table=self.today_table))
+        remove_dup(self.today_table, 'id', con)
+        remove_dup(self.history_table, ['id', 'processing_date'], con)
 
     def _preprocess(self, df, today_str):
         df = df[df['type'] == 'ad'].copy()
