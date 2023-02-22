@@ -69,7 +69,6 @@ def remove_dup(table, partitions, con):
     con.execute(q_today_remove_duplicates)
 
 
-
 def _process_price(x):
     if x == 'לא צוין מחיר':
         return None
@@ -260,7 +259,11 @@ class ScraperYad2:
         minimum_cols = ['id', 'price', 'date', 'date_added', 'processing_date']
         df = df[minimum_cols].copy()
         merged = df[['id', 'price']].merge(df_today_history, left_on='id', right_on='id', how='left')
-        ids_not_changed = merged[merged['price'] == merged['last_price'].astype(float)]['id'].to_list()
+        merged['last_price'] = merged['last_price'].astype(float)
+        # cond with equal, and equal nan, special case
+        equal_cond = (merged['price'] == merged['last_price'])
+        equal_nan_cond = (merged['price'].isna() & merged['last_price'].isna())
+        ids_not_changed = merged[equal_cond | equal_nan_cond]['id'].to_list()
         df = df[~df['id'].isin(ids_not_changed)]
         df.to_sql(name=self.history_table, con=con, if_exists='append', index=False, dtype=history_dtype)
 
