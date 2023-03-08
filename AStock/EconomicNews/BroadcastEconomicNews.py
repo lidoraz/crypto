@@ -48,10 +48,10 @@ def publish(msg, prod):
         print(msg)
 
 
-def build_str(df, convert_tz=None):
+def build_str(df, convert_tz=None, show_today=True):
     df['dt'] = df['dt'].dt.tz_localize('UTC').dt.tz_convert(convert_tz)
     today = str(datetime.now().date())
-    str_build = f"<u><b>Today's ({today})</b></u>\n"
+    str_build = f"<u><b>Today's ({today})</b></u>\n" if show_today else ""
     if len(df) == 0:
         str_build += 'Nothing..'
         return str_build
@@ -100,13 +100,16 @@ def job_that_executes_once(hour, minute):
         while tried < tries:
             tried += 1
             df = get_todays()
+            if df is None:
+                print("got null df, retry..")
+                continue
             df = df[(df['dt'].dt.hour == hour) & (df['dt'].dt.minute == minute)]
             if len(df):  # should nt have
                 # if is_all_filled:
                 # is_all_filled = check_is_all_filled(df)
                 df, total_got = filter_not_filled(df, rows_got)
                 if len(df):
-                    str_build = build_str(df, convert_tz='Israel')
+                    str_build = build_str(df, convert_tz='Israel', show_today=False)
                     publish(str_build, prod=_PROD)
                 else:
                     print(f'Still not filled {tried}/{tries}, but published rows: {rows_got}')
@@ -137,12 +140,13 @@ def create_tasks(df):
                 job_that_executes_once(hour, minute))
 
 
-def job():
+def job(is_broadcast=True):
     df = get_todays(None)
     if df is not None and len(df):
         create_tasks(df)  # Make this work, later....
         str_build = build_str(df, convert_tz='Israel')
-        publish(str_build, prod=_PROD)
+        if is_broadcast:
+            publish(str_build, prod=_PROD)
     else:
         print('get_todays, df is empty, or having a problem')
     # Build a task to  get data at correct timing
@@ -167,5 +171,5 @@ def run_forever():
 
 if __name__ == '__main__':
     # job_that_executes_once(12, 30)()
-    job()  # do it once, and then go to loop
+    job(is_broadcast=False)  # do it once, and then go to loop
     run_forever()
