@@ -27,12 +27,6 @@ def get_insiders():
     return df_i
 
 
-def get_ticker_url(ticker):
-    path = f"https://financialmodelingprep.com/image-stock/{ticker.upper()}.png"
-    html_img = f"""<img src="{path}" class="ticker-img"/>"""
-    return html_img
-
-
 def filter_stocks(df, avg_volume_m=2, minimum_price=10):
     # filter out penny stocks with no volume,
     # more chance for institutional traders to buy and get it to the moon
@@ -54,7 +48,7 @@ def filter_stocks(df, avg_volume_m=2, minimum_price=10):
 
 
 def get_header(title, color, h_num=2):
-    return f'<h{h_num}><span style="background-color: {color};">{title}</span></h{h_num}>'
+    return f'<h{h_num} style="background-color: {color}; padding:10px; text-align: center;">{title}</h{h_num}>'
 
 
 def color_by_cell(df, col, cmap):
@@ -63,20 +57,21 @@ def color_by_cell(df, col, cmap):
         sev = f"({'$' * ins})" if ins > 1 else ''
         return f'{sev} {ins}'
 
+    df['Ins'] = df.apply(
+        lambda x: f"""<a target=_blank href="http://openinsider.com/{x['Ticker']}">{ins_f(x['Ins'])}</a>""", axis=1)
     s = df.style.background_gradient(axis=0, gmap=df[col], cmap=cmap) \
         .format(formatter={'Value': lambda x: f"${int(x):,.0f}",
                            'Trade Date': lambda x: x.date(),
                            'Vol': lambda x: f'{x:.2f}M',
                            'Qty': lambda x: f"{human_format(int(x))}",
-                           'Ins': lambda x: ins_f(x),
-                           'Ticker': lambda x: f'<a  target=_blank href="http://openinsider.com/{x}">{x}</a>'}) \
-        .hide(axis="index")\
-        .set_properties(**{'padding': '5px', 'font-size': '10pt', 'font-family': 'sans-serif', 'font-weight': '300'})
+                           'Ticker': lambda x: get_link(x)}) \
+        .hide(axis="index")
+    # .set_properties(**{'padding': '5px', 'font-size': '12pt', 'font-family': 'sans-serif', 'font-weight': '500'})
     return s
 
 
 def get_link(t):
-    return f'<a target=_blank href="https://finviz.com/quote.ashx?t={t.upper()}">finviz</a>'
+    return f'<a target=_blank href="https://finviz.com/quote.ashx?t={t.upper()}" alt="Finviz">{t}</a>'
 
 
 style = """
@@ -99,6 +94,17 @@ width: 100%;
 }
 .main-cont{
     100%;
+    background-color: black;
+}
+
+.main-cont tr td{
+padding: 5px;
+font-size: 14pt; 
+font-family: sans-serif;
+font-weight: 500;
+}
+a:link {
+  color: inherit;
 }
 
 @media only screen and (min-width:1000px) {
@@ -114,7 +120,7 @@ def create_html(df):
     def _sort_df(df):
         return df.sort_values('Trade Date', ascending=False).reset_index(drop=True)
 
-    columns = ['img', 'Trade Date', 'Ticker', 'Ins', 'Price', 'Qty', 'ΔOwn', 'Value', 'Vol', 'link']
+    columns = ['Trade Date', 'img', 'Ticker', 'Ins', 'Price', 'Qty', 'ΔOwn', 'Value', 'Vol']
     is_buy = df['Trade Type'].str.slice(0, 1) == 'P'  # P - Purchase
     is_sell = df['Trade Type'] == 'S - Sale'
     is_oe = df['Trade Type'] == 'S - Sale+OE'
@@ -138,11 +144,18 @@ def create_html(df):
         print('</div></html>', file=f)
 
 
+def get_ticker_img(ticker):
+    ticker = ticker.upper()
+    path = f"https://financialmodelingprep.com/image-stock/{ticker}.png"
+    # <a  target=_blank href="http://openinsider.com/{x}">{x}</a>
+    html_img = f"""<img src="{path}" class="ticker-img"/>"""
+    return html_img
+
+
 def preprocess(df):
-    df['link'] = df['Ticker'].apply(get_link)
     df['Value'] = df['Value'].str.replace(',', "").str.extract("(\d+)")
     df['Trade Date'] = pd.to_datetime(df['Trade Date'])
-    df['img'] = df['Ticker'].apply(get_ticker_url)
+    df['img'] = df['Ticker'].apply(get_ticker_img)
     return df
 
 
@@ -165,9 +178,9 @@ def pub_object(path_from, path_to):
 
 
 def run(minimum_price=5, avg_volume_m=2):
-    # df = get_insiders()
-    # df = filter_stocks(df, avg_volume_m=avg_volume_m, minimum_price=minimum_price)
-    # df.to_pickle('tmp.pk')
+    df = get_insiders()
+    df = filter_stocks(df, avg_volume_m=avg_volume_m, minimum_price=minimum_price)
+    df.to_pickle('tmp.pk')
     df = pd.read_pickle('tmp.pk')
     df = preprocess(df)
     create_html(df)
