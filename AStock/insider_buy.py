@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 
 from AStock.sectors import get_daily_data
 from Indicators.Indicator import human_format
+from datetime import datetime
 
 
 # from AStock.long_term_gaps import get_daily_data
@@ -39,10 +40,10 @@ def filter_stocks(df, avg_volume_m=2, minimum_price=10):
     tickers = df.Ticker.to_list()
     if avg_volume_m is not None:
         daily_volume = get_daily_data(tickers, days_before=60, group_by='column')['Volume']
-        avg_volume = daily_volume.rolling(20).mean().iloc[-1].rename('avg_volume')
+        avg_volume = daily_volume.rolling(20).mean().iloc[-1].rename('Vol')
         df = df.merge(avg_volume, left_on='Ticker', right_on=avg_volume.index)
-        df = df[df['avg_volume'] > avg_volume_m]
-        df['avg_volume'] = ((df['avg_volume'] / 1e6).round(1))
+        df = df[df['Vol'] > avg_volume_m]
+        df['Vol'] = ((df['Vol'] / 1e6).round(1))
     if minimum_price is not None:
         price = df['Price'].str.slice(1).str.replace(",", "").apply(float)
         price_cond = price > minimum_price
@@ -55,29 +56,31 @@ def filter_stocks(df, avg_volume_m=2, minimum_price=10):
 def run(minimum_price=5, avg_volume_m=2):
     df = get_insiders()
     df = filter_stocks(df, avg_volume_m=avg_volume_m, minimum_price=minimum_price)
-    # df.to_pickle('tmp.pk')
-    # df = pd.read_pickle('tmp.pk')
-    display(df)
+    df.to_pickle('tmp.pk')
+    df = pd.read_pickle('tmp.pk')
+    df = preprocess(df)
+    create_html(df)
+    pub_object('daily_insider.html', 'stocks/daily_insider.html')
 
 
 def get_header(title, color, h_num=2):
-    return f'<h{h_num} style="background-color: {color};">{title}</h{h_num}> '
+    return f'<h{h_num}><span style="background-color: {color};">{title}</span></h{h_num}>'
 
 
 def color_by_cell(df, col, cmap):
     def ins_f(ins):
         ins = int(ins)
-        sev = '*' * ins if ins > 1 else ''
-        return f'{sev}{ins}'
+        sev = f"({'$' * ins})" if ins > 1 else ''
+        return f'{sev} {ins}'
 
     s = df.style.background_gradient(axis=0, gmap=df[col], cmap=cmap) \
         .format(formatter={'Value': lambda x: f"${int(x):,.0f}",
                            'Trade Date': lambda x: x.date(),
-                           'avg_volume': lambda x: f'{x:.2f}M',
+                           'Vol': lambda x: f'{x:.2f}M',
                            'Qty': lambda x: f"{human_format(int(x))}",
                            'Ins': lambda x: ins_f(x),
-                           'Ticker': lambda x: f'{x}<a  target=_blank href="http://openinsider.com/{x}">(*)</a>'}) \
-        .set_properties(**{'padding': '5px', 'font-size': '10pt', 'font-family': 'sans-serif', 'font-weight': '600'})
+                           'Ticker': lambda x: f'<a  target=_blank href="http://openinsider.com/{x}">{x}</a>'}) \
+        .set_properties(**{'padding': '5px', 'font-size': '10pt', 'font-family': 'sans-serif', 'font-weight': '300'})
     return s
 
 
@@ -87,54 +90,63 @@ def get_link(t):
 
 style = """
 <style> 
-* {font-family: sans-serif; }
+* {font-family: sans-serif; color:white;}
 h1, h2, h3, h4, h5, h6 {margin:3px; padding:3px;}
-body {
-background: rgb(0,0,0);
-background: linear-gradient(270deg, rgba(0,0,0,1) 34%, rgba(102,102,102,1) 57%, rgba(207,207,207,1) 79%);
-
+a {
+color: black;
 }
-.ticker-img{
+body {
+background: rgb(2,0,36);
+background: linear-gradient(270deg, rgba(2,0,36,1) 0%, rgba(9,9,121,1) 100%, rgba(0,212,255,1) 100%); 
+}
+.ticker-img {
 max-height: 35px; max-width: 35px; background-color: white;
+}
+table {
+border-collapse: collapse;
+width: 50%;
+}
+
+.main-cont{
 }
 </style>
 """
 
 
-def display(df):
-    # 'Owned',
-    columns = ['img', 'Trade Date', 'Ticker', 'Ins', 'Price', 'Qty', 'ΔOwn', 'Value', 'avg_volume', 'link']
-    type_col = 'Trade Type'
-    df['link'] = df['Ticker'].apply(get_link)
-    df['Value'] = df['Value'].str.replace(',', "").str.extract("(\d+)")
-    is_buy = df['Trade Type'].str.slice(0, 1) == 'P'  # P - Purchase
-    is_sell = df['Trade Type'] == 'S - Sale'
-    is_oe = df['Trade Type'] == 'S - Sale+OE'
-    df['Trade Date'] = pd.to_datetime(df['Trade Date'])
-
+def create_html(df):
     def _sort_df(df):
         return df.sort_values('Trade Date', ascending=False).reset_index(drop=True)
 
-    df['img'] = df['Ticker'].apply(get_ticker_url)
+    columns = ['img', 'Trade Date', 'Ticker', 'Ins', 'Price', 'Qty', 'ΔOwn', 'Value', 'Vol', 'link']
+    is_buy = df['Trade Type'].str.slice(0, 1) == 'P'  # P - Purchase
+    is_sell = df['Trade Type'] == 'S - Sale'
+    is_oe = df['Trade Type'] == 'S - Sale+OE'
     df = df[columns]
-    # df[is_buy][columns].to_html('test.html', escape=False)
-    # color_by_cell(df, col)
     df_1 = color_by_cell(_sort_df(df[is_buy]), 'Value', 'PuBuGn')
     df_2 = color_by_cell(_sort_df(df[is_sell]), 'Value', 'YlOrRd')
     df_3 = color_by_cell(_sort_df(df[is_oe]), 'Value', 'YlOrRd')
-    from datetime import datetime
-    with open('daily_insider.html', 'w') as f:
+    with open('daily_insider.html', 'w', encoding="utf-8") as f:
+        print("<html><head><title>Insider Transactions</title>", file=f)
         print(style, file=f)
+        print("</head>", file=f)
+        print('<div class="main-cont">', file=f)
         print("<h1> Insider Transactions, past week </h1>", file=f)
         print(f"<h6> from openinsider.com Updated to: {datetime.now().date()} </h6>", file=f)
-        print(get_header(" -> Insider Buy ", "green", h_num=2), file=f)
+        print(get_header(" -> Insider Buy ", "#21421e", h_num=2), file=f)
         print(df_1.to_html(), file=f)
-        print(get_header(" -> Insider Sale ", "red", h_num=2), file=f)
+        print(get_header(" -> Insider Sale ", "#801818", h_num=2), file=f)
         print(df_2.to_html(), file=f)
-        print(get_header(" -> Insider Sale + Option exercise ", "yellow", h_num=2), file=f)
+        print(get_header(" -> Insider Sale + Option exercise ", "#e9692c", h_num=2), file=f)
         print(df_3.to_html(), file=f)
+        print('</div></html>', file=f)
 
-    pub_object('daily_insider.html', 'stocks/daily_insider.html')
+
+def preprocess(df):
+    df['link'] = df['Ticker'].apply(get_link)
+    df['Value'] = df['Value'].str.replace(',', "").str.extract("(\d+)")
+    df['Trade Date'] = pd.to_datetime(df['Trade Date'])
+    df['img'] = df['Ticker'].apply(get_ticker_url)
+    return df
 
 
 def pub_object(path_from, path_to):
@@ -157,7 +169,7 @@ def pub_object(path_from, path_to):
 
 # def display(df):
 #     # 'Owned',
-#     columns = ['Trade Date', 'Ticker', 'Ins', 'Price', 'Qty', 'ΔOwn', 'Value', 'avg_volume']
+#     columns = ['Trade Date', 'Ticker', 'Ins', 'Price', 'Qty', 'ΔOwn', 'Value', 'Vol']
 #     type_col = 'Trade Type'
 #     is_buy = df['Trade Type'].str.slice(0, 1) == 'P'  # P - Purchase
 #     is_sell = df['Trade Type'] == 'S - Sale'

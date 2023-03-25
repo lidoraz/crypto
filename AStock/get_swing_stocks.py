@@ -39,7 +39,7 @@ def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
         color_bars = ['green' if x['close'] > x['open'] else 'red' for _, x in lat_df.iterrows()]
         plt.bar(range(lk), lat_df['volume'], color=color_bars)
         plt.axis('off')
-        plt.savefig(f'img/{ticker}.png')
+        plt.savefig(f'img/{ticker}.png', bbox_inches='tight')
         plt.clf()
 
     def candle_stick_thumbnail(df, lk):
