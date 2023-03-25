@@ -112,11 +112,11 @@ def display(df):
         print("<h1> Insider Transactions, past week </h1>", file=f)
         print(f"<h6> from openinsider.com Updated to: {datetime.now().date()} </h6>", file=f)
         print(get_header(" -> Insider Buy ", "green", h_num=2), file=f)
-        df_1.to_html(f, escape=False)
+        print(df_1.to_html(escape=False), file=f)
         print(get_header(" -> Insider Sale ", "red", h_num=2), file=f)
-        df_2.to_html(f, escape=False)
+        print(df_2.to_html(escape=False), file=f)
         print(get_header(" -> Insider Sale + Option exercise ", "yellow", h_num=2), file=f)
-        df_3.to_html(f, escape=False)
+        print(df_3.to_html(escape=False), file=f)
 
     pub_object('daily_insider.html', 'stocks/daily_insider.html')
 
@@ -135,7 +135,7 @@ def pub_object(path_from, path_to):
             ACL="public-read"
         )
     # buck = s3.Bucket(BUCKET_NAME)
-    # print(f"Uploading file:: {path_from} bucket: {BUCKET_NAME}/{path_to}")
+    print(f"Uploading file:: {path_from} bucket: {BUCKET_NAME}/{path_to}")
     # buck.upload_file(path_from, path_to)
 
 
