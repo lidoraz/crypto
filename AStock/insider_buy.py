@@ -53,16 +53,6 @@ def filter_stocks(df, avg_volume_m=2, minimum_price=10):
     return df
 
 
-def run(minimum_price=5, avg_volume_m=2):
-    df = get_insiders()
-    df = filter_stocks(df, avg_volume_m=avg_volume_m, minimum_price=minimum_price)
-    df.to_pickle('tmp.pk')
-    df = pd.read_pickle('tmp.pk')
-    df = preprocess(df)
-    create_html(df)
-    pub_object('daily_insider.html', 'stocks/daily_insider.html')
-
-
 def get_header(title, color, h_num=2):
     return f'<h{h_num}><span style="background-color: {color};">{title}</span></h{h_num}>'
 
@@ -80,6 +70,7 @@ def color_by_cell(df, col, cmap):
                            'Qty': lambda x: f"{human_format(int(x))}",
                            'Ins': lambda x: ins_f(x),
                            'Ticker': lambda x: f'<a  target=_blank href="http://openinsider.com/{x}">{x}</a>'}) \
+        .hide(axis="index")\
         .set_properties(**{'padding': '5px', 'font-size': '10pt', 'font-family': 'sans-serif', 'font-weight': '300'})
     return s
 
@@ -104,10 +95,16 @@ max-height: 35px; max-width: 35px; background-color: white;
 }
 table {
 border-collapse: collapse;
-width: 50%;
+width: 100%;
+}
+.main-cont{
+    100%;
 }
 
-.main-cont{
+@media only screen and (min-width:1000px) {
+    .main-cont{
+        width:812px;
+    }
 }
 </style>
 """
@@ -165,6 +162,16 @@ def pub_object(path_from, path_to):
     # buck = s3.Bucket(BUCKET_NAME)
     print(f"Uploading file:: {path_from} bucket: {BUCKET_NAME}/{path_to}")
     # buck.upload_file(path_from, path_to)
+
+
+def run(minimum_price=5, avg_volume_m=2):
+    # df = get_insiders()
+    # df = filter_stocks(df, avg_volume_m=avg_volume_m, minimum_price=minimum_price)
+    # df.to_pickle('tmp.pk')
+    df = pd.read_pickle('tmp.pk')
+    df = preprocess(df)
+    create_html(df)
+    pub_object('daily_insider.html', 'stocks/daily_insider.html')
 
 
 # def display(df):
