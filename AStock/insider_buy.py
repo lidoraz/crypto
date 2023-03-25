@@ -3,6 +3,7 @@ import pandas as pd
 from bs4 import BeautifulSoup
 
 from AStock.sectors import get_daily_data
+from Indicators.Indicator import human_format
 
 
 # from AStock.long_term_gaps import get_daily_data
@@ -25,6 +26,12 @@ def get_insiders():
     return df_i
 
 
+def get_ticker_url(ticker):
+    path = f"https://financialmodelingprep.com/image-stock/{ticker.upper()}.png"
+    html_img = f"""<img src="{path}" style="max-height: 50px; max-width: 50px; background-color: white;"/>"""
+    return html_img
+
+
 def filter_stocks(df, avg_volume_m=2, minimum_price=10):
     # filter out penny stocks with no volume,
     # more chance for institutional traders to buy and get it to the moon
@@ -37,7 +44,7 @@ def filter_stocks(df, avg_volume_m=2, minimum_price=10):
         df = df[df['avg_volume'] > avg_volume_m]
         df['avg_volume'] = ((df['avg_volume'] / 1e6).round(1))
     if minimum_price is not None:
-        price = df['Price'].str.slice(1).apply(float)
+        price = df['Price'].str.slice(1).str.replace(",", "").apply(float)
         price_cond = price > minimum_price
         df = df[price_cond]
     # filtered_tickers = avg_volume[avg_volume > avg_volume_m]
@@ -48,26 +55,108 @@ def filter_stocks(df, avg_volume_m=2, minimum_price=10):
 def run(minimum_price=5, avg_volume_m=2):
     df = get_insiders()
     df = filter_stocks(df, avg_volume_m=avg_volume_m, minimum_price=minimum_price)
+    # df.to_pickle('tmp.pk')
+    # df = pd.read_pickle('tmp.pk')
     display(df)
+
+
+def get_header(title, color, h_num=2):
+    return f'<h{h_num} style="background-color: {color};">{title}</h{h_num}> '
+
+
+def color_by_cell(df, col, cmap):
+    def ins_f(ins):
+        ins = int(ins)
+        sev = '*' * ins if ins > 1 else ''
+        return f'{sev}{ins}'
+
+    s = df.style.background_gradient(axis=0, gmap=df[col], cmap=cmap) \
+        .format(formatter={'Value': lambda x: f"${int(x):,.0f}",
+                           'Trade Date': lambda x: x.date(),
+                           'avg_volume': lambda x: f'{x:.2f}M',
+                           'Qty': lambda x: f"{human_format(int(x))}",
+                           'Ins': lambda x: ins_f(x),
+                           'Ticker': lambda x: f'{x}<a  target=_blank href="http://openinsider.com/{x}">(*)</a>'}) \
+        .set_properties(**{'padding': '5px', 'font-size': '10pt', 'font-family': 'sans-serif', 'font-weight': '600'})
+    return s
+
+
+def get_link(t):
+    return f'<a target=_blank href="https://finviz.com/quote.ashx?t={t.upper()}">finviz</a>'
 
 
 def display(df):
     # 'Owned',
-    columns = ['Trade Date', 'Ticker', 'Ins', 'Price', 'Qty', 'ΔOwn', 'Value', 'avg_volume']
+    columns = ['img', 'Trade Date', 'Ticker', 'Ins', 'Price', 'Qty', 'ΔOwn', 'Value', 'avg_volume', 'link']
     type_col = 'Trade Type'
+    df['link'] = df['Ticker'].apply(get_link)
+    df['Value'] = df['Value'].str.replace(',', "").str.extract("(\d+)")
     is_buy = df['Trade Type'].str.slice(0, 1) == 'P'  # P - Purchase
     is_sell = df['Trade Type'] == 'S - Sale'
     is_oe = df['Trade Type'] == 'S - Sale+OE'
     df['Trade Date'] = pd.to_datetime(df['Trade Date'])
 
     def _sort_df(df):
-        return df.sort_values('Trade Date', ascending=False)
-    print('-> Buy')
-    print(_sort_df(df[is_buy][columns]))
-    print('-> Sale')
-    print(_sort_df(df[is_sell][columns]))
-    print('-> Sale + Option exercise ')
-    print(_sort_df(df[is_oe][columns]))
+        return df.sort_values('Trade Date', ascending=False).reset_index(drop=True)
+
+    df['img'] = df['Ticker'].apply(get_ticker_url)
+    df = df[columns]
+    # df[is_buy][columns].to_html('test.html', escape=False)
+    # color_by_cell(df, col)
+    df_1 = color_by_cell(_sort_df(df[is_buy]), 'Value', 'ocean_r')
+    df_2 = color_by_cell(_sort_df(df[is_sell]), 'Value', 'YlOrRd')
+    df_3 = color_by_cell(_sort_df(df[is_oe]), 'Value', 'YlOrRd')
+    from datetime import datetime
+    with open('daily_insider.html', 'w') as f:
+        print("<style> * {font-family: sans-serif; margin:0; padding:0;}</style>", file=f)
+        print("<h1> Insider Transactions, past week </h1>", file=f)
+        print(f"<h6> from openinsider.com Updated to: {datetime.now().date()} </h6>", file=f)
+        print(get_header(" -> Insider Buy ", "green", h_num=2), file=f)
+        df_1.to_html(f, escape=False)
+        print(get_header(" -> Insider Sale ", "red", h_num=2), file=f)
+        df_2.to_html(f, escape=False)
+        print(get_header(" -> Insider Sale + Option exercise ", "yellow", h_num=2), file=f)
+        df_3.to_html(f, escape=False)
+
+    pub_object('daily_insider.html', 'stocks/daily_insider.html')
+
+
+def pub_object(path_from, path_to):
+    BUCKET_NAME = 'real-estate-public'
+    import boto3
+    s3 = boto3.client("s3")
+    with open(path_from, 'r') as f:
+        s3.put_object(
+            Bucket=BUCKET_NAME,
+            Key=path_to,
+            Body=f.read(),
+            CacheControl="max-age=0,no-cache,no-store,must-revalidate",
+            ContentType="text/html",
+            ACL="public-read"
+        )
+    # buck = s3.Bucket(BUCKET_NAME)
+    # print(f"Uploading file:: {path_from} bucket: {BUCKET_NAME}/{path_to}")
+    # buck.upload_file(path_from, path_to)
+
+
+# def display(df):
+#     # 'Owned',
+#     columns = ['Trade Date', 'Ticker', 'Ins', 'Price', 'Qty', 'ΔOwn', 'Value', 'avg_volume']
+#     type_col = 'Trade Type'
+#     is_buy = df['Trade Type'].str.slice(0, 1) == 'P'  # P - Purchase
+#     is_sell = df['Trade Type'] == 'S - Sale'
+#     is_oe = df['Trade Type'] == 'S - Sale+OE'
+#     df['Trade Date'] = pd.to_datetime(df['Trade Date'])
+#
+#     def _sort_df(df):
+#         return df.sort_values('Trade Date', ascending=False)
+#
+#     print('-> Buy')
+#     print(_sort_df(df[is_buy][columns]))
+#     print('-> Sale')
+#     print(_sort_df(df[is_sell][columns]))
+#     print('-> Sale + Option exercise ')
+#     print(_sort_df(df[is_oe][columns]))
 
 
 if __name__ == '__main__':

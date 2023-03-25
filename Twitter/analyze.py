@@ -62,7 +62,8 @@ if __name__ == '__main__':
     symbol = 'AMD'
     # txt = 'Top Ticker flow'   # Get unusual_whales
     # txt =
-    symbol = 'BTC'
+    # symbol = 'JPM'
     # symbol = '🚨'
-    get_by_symbol(symbol, days_back=5)
+    symbol = 'BREAKING'
+    get_by_symbol(symbol, days_back=3)
     # get_by_free_text(txt, days_back=60)

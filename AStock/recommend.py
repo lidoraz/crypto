@@ -154,4 +154,5 @@ def add_info_symbols(symbols, curr_dt, threaded=True):
 
 
 if __name__ == '__main__':
-    add_info_symbols(['NFLX', 'AAPL', 'SNOW'], pd.to_datetime('2022-06-23'), False)
+    x = add_info_symbols(['SCHW', 'NFLX', 'AAPL', 'SNOW'], pd.to_datetime('2022-06-23'), True)
+    print()
