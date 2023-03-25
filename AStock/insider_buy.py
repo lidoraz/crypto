@@ -65,7 +65,8 @@ def color_by_cell(df, col, cmap):
                            'Vol': lambda x: f'{x:.2f}M',
                            'Qty': lambda x: f"{human_format(int(x))}",
                            'Ticker': lambda x: get_link(x)}) \
-        .hide(axis="index")
+        .hide_index() # remote has older pandas
+        # .hide(axis="index")
     # .set_properties(**{'padding': '5px', 'font-size': '12pt', 'font-family': 'sans-serif', 'font-weight': '500'})
     return s
 
