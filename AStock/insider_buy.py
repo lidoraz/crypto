@@ -28,7 +28,7 @@ def get_insiders():
 
 def get_ticker_url(ticker):
     path = f"https://financialmodelingprep.com/image-stock/{ticker.upper()}.png"
-    html_img = f"""<img src="{path}" style="max-height: 50px; max-width: 50px; background-color: white;"/>"""
+    html_img = f"""<img src="{path}" class="ticker-img"/>"""
     return html_img
 
 
@@ -53,10 +53,10 @@ def filter_stocks(df, avg_volume_m=2, minimum_price=10):
 
 
 def run(minimum_price=5, avg_volume_m=2):
-    df = get_insiders()
-    df = filter_stocks(df, avg_volume_m=avg_volume_m, minimum_price=minimum_price)
+    # df = get_insiders()
+    # df = filter_stocks(df, avg_volume_m=avg_volume_m, minimum_price=minimum_price)
     # df.to_pickle('tmp.pk')
-    # df = pd.read_pickle('tmp.pk')
+    df = pd.read_pickle('tmp.pk')
     display(df)
 
 
@@ -85,6 +85,22 @@ def get_link(t):
     return f'<a target=_blank href="https://finviz.com/quote.ashx?t={t.upper()}">finviz</a>'
 
 
+style = """
+<style> 
+* {font-family: sans-serif; }
+h1, h2, h3, h4, h5, h6 {margin:3px; padding:3px;}
+body {
+background: rgb(0,0,0);
+background: linear-gradient(270deg, rgba(0,0,0,1) 34%, rgba(102,102,102,1) 57%, rgba(207,207,207,1) 79%);
+
+}
+.ticker-img{
+max-height: 35px; max-width: 35px; background-color: white;
+}
+</style>
+"""
+
+
 def display(df):
     # 'Owned',
     columns = ['img', 'Trade Date', 'Ticker', 'Ins', 'Price', 'Qty', 'ΔOwn', 'Value', 'avg_volume', 'link']
@@ -103,20 +119,20 @@ def display(df):
     df = df[columns]
     # df[is_buy][columns].to_html('test.html', escape=False)
     # color_by_cell(df, col)
-    df_1 = color_by_cell(_sort_df(df[is_buy]), 'Value', 'ocean_r')
+    df_1 = color_by_cell(_sort_df(df[is_buy]), 'Value', 'PuBuGn')
     df_2 = color_by_cell(_sort_df(df[is_sell]), 'Value', 'YlOrRd')
     df_3 = color_by_cell(_sort_df(df[is_oe]), 'Value', 'YlOrRd')
     from datetime import datetime
     with open('daily_insider.html', 'w') as f:
-        print("<style> * {font-family: sans-serif; margin:0; padding:0;}</style>", file=f)
+        print(style, file=f)
         print("<h1> Insider Transactions, past week </h1>", file=f)
         print(f"<h6> from openinsider.com Updated to: {datetime.now().date()} </h6>", file=f)
         print(get_header(" -> Insider Buy ", "green", h_num=2), file=f)
-        print(df_1.to_html(escape=False), file=f)
+        print(df_1.to_html(), file=f)
         print(get_header(" -> Insider Sale ", "red", h_num=2), file=f)
-        print(df_2.to_html(escape=False), file=f)
+        print(df_2.to_html(), file=f)
         print(get_header(" -> Insider Sale + Option exercise ", "yellow", h_num=2), file=f)
-        print(df_3.to_html(escape=False), file=f)
+        print(df_3.to_html(), file=f)
 
     pub_object('daily_insider.html', 'stocks/daily_insider.html')
 
