@@ -48,7 +48,7 @@ def filter_stocks(df, avg_volume_m=2, minimum_price=10):
 
 
 def get_header(title, color, h_num=2):
-    return f'<h{h_num} style="background-color: {color}; padding:10px; text-align: center;">{title}</h{h_num}>'
+    return f'<h{h_num} style="background-color: {color}; padding:10px; text-align: center; border: solid 2px black;">{title}</h{h_num}>'
 
 
 def color_by_cell(df, col, cmap):
@@ -59,14 +59,14 @@ def color_by_cell(df, col, cmap):
 
     df['Ins'] = df.apply(
         lambda x: f"""<a target=_blank href="http://openinsider.com/{x['Ticker']}">{ins_f(x['Ins'])}</a>""", axis=1)
-    s = df.style.background_gradient(axis=0, gmap=df[col], cmap=cmap) \
+    s = df.style.background_gradient(axis=0, gmap=df[col], cmap=cmap, vmin=200_000) \
         .format(formatter={'Value': lambda x: f"${int(x):,.0f}",
                            'Trade Date': lambda x: x.date(),
                            'Vol': lambda x: f'{x:.2f}M',
                            'Qty': lambda x: f"{human_format(int(x))}",
                            'Ticker': lambda x: get_link(x)}) \
-        .hide_index() # remote has older pandas
-        # .hide(axis="index")
+        .hide_index()  # remote has older pandas
+    # .hide(axis="index")
     # .set_properties(**{'padding': '5px', 'font-size': '12pt', 'font-family': 'sans-serif', 'font-weight': '500'})
     return s
 
@@ -126,9 +126,9 @@ def create_html(df):
     is_sell = df['Trade Type'] == 'S - Sale'
     is_oe = df['Trade Type'] == 'S - Sale+OE'
     df = df[columns]
-    df_1 = color_by_cell(_sort_df(df[is_buy]), 'Value', 'PuBuGn')
-    df_2 = color_by_cell(_sort_df(df[is_sell]), 'Value', 'YlOrRd')
-    df_3 = color_by_cell(_sort_df(df[is_oe]), 'Value', 'YlOrRd')
+    df_1 = color_by_cell(_sort_df(df[is_buy]), 'Value', 'Greens')
+    df_2 = color_by_cell(_sort_df(df[is_sell]), 'Value', 'Reds')
+    df_3 = color_by_cell(_sort_df(df[is_oe]), 'Value', 'Oranges')
     with open('daily_insider.html', 'w', encoding="utf-8") as f:
         print("<html><head><title>Insider Transactions</title>", file=f)
         print(style, file=f)
