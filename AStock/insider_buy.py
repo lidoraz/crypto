@@ -59,7 +59,7 @@ def color_by_cell(df, col, cmap):
 
     df['Ins'] = df.apply(
         lambda x: f"""<a target=_blank href="http://openinsider.com/{x['Ticker']}">{ins_f(x['Ins'])}</a>""", axis=1)
-    s = df.style.background_gradient(axis=0, gmap=df[col], cmap=cmap, vmin=200_000) \
+    s = df.style.background_gradient(axis=0, gmap=df[col], cmap=cmap) \
         .format(formatter={'Value': lambda x: f"${int(x):,.0f}",
                            'Trade Date': lambda x: x.date(),
                            'Vol': lambda x: f'{x:.2f}M',
