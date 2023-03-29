@@ -185,8 +185,8 @@ def preprocess(df):
     return df
 
 
-def pub_object(path_from, path_to):
-    BUCKET_NAME = 'real-estate-public'
+def put_object_stocks(path_from, path_to):
+    BUCKET_NAME = 'all-finance-data'
     import boto3
     s3 = boto3.client("s3")
     with open(path_from, 'r') as f:
@@ -204,13 +204,13 @@ def pub_object(path_from, path_to):
 
 
 def run(minimum_price=5, avg_volume_m=2):
-    df = get_insiders()
-    df = filter_stocks(df, avg_volume_m=avg_volume_m, minimum_price=minimum_price)
-    df.to_pickle('tmp.pk')
+    # df = get_insiders()
+    # df = filter_stocks(df, avg_volume_m=avg_volume_m, minimum_price=minimum_price)
+    # df.to_pickle('tmp.pk')
     df = pd.read_pickle('tmp.pk')
     df = preprocess(df)
     create_html(df)
-    pub_object('daily_insider.html', 'stocks/daily_insider.html')
+    put_object_stocks('daily_insider.html', 'stocks/daily_insider.html')
 
 
 # def display(df):
