@@ -1,5 +1,7 @@
 import pandas as pd
 from datetime import datetime
+
+from AStock.insider_buy import pub_object
 from AStock.sectors import get_daily_data, all_etf_longname
 from AStock.util import plot_ohlc_daily
 from Indicators import RSI, TheStratInd
@@ -7,6 +9,8 @@ import matplotlib
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+
+file_name = 'daily_swing.html'
 
 
 def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
@@ -59,11 +63,14 @@ def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
         # df_tdf_t.rename(columns={'Close': 'close', 'Open': 'open', 'High': 'high', 'Low': 'low'}))
         df_t = df_t.join((df_t['close'] / df_t['close'].shift(1) - 1).rename('d_chg_pct'))
         df_t = df_t.join((df_t['close'] / df_t['close'].shift(7) - 1).rename('w_chg_pct'))
+        df_t = df_t.join((df_t['close'] / df_t['close'].shift(14) - 1).rename('2w_chg_pct'))
+        df_t = df_t.join((df_t['close'] / df_t['close'].shift(30) - 1).rename('m_chg_pct'))
+        df_t = df_t.join((df_t['close'] / df_t['close'].shift(90) - 1).rename('3m_chg_pct'))
         # df_t = df_t.join(calc_volume_change(df_t)) # TEST THIS
         df_t = df_t.join(add_sma_pct(df_t, 20))
         df_t = df_t.join(add_sma_pct(df_t, 50))
         df_t = df_t.join(add_sma_pct(df_t, 150))
-        # df_t = df_t.join(add_sma_pct(df_t, 200))
+        df_t = df_t.join(add_sma_pct(df_t, 200))
         df_t = df_t.join(add_cci(df_t, 14))
         df_t = df_t.join(RSI(14).calc(df_t))
         df_t = df_t.join(TheStratInd(False).calc(df_t[-5:]).fillna(''))
@@ -140,7 +147,7 @@ def print_pct_html(df_index, df_stocks, data_date):
     #                         "table-hover"])
     # highlighted = out_df.set_caption(f'<h1>Selected tickers, Relevant to date: {data_date}</h1>')
     # # render() generates the HTML for the Styler object
-    with open('check.html', 'w') as f:
+    with open(file_name, 'w') as f:
         out = out_df1_html + '\n' + out_df2_html
         f.write(out)
 
@@ -209,6 +216,7 @@ def get_swings():
     pprint_screener(df_stocks)
 
     print_pct_html(df_index, df_stocks, data_date)
+    pub_object(file_name, f'stocks/{file_name}')
 
 
 def pprint_screener(df):
