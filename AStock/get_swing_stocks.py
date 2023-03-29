@@ -6,6 +6,7 @@ from AStock.sectors import get_daily_data, all_etf_longname
 from AStock.util import plot_ohlc_daily
 from Indicators import RSI, TheStratInd
 import matplotlib
+import base64
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -43,14 +44,14 @@ def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
         color_bars = ['green' if x['close'] > x['open'] else 'red' for _, x in lat_df.iterrows()]
         plt.bar(range(lk), lat_df['volume'], color=color_bars)
         plt.axis('off')
-        plt.savefig(f'img/{ticker}.png', bbox_inches='tight')
+        plt.savefig(f'AStock/img/{ticker}.png', bbox_inches='tight')
         plt.clf()
 
     def candle_stick_thumbnail(df, lk):
         df_t = df[-lk:]
         fig = plot_ohlc_daily(df_t)
         plt.axis('off')
-        plt.savefig(f'img/{ticker}_ohlc.png')
+        plt.savefig(f'AStock/img/{ticker}_ohlc.png')
         plt.clf()
 
     for ticker in tickers:
@@ -83,7 +84,11 @@ def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
         # candle_stick_thumbnail(df_t, 10)
         curr_row = df_t.iloc[-day_shift].rename(ticker)
         curr_row = curr_row.drop(['adj close', 'open', 'high', 'low'])  # 'High', 'Low'
-        curr_row['profile_volume'] = f'<img src="img/{ticker}.png" height="27px"/>'
+        with open(f'AStock/img/{ticker}.png', 'rb') as f:
+            b64 = base64.b64encode(open(f'AStock/img/{ticker}.png', 'rb').read()).decode("utf-8")
+            src_b64 = f"data: image/png; base64,{b64}"
+            curr_row['profile_volume'] = f'<img src="{src_b64}" height="27px"/>'
+        # curr_row['profile_volume'] = f'<img src="img/{ticker}.png" height="27px"/>'
         res = pd.concat([res, curr_row.to_frame()], axis=1)
     # [['Close', 'Volume']]
     res = res.T
