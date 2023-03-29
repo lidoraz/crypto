@@ -56,12 +56,12 @@ def color_by_cell(df, col, cmap):
         ins = int(ins)
         sev = f"({'$' * ins})" if ins > 1 else ''
         return f'{sev} {ins}'
-
+    df['Trade Date'] = (datetime.now() - df['Trade Date']).dt.days.astype(str) + ' days'
     df['Ins'] = df.apply(
         lambda x: f"""<a target=_blank href="http://openinsider.com/{x['Ticker']}">{ins_f(x['Ins'])}</a>""", axis=1)
     s = df.style.background_gradient(axis=0, gmap=df[col], cmap=cmap) \
         .format(formatter={'Value': lambda x: f"${int(x):,.0f}",
-                           'Trade Date': lambda x: x.date(),
+                           # 'Trade Date': lambda x: x.date(),
                            'Vol': lambda x: f'{x:.2f}M',
                            'Qty': lambda x: f"{human_format(int(x))}",
                            'Ticker': lambda x: get_link(x)}) \
@@ -94,23 +94,28 @@ border-collapse: collapse;
 width: 100%;
 }
 .main-cont{
-    100%;
+    margin: auto;
     background-color: black;
 }
 
 .main-cont tr td{
 padding: 5px;
-font-size: 14pt; 
+font-size: 16pt; 
 font-family: sans-serif;
 font-weight: 500;
+text-align: center;
 }
 a:link {
   color: inherit;
+  -webkit-text-fill-color: inherit;
 }
 
 @media only screen and (min-width:1000px) {
     .main-cont{
         width:812px;
+    }
+    .main-cont tr td{
+        font-size: 12pt;
     }
 }
 </style>
@@ -135,7 +140,7 @@ def create_html(df):
         print("</head>", file=f)
         print('<div class="main-cont">', file=f)
         print("<h1> Insider Transactions, past week </h1>", file=f)
-        print(f"<h6> from openinsider.com Updated to: {datetime.now().date()} </h6>", file=f)
+        print(f"<h6> from openinsider.com Updated to: {datetime.now().strftime('%a, %B %d, %Y at %H:%m')} </h6>", file=f)
         print(get_header(" -> Insider Buy ", "#21421e", h_num=2), file=f)
         print(df_1.to_html(), file=f)
         print(get_header(" -> Insider Sale ", "#801818", h_num=2), file=f)
