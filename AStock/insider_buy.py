@@ -51,12 +51,19 @@ def get_header(title, color, h_num=2):
     return f'<h{h_num} style="background-color: {color}; padding:10px; text-align: center; border: solid 2px black;">{title}</h{h_num}>'
 
 
+def _get_days_ago(series):
+    map_days = lambda x: 'Today' if x == 0 else f'{x} days' if x > 1 else f'{x} day'
+    return (datetime.now() - pd.to_datetime(series)).dt.days.apply(map_days)
+
+
 def color_by_cell(df, col, cmap):
     def ins_f(ins):
         ins = int(ins)
         sev = f"({'$' * ins})" if ins > 1 else ''
         return f'{sev} {ins}'
-    df['Trade Date'] = (datetime.now() - df['Trade Date']).dt.days.astype(str) + ' days'
+
+    df['Trade Date'] = _get_days_ago(df['Trade Date'])
+    df['Filing Date'] = _get_days_ago(df['Filing Date'])
     df['Ins'] = df.apply(
         lambda x: f"""<a target=_blank href="http://openinsider.com/{x['Ticker']}">{ins_f(x['Ins'])}</a>""", axis=1)
     s = df.style.background_gradient(axis=0, gmap=df[col], cmap=cmap) \
@@ -126,7 +133,7 @@ def create_html(df):
     def _sort_df(df):
         return df.sort_values('Trade Date', ascending=False).reset_index(drop=True)
 
-    columns = ['Trade Date', 'img', 'Ticker', 'Ins', 'Price', 'Qty', 'ΔOwn', 'Value', 'Vol']
+    columns = ['Filing Date', 'Trade Date', 'img', 'Ticker', 'Ins', 'Price', 'Qty', 'ΔOwn', 'Value', 'Vol']
     is_buy = df['Trade Type'].str.slice(0, 1) == 'P'  # P - Purchase
     is_sell = df['Trade Type'] == 'S - Sale'
     is_oe = df['Trade Type'] == 'S - Sale+OE'
@@ -140,7 +147,8 @@ def create_html(df):
         print("</head>", file=f)
         print('<div class="main-cont">', file=f)
         print("<h1> Insider Transactions, past week </h1>", file=f)
-        print(f"<h6> from openinsider.com Updated to: {datetime.now().strftime('%a, %B %d, %Y at %H:%m')} </h6>", file=f)
+        print(f"<h6> from openinsider.com, Updated to: {datetime.now(tz=None).strftime('%a, %B %d, %Y at %H:%M UTC')} </h6>",
+              file=f)
         print(get_header(" -> Insider Buy ", "#21421e", h_num=2), file=f)
         print(df_1.to_html(), file=f)
         print(get_header(" -> Insider Sale ", "#801818", h_num=2), file=f)
@@ -184,9 +192,9 @@ def pub_object(path_from, path_to):
 
 
 def run(minimum_price=5, avg_volume_m=2):
-    df = get_insiders()
-    df = filter_stocks(df, avg_volume_m=avg_volume_m, minimum_price=minimum_price)
-    df.to_pickle('tmp.pk')
+    # df = get_insiders()
+    # df = filter_stocks(df, avg_volume_m=avg_volume_m, minimum_price=minimum_price)
+    # df.to_pickle('tmp.pk')
     df = pd.read_pickle('tmp.pk')
     df = preprocess(df)
     create_html(df)
