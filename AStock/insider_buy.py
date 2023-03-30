@@ -204,9 +204,9 @@ def put_object_stocks(path_from, path_to):
 
 
 def run(minimum_price=5, avg_volume_m=2):
-    # df = get_insiders()
-    # df = filter_stocks(df, avg_volume_m=avg_volume_m, minimum_price=minimum_price)
-    # df.to_pickle('tmp.pk')
+    df = get_insiders()
+    df = filter_stocks(df, avg_volume_m=avg_volume_m, minimum_price=minimum_price)
+    df.to_pickle('tmp.pk')
     df = pd.read_pickle('tmp.pk')
     df = preprocess(df)
     create_html(df)
