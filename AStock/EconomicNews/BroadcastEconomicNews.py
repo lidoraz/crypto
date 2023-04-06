@@ -28,6 +28,11 @@ def get_todays(tz=None):
         return None
 
 
+def check_env():
+    assert os.environ.get('TELEGRAM_TOKEN')
+    assert os.environ.get('TELEGRAM_GROUP_NEWS')
+
+
 def publish(msg, prod):
     if prod:
         # url = "https://api.telegram.org/bot{token}/sendMessage?chat_id={group_id}&text={msg}&parse_mode=HTML"
@@ -168,6 +173,9 @@ def run_forever():
         time.sleep(1)
         # print(schedule.get_jobs())
 
+
+if _PROD:
+    check_env()
 
 if __name__ == '__main__':
     # # job_that_executes_once(12, 30)()

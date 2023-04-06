@@ -57,6 +57,8 @@ def _get_days_ago(series):
 
 
 def color_by_cell(df, col, cmap):
+    if not len(df):
+        return df.style.hide_index()
     def ins_f(ins):
         ins = int(ins)
         sev = f"({'$' * ins})" if ins > 1 else ''
@@ -66,6 +68,7 @@ def color_by_cell(df, col, cmap):
     df['Filing Date'] = _get_days_ago(df['Filing Date'])
     df['Ins'] = df.apply(
         lambda x: f"""<a target=_blank href="http://openinsider.com/{x['Ticker']}">{ins_f(x['Ins'])}</a>""", axis=1)
+
     s = df.style.background_gradient(axis=0, gmap=df[col], cmap=cmap) \
         .format(formatter={'Value': lambda x: f"${int(x):,.0f}",
                            # 'Trade Date': lambda x: x.date(),
@@ -131,7 +134,7 @@ a:link {
 
 def create_html(df):
     def _sort_df(df):
-        return df.sort_values('Trade Date', ascending=False).reset_index(drop=True)
+        return df.sort_values('Filing Date', ascending=False).reset_index(drop=True)
 
     columns = ['Filing Date', 'Trade Date', 'img', 'Ticker', 'Ins', 'Price', 'Qty', 'ΔOwn', 'Value', 'Vol']
     is_buy = df['Trade Type'].str.slice(0, 1) == 'P'  # P - Purchase
@@ -168,13 +171,14 @@ def get_ticker_img(ticker):
 
 def preprocess(df):
     df['Value'] = df['Value'].str.replace(',', "").str.extract("(\d+)")
+    df['Filing Date'] = pd.to_datetime(df['Filing Date'])
     df['Trade Date'] = pd.to_datetime(df['Trade Date'])
     df['img'] = df['Ticker'].apply(get_ticker_img)
     return df
 
 
 def pub_object(path_from, path_to):
-    BUCKET_NAME = 'real-estate-public'
+    BUCKET_NAME = 'all-finance-data'
     import boto3
     s3 = boto3.client("s3")
     with open(path_from, 'r') as f:
