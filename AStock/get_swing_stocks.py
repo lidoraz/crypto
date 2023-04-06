@@ -1,7 +1,7 @@
 import pandas as pd
 from datetime import datetime
 
-from AStock.insider_buy import pub_object
+from AStock.insider_buy import put_object_stocks
 from AStock.sectors import get_daily_data, all_etf_longname
 from AStock.util import plot_ohlc_daily
 from Indicators import RSI, TheStratInd
@@ -221,7 +221,7 @@ def get_swings():
     pprint_screener(df_stocks)
 
     print_pct_html(df_index, df_stocks, data_date)
-    pub_object(file_name, f'stocks/{file_name}')
+    put_object_stocks(file_name, f'stocks/{file_name}')
 
 
 def pprint_screener(df):

@@ -9,6 +9,17 @@ from datetime import datetime
 
 # from AStock.long_term_gaps import get_daily_data
 
+google_analytics = """
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y093DMFS92"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y093DMFS92');
+</script>
+"""
 
 def get_insiders():
     insider_url_group_buy_over100k = "http://openinsider.com/screener?s=&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=30&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&vl=&vh=&ocl=&och=&sic1=-1&sicl=100&sich=9999&isofficer=1&iscob=1&isceo=1&ispres=1&iscoo=1&iscfo=1&isgc=1&isvp=1&grp=2&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=100&v2h=&oc2l=&oc2h=&sortcol=0&cnt=300&page=1"
@@ -146,6 +157,7 @@ def create_html(df):
     df_3 = color_by_cell(_sort_df(df[is_oe]), 'Value', 'Oranges')
     with open('daily_insider.html', 'w', encoding="utf-8") as f:
         print("<html><head><title>Insider Transactions</title>", file=f)
+        print(google_analytics, file=f)
         print(style, file=f)
         print("</head>", file=f)
         print('<div class="main-cont">', file=f)
@@ -177,7 +189,7 @@ def preprocess(df):
     return df
 
 
-def pub_object(path_from, path_to):
+def put_object_stocks(path_from, path_to):
     BUCKET_NAME = 'all-finance-data'
     import boto3
     s3 = boto3.client("s3")
@@ -202,7 +214,7 @@ def run(minimum_price=5, avg_volume_m=2):
     df = pd.read_pickle('tmp.pk')
     df = preprocess(df)
     create_html(df)
-    pub_object('daily_insider.html', 'stocks/daily_insider.html')
+    put_object_stocks('daily_insider.html', 'stocks/daily_insider.html')
 
 
 # def display(df):
