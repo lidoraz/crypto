@@ -15,7 +15,7 @@ def get_latest_from_db(db, min_back):
     return df
 
 
-def get_lastest_from_db_postgres(con, min_back:int, free_text_filter=None):
+def get_lastest_from_db_postgres(con, min_back: int, free_text_filter=None):
     import time
     # Should take 1 min before + few seconds prior to that, could be 6 but needs to check.
     # time_now = (int(time.time()) - min_back * 60 + 12) * 1000
@@ -30,3 +30,22 @@ def get_lastest_from_db_postgres(con, min_back:int, free_text_filter=None):
     print(q)
     df = pd.read_sql(q, con)
     return df
+
+
+def load_from_txt(path='users.txt'):
+    with open(path, 'r') as f:
+        lines = f.readlines()
+    remove_comments = lambda x: x if '#' not in x else x.split('#')[0]
+    lines = [remove_comments(l.replace('\n', '')) for l in lines]
+    users = {}
+    for line in lines:
+        try:
+            if '#' in line:
+                continue
+            k, v = line.split('=')
+            k = k.strip()
+            v = int(v)
+            users[k] = v
+        except:
+            pass
+    return users

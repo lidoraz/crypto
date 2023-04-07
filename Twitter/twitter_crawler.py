@@ -8,12 +8,13 @@ from datetime import datetime
 import pandas as pd
 import psycopg2 as pg
 from Utils.utils import WaitToMinEveryHour
-from Twitter.users import users
-from Twitter.utils import print_from_db
+# from Twitter.users import users
+from Twitter.utils import print_from_db, load_from_txt
 
 # https://www.investopedia.com/financial-edge/0712/10-twitter-feeds-investors-should-follow.aspx
 TWITTER_URL_HIST = 'https://api.twitter.com/2/users/{}/tweets?max_results={}'
 TWITTER_URL_LIVE = 'https://api.twitter.com/2/users/{}/tweets?start_time={}'
+users_path = 'Twitter/users.txt'
 
 
 def create_headers(bearer_token):
@@ -107,8 +108,8 @@ class TwitterDBPostgres:
         conn = pg.connect(
             host="localhost",
             port=port,
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASS"),
+            user=os.getenv("PGUSER"),
+            password=os.getenv("PGPASSWORD"),
             database="vsdatabase"
         )
         self.con = conn
@@ -135,7 +136,7 @@ class TwitterDBPostgres:
 
 
 def run_once():
-    # db = TweetDB()
+    users = load_from_txt(path=users_path)
     df = go_over_multiple(users, live=False)
     print_from_db(df)
 
@@ -145,9 +146,13 @@ def realtime_to_db():
     live = False
     wait = WaitToMinEveryHour(range(60), offset_sec=0)
     db = TwitterDBPostgres()
-    print(users)
+    past_users = {}
     while True:
         wait.wait()
+        users = load_from_txt(path=users_path)
+        if past_users != users:
+            print(f'Loading from {len(users)=}: {users}')
+            past_users = users
         df = go_over_multiple(users, live=live)
         live = True
         if df is not None and len(df):

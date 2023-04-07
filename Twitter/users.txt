@@ -1,0 +1,31 @@
+unusual_whales=1200616796295847936
+stockmktnewz=1250830691824283648
+sofiaHCBBG=627526105
+jimcramer=14216123
+elonmusk=44196397
+jpmorgan=1155522630
+cnbc=20402945
+benzinga=44060322
+Stocktwits=14886375
+breakoutstocks=15897179
+bespokeinvest=28571999
+wsjmarkets=28164923
+stephanie_link=455309376
+nytimesbusiness=1754641
+ibdinvestors=21328656
+wsjmoneybeat=18858395
+marketrebels=817007725666242561
+epsguid=55395551
+zerohedge=18856867
+marknewtoncmt=253168011  # Mark Newton CMT - Managing Director/Global Head of Technical Strategy
+carterbworth=1217143228803289090  # Carter Braxton Worth - CNBC’s Chart Master
+MarceloPLima=41652821  # Friend of Musk, Trying to find moats riding S-curves. Entrepreneur, investor.
+SquawkCNBC=404422077  # info earnings etc.. from CNBC
+tier10k=2361601055
+
+# #Stocks tracker
+# pelositracker=1540038673810350080,
+# buffettracker=1539998845718781953,
+# burrytracker=1539636858170122242,
+# DalioTracker=1539650581928693760,
+# ackmantracker=1540073248649388033,
