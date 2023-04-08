@@ -6,7 +6,6 @@ from AStock.sectors import get_daily_data
 from Indicators.Indicator import human_format
 from datetime import datetime
 
-
 # from AStock.long_term_gaps import get_daily_data
 
 google_analytics = """
@@ -20,6 +19,7 @@ google_analytics = """
   gtag('config', 'G-Y093DMFS92');
 </script>
 """
+
 
 def get_insiders():
     insider_url_group_buy_over100k = "http://openinsider.com/screener?s=&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=30&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&vl=&vh=&ocl=&och=&sic1=-1&sicl=100&sich=9999&isofficer=1&iscob=1&isceo=1&ispres=1&iscoo=1&iscfo=1&isgc=1&isvp=1&grp=2&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=100&v2h=&oc2l=&oc2h=&sortcol=0&cnt=300&page=1"
@@ -70,23 +70,24 @@ def _get_days_ago(series):
 def color_by_cell(df, col, cmap):
     if not len(df):
         return df.style.hide_index()
+
     def ins_f(ins):
         ins = int(ins)
         sev = f"({'$' * ins})" if ins > 1 else ''
         return f'{sev} {ins}'
 
-    df['Trade Date'] = _get_days_ago(df['Trade Date'])
-    df['Filing Date'] = _get_days_ago(df['Filing Date'])
+    df['Trade'] = _get_days_ago(df['Trade'])
+    df['Filing'] = _get_days_ago(df['Filing'])
+
     df['Ins'] = df.apply(
         lambda x: f"""<a target=_blank href="http://openinsider.com/{x['Ticker']}">{ins_f(x['Ins'])}</a>""", axis=1)
 
     s = df.style.background_gradient(axis=0, gmap=df[col], cmap=cmap) \
         .format(formatter={'Value': lambda x: f"${int(x):,.0f}",
-                           # 'Trade Date': lambda x: x.date(),
                            'Vol': lambda x: f'{x:.2f}M',
                            'Qty': lambda x: f"{human_format(int(x))}",
                            'Ticker': lambda x: get_link(x)}) \
-        .hide_index()  # remote has older pandas
+        .hide(axis='index')
     # .hide(axis="index")
     # .set_properties(**{'padding': '5px', 'font-size': '12pt', 'font-family': 'sans-serif', 'font-weight': '500'})
     return s
@@ -107,9 +108,22 @@ body {
 background: rgb(2,0,36);
 background: linear-gradient(270deg, rgba(2,0,36,1) 0%, rgba(9,9,121,1) 100%, rgba(0,212,255,1) 100%); 
 }
-.ticker-img {
-max-height: 35px; max-width: 35px; background-color: white;
+
+.cont-img {
+height: 35px;
+width: 35px;
+background: white;
+display: flex;
+align-items: center;
+border-radius: 50%;
 }
+
+.ticker-img {
+max-height: 35px;
+max-width: 35px;
+border-radius: 50%;
+}
+
 table {
 border-collapse: collapse;
 width: 100%;
@@ -145,39 +159,47 @@ a:link {
 
 def create_html(df):
     def _sort_df(df):
-        return df.sort_values('Filing Date', ascending=False).reset_index(drop=True)
+        return df.sort_values('Filing', ascending=False).reset_index(drop=True)
 
+    # df.rename(columns={"ΔOwn": "±ΔOwn"})
     columns = ['Filing Date', 'Trade Date', 'img', 'Ticker', 'Ins', 'Price', 'Qty', 'ΔOwn', 'Value', 'Vol']
     is_buy = df['Trade Type'].str.slice(0, 1) == 'P'  # P - Purchase
     is_sell = df['Trade Type'] == 'S - Sale'
     is_oe = df['Trade Type'] == 'S - Sale+OE'
+
     df = df[columns]
+    df = df.rename(columns={"Trade Date": "Trade",
+                            "Filing Date": "Filing",
+                            "img": "",
+                            "ΔOwn": "±Own"})
     df_1 = color_by_cell(_sort_df(df[is_buy]), 'Value', 'Greens')
     df_2 = color_by_cell(_sort_df(df[is_sell]), 'Value', 'Reds')
     df_3 = color_by_cell(_sort_df(df[is_oe]), 'Value', 'Oranges')
     with open('daily_insider.html', 'w', encoding="utf-8") as f:
-        print("<html><head><title>Insider Transactions</title>", file=f)
-        print(google_analytics, file=f)
-        print(style, file=f)
-        print("</head>", file=f)
-        print('<div class="main-cont">', file=f)
-        print("<h1> Insider Transactions, past week </h1>", file=f)
-        print(f"<h6> from openinsider.com, Updated to: {datetime.now(tz=None).strftime('%a, %B %d, %Y at %H:%M UTC')} </h6>",
-              file=f)
-        print(get_header(" -> Insider Buy ", "#21421e", h_num=2), file=f)
-        print(df_1.to_html(), file=f)
-        print(get_header(" -> Insider Sale ", "#801818", h_num=2), file=f)
-        print(df_2.to_html(), file=f)
-        print(get_header(" -> Insider Sale + Option exercise ", "#e9692c", h_num=2), file=f)
-        print(df_3.to_html(), file=f)
-        print('</div></html>', file=f)
+        f.write("<html><head><title>Insider Transactions</title>")
+        f.write('<meta charset="UTF-8">\n')
+        f.write(google_analytics)
+        f.write(style)
+        f.write("</head>")
+        f.write('<h1> מה נשמע?? </h1>')
+        f.write('<div class="main-cont">')
+        f.write("<h1> Insider Transactions, past week </h1>")
+        f.write(
+            f"<h6> from openinsider.com, Updated to: {datetime.now(tz=None).strftime('%a, %B %d, %Y at %H:%M UTC')} </h6>")
+        f.write(get_header(" -> Insider Buy ", "#21421e", h_num=2))
+        f.write(df_1.to_html())
+        f.write(get_header(" -> Insider Sale ", "#801818", h_num=2))
+        f.write(df_2.to_html())
+        f.write(get_header(" -> Insider Sale + Option exercise ", "#e9692c", h_num=2))
+        f.write(df_3.to_html())
+        f.write('</div></html>')
 
 
 def get_ticker_img(ticker):
     ticker = ticker.upper()
     path = f"https://financialmodelingprep.com/image-stock/{ticker}.png"
     # <a  target=_blank href="http://openinsider.com/{x}">{x}</a>
-    html_img = f"""<img src="{path}" class="ticker-img"/>"""
+    html_img = f"""<div class="cont-img"><img src="{path}" class="ticker-img"/> </div>"""
     return html_img
 
 
@@ -199,7 +221,7 @@ def put_object_stocks(path_from, path_to):
             Key=path_to,
             Body=f.read(),
             CacheControl="max-age=0,no-cache,no-store,must-revalidate",
-            ContentType="text/html",
+            ContentType="text/html; charset=utf-8",
             ACL="public-read"
         )
     # buck = s3.Bucket(BUCKET_NAME)
