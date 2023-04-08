@@ -170,18 +170,15 @@ def create_html(df):
     df = df[columns]
     df = df.rename(columns={"Trade Date": "Trade",
                             "Filing Date": "Filing",
-                            "img": "",
-                            "ΔOwn": "±Own"})
+                            "img": ""})
     df_1 = color_by_cell(_sort_df(df[is_buy]), 'Value', 'Greens')
     df_2 = color_by_cell(_sort_df(df[is_sell]), 'Value', 'Reds')
     df_3 = color_by_cell(_sort_df(df[is_oe]), 'Value', 'Oranges')
     with open('daily_insider.html', 'w', encoding="utf-8") as f:
         f.write("<html><head><title>Insider Transactions</title>")
-        f.write('<meta charset="UTF-8">\n')
         f.write(google_analytics)
         f.write(style)
         f.write("</head>")
-        f.write('<h1> מה נשמע?? </h1>')
         f.write('<div class="main-cont">')
         f.write("<h1> Insider Transactions, past week </h1>")
         f.write(
@@ -215,7 +212,7 @@ def put_object_stocks(path_from, path_to):
     BUCKET_NAME = 'all-finance-data'
     import boto3
     s3 = boto3.client("s3")
-    with open(path_from, 'r') as f:
+    with open(path_from, 'r', encoding="utf-8") as f:
         s3.put_object(
             Bucket=BUCKET_NAME,
             Key=path_to,
