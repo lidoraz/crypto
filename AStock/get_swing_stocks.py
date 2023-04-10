@@ -108,6 +108,16 @@ def print_apply_html_formats(df):
     cci_cols = [c for c in df.columns if c.startswith('cci_')]
     # df = df.round(2)
     # df['Volume'] = df['Volume'].apply(lambda x: f'{x / 1e6:0.1f}M')
+    df.columns = [c.replace("thestrat_", "") for c in df.columns]
+    cols = df.columns.tolist()
+    cols.remove("volume")
+    cols.append("volume")
+    img_ticker_s = '<div class="cont-img"> <img src="https://financialmodelingprep.com/image-stock/{}.png" class="ticker-img" /></div>'
+    df['-'] = df.reset_index()['index'].apply(lambda x: img_ticker_s.format(x)).values
+    df = df[["-"] + cols]
+    mapper = {"Hammer": "🔨", "Shooter": "🔫"}
+    df['cnd_type'] = df['cnd_type'].apply(lambda x: mapper.get(x, ""))
+    df = df.rename(columns={"cnd_color": "c", "cnd_type": "t", "profile_volume": "Vol"})
     out_df = df.style
     out_df = out_df.background_gradient(subset=pct_cols, cmap='RdYlGn', vmin=-0.25, vmax=.25, axis=0)
     out_df = out_df.background_gradient(subset=['d_chg_pct', 'w_chg_pct'], cmap='RdYlGn', vmin=-0.07, vmax=.07, axis=0)
@@ -126,34 +136,70 @@ def print_apply_html_formats(df):
             color = '#d73027'
         return f'background-color: {color}; color: white'
 
-    out_df = out_df.applymap(subset=['thestrat_combo'], func=color_combo)
+    # format_cols = ["price", "cci_14", "RSI14"]
+    out_df = out_df.applymap(subset=['combo'], func=color_combo)
 
     out_df = out_df.set_properties(**{'text-align': 'center'})
-    strat_cols = ['thestrat_num', 'cnd_color', 'thestrat_combo', 'thestrat_cnd_type', 'profile_volume']
-
     # out_df.applymap(subset=['cnd_color' , 'thestrat_combo'], func=lambda v: "color:pink;" if v>4 else "color:darkblue;")
-    formatters = {c: '{:.2f}' for c in df.columns if c not in strat_cols}
-
-    formatters['volume'] = lambda x: "{:.1f}M".format(x * 1e-6)
-    formatters.update({c: '{:.2%}' for c in pct_cols})
+    # formatters = {c: '{:.2f}' for c in df.columns if c not in strat_cols}
+    formatters = {c: '{:.2%}' for c in pct_cols}
     formatters['close'] = '${:.2f}'
+    formatters['volume'] = lambda x: "{:.1f}M".format(x * 1e-6)
+    formatters.update({c: '{:.1f}' for c in ["cci_14", "RSI14"]})
     out_df = out_df.format(formatters)
     return out_df
 
 
 def print_pct_html(df_index, df_stocks, data_date):
     out_df1 = print_apply_html_formats(df_index)
+    print(out_df1.columns)
     out_df2 = print_apply_html_formats(df_stocks)
-    out_df1 = out_df1.set_caption(f'<h1>Selected tickers, Relevant to date: {data_date}</h1>')
+    # out_df1 = out_df1.set_caption()
     out_df1_html = out_df1.to_html()
     out_df2_html = out_df2.to_html()
-    # out_df.to_html('check.html',
-    #                classes=["table-bordered", "table-striped",
-    #                         "table-hover"])
-    # highlighted = out_df.set_caption(f'<h1>Selected tickers, Relevant to date: {data_date}</h1>')
-    # # render() generates the HTML for the Styler object
-    with open(file_name, 'w') as f:
-        out = out_df1_html + '\n' + out_df2_html
+    style = """
+        * {font-family: sans-serif;}
+        h1 {
+        text-align: center;
+        }
+        main-cont{
+        margin: auto;
+        }
+        table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 11pt;
+        }
+        .cont-img {
+        height: 30px;
+        width: 30px;
+        background: white;
+        display: flex;
+        align-items: center;
+        border-radius: 50%;
+        }
+        
+        .ticker-img {
+        max-height: 30px;
+        max-width: 30px;
+        border-radius: 50%;
+        }
+    """
+    with open(file_name, 'w', encoding="utf-8") as f:
+        out = f"""
+        <html><head>
+        <style>
+        {style}
+        </style>
+        </head><body>
+        <div class="main-cont">
+        <h1>Swing Selected tickers, Relevant to: {data_date.strftime('%a, %B %d, %Y at %H:%M UTC')}</h1>
+        {out_df1_html}
+        {out_df2_html}
+        </div>
+        
+        </body></html>
+        """
         f.write(out)
 
 
@@ -172,7 +218,7 @@ def get_swings():
                    'OKTA', 'OPEN', 'RBLX', 'S', 'SHOP', 'SNOW', 'SOFI', 'TOST', 'TSLA', 'TWLO', 'ZI', 'ARKK', 'WOLF',
                    'MNDY', 'BILL', 'ENPH', 'ASAN', 'ESTC', 'TEAM', 'IOT', 'HCP', 'ZS', 'U', 'MDB', 'SEDG', 'DAVA',
                    'ENTG', 'FSLR', 'GLOB', 'PLTR', 'TTD', 'HUBS', 'NOW', 'PATH', 'PCOR', 'EPAM', 'PAYC', 'FIVN', 'CYBR',
-                   'DT', 'FTNT', 'PCTY', 'ZEN', 'APP', 'PANW', 'AVLR', 'PAGS']
+                   'DT', 'FTNT', 'PCTY', 'APP', 'PANW', 'PAGS']
     crypto = ['MARA', 'HUT', 'MSTR', 'RIOT', 'COIN']
     # FILTER GROWTH VS VALUE STOCK
     fintech = ['AFRM', 'SOFI', 'PYPL', 'SQ', 'UPST', 'LMND']
@@ -182,26 +228,29 @@ def get_swings():
     saas = ['MNDY', 'DDOG', 'DASH', 'PATH', 'SNOW', 'CRM', 'VEEV']
     internet_software = ['META', 'GOOGL', 'PINS', 'ADBE']
     chinese = ['BABA', 'NIO', 'JD', ]
-    other = ['RBLX', 'ROKU', 'DIS', 'NFLX', 'BA', ]
+    other = ['RBLX', 'ROKU', 'DIS', 'NFLX', 'BA', "ZIM", "GS", "SCHW"]
     green = ['SEDG', 'ENPH']
     consumer = ['AMZN', 'SHOP', 'CHWY', 'RIVN', 'LULU']
     internet_retail = ['AMZN', 'CHWY', 'LULU']
 
-    medical = ['TDOC', 'MRNA']
+    medical = ['TDOC', 'MRNA', "JNJ"]
     indexes = ['SPY', 'QQQ', 'IWM', 'DIA', 'SOXX', 'ARKK']  # 'RTY=F'
+    sector_indexes = ["XLK", "XLC", "XLU", "XLRE", "XLB", "XLP", "XLI", "XLY", "XLV", "XLE", "XLF"]
     customer_service = ['WING', 'CROX', 'LOVE', 'UBER']
+    # ADD VIX TICKERS FOR BAROMETER: ^VIX, ^VIX9D, ^VIX3M
     # all_etf_longname
     tickers = crypto + fintech + big_tech + semi + cyber + internet_software + saas + chinese + internet_retail + other + green + consumer + medical + customer_service + indexes
     tickers = high_growth + indexes + tickers
     tickers = list(set(tickers))
-    data = get_daily_data(tickers, days_before=300, group_by='ticker')
+    # data = get_daily_data(tickers, days_before=300, group_by='ticker')
+    # data.to_pickle("data_swing.pk")
+    data = pd.read_pickle("data_swing.pk")
     # data = data[:-days_before]
     time_now = datetime.utcnow()
     if data.iloc[-1].isna().all():
         # if time_now.hour < 11 or time_now.hour == 13 and time_now.minute < 31:
         data = data[:-1]
         print(f'Calculating for date: {data.index[-1].date()}')
-    data_date = str(data.index[-1].date())
     # data = filter_nulls(data)
 
     df = check_ticker(data)
@@ -220,7 +269,7 @@ def get_swings():
     # check that close price is not far from open, look for doji, or bullish, also can use thestrat for indicator.
     pprint_screener(df_stocks)
 
-    print_pct_html(df_index, df_stocks, data_date)
+    print_pct_html(df_index, df_stocks, data.index[-1])
     put_object_stocks(file_name, f'stocks/{file_name}')
 
 
