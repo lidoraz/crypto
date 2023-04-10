@@ -151,7 +151,10 @@ def job(is_broadcast=True):
         create_tasks(df)  # Make this work, later....
         str_build = build_str(df, convert_tz='Israel')
         if is_broadcast:
-            publish(str_build, prod=_PROD)
+            try:
+                publish(str_build, prod=_PROD)
+            except Exception as e:
+                print(e)
     else:
         print('get_todays, df is empty, or having a problem')
     # Build a task to  get data at correct timing
