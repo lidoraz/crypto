@@ -246,21 +246,13 @@ def get_swings():
     #data.to_pickle("data_swing.pk")
     #data = pd.read_pickle("data_swing.pk")
     # data = data[:-days_before]
-    time_now = datetime.utcnow()
     if data.iloc[-1].isna().all():
-        # if time_now.hour < 11 or time_now.hour == 13 and time_now.minute < 31:
         data = data[:-1]
         print(f'Calculating for date: {data.index[-1].date()}')
-    # data = filter_nulls(data)
 
     df = check_ticker(data)
-
-    print('-> Indexes')
-
-    df_index = df[df.index.isin(indexes)]
-    # print_pct(res_indexes.sort_values('sma20_pct', ascending=False))
+    df_index = df.reindex(indexes)  # filter and reindex
     pprint_screener(df_index)
-    print('-> Stocks')
     df_stocks = df[~df.index.isin(indexes)]
     # LONG - should be far from sma20, SHORT- higher than sma 20.
     # df_stocks = df_stocks.sort_values('sma20_pct', ascending=False)  # check long potentials
