@@ -113,8 +113,8 @@ def print_apply_html_formats(df):
     cols.remove("volume")
     cols.append("volume")
     img_ticker_s = '<div class="cont-img"> <img src="https://financialmodelingprep.com/image-stock/{}.png" class="ticker-img" /></div>'
-    df['-'] = df.reset_index()['index'].apply(lambda x: img_ticker_s.format(x)).values
-    df = df[["-"] + cols]
+    df[' '] = df.reset_index()['index'].apply(lambda x: img_ticker_s.format(x)).values
+    df = df[[" "] + cols]
     mapper = {"Hammer": "🔨", "Shooter": "🔫"}
     df['cnd_type'] = df['cnd_type'].apply(lambda x: mapper.get(x, ""))
     df = df.rename(columns={"cnd_color": "c", "cnd_type": "t", "profile_volume": "Vol"})
@@ -188,6 +188,7 @@ def print_pct_html(df_index, df_stocks, data_date):
     with open(file_name, 'w', encoding="utf-8") as f:
         out = f"""
         <html><head>
+        <title>Swing Screener</title>
         <style>
         {style}
         </style>
@@ -252,14 +253,14 @@ def get_swings():
 
     df = check_ticker(data)
     df_index = df.reindex(indexes)  # filter and reindex
-    pprint_screener(df_index)
+    # pprint_screener(df_index)
     df_stocks = df[~df.index.isin(indexes)]
     # LONG - should be far from sma20, SHORT- higher than sma 20.
     # df_stocks = df_stocks.sort_values('sma20_pct', ascending=False)  # check long potentials
     df_stocks = df_stocks.sort_values(['sma20_pct', 'cnd_color', ], ascending=[False, True, ])  # check long potentials
     # CHECK RSI, and CCI, check also for volume decrease for sells.
     # check that close price is not far from open, look for doji, or bullish, also can use thestrat for indicator.
-    pprint_screener(df_stocks)
+    # pprint_screener(df_stocks)
 
     print_pct_html(df_index, df_stocks, data.index[-1])
     put_object_stocks(file_name, f'stocks/{file_name}')
