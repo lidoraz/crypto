@@ -242,9 +242,9 @@ def get_swings():
     tickers = crypto + fintech + big_tech + semi + cyber + internet_software + saas + chinese + internet_retail + other + green + consumer + medical + customer_service + indexes
     tickers = high_growth + indexes + tickers
     tickers = list(set(tickers))
-    # data = get_daily_data(tickers, days_before=300, group_by='ticker')
-    # data.to_pickle("data_swing.pk")
-    data = pd.read_pickle("data_swing.pk")
+    data = get_daily_data(tickers, days_before=300, group_by='ticker')
+    #data.to_pickle("data_swing.pk")
+    #data = pd.read_pickle("data_swing.pk")
     # data = data[:-days_before]
     time_now = datetime.utcnow()
     if data.iloc[-1].isna().all():
