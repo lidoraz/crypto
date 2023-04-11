@@ -150,7 +150,7 @@ def print_apply_html_formats(df):
     return out_df
 
 
-def print_pct_html(df_index, df_stocks, data_date):
+def print_pct_html(df_index, df_stocks):
     out_df1 = print_apply_html_formats(df_index)
     print(out_df1.columns)
     out_df2 = print_apply_html_formats(df_stocks)
@@ -199,7 +199,7 @@ def print_pct_html(df_index, df_stocks, data_date):
         </style>
         </head><body>
         <div class="main-cont">
-        <h1>Swing Selected tickers, Relevant to: {data_date.strftime('%a, %B %d, %Y at %H:%M UTC')}</h1>
+        <h1>Swing Selected tickers, Relevant to: {datetime.now().strftime('%a, %B %d, %Y at %H:%M UTC')}</h1>
         <h3>Fear&Greed - {fg_str} </h3>
         {out_df1_html}
         {out_df2_html}
@@ -268,7 +268,7 @@ def get_swings():
     # check that close price is not far from open, look for doji, or bullish, also can use thestrat for indicator.
     # pprint_screener(df_stocks)
 
-    print_pct_html(df_index, df_stocks, data.index[-1])
+    print_pct_html(df_index, df_stocks)
     put_object_stocks(file_name, f'stocks/{file_name}')
 
 
@@ -303,6 +303,7 @@ def get_color(x):
     if x < 40:
         return '#1a9850'
     return "Black"
+
 
 def color_combo(combo):
     color = 'White'
