@@ -5,6 +5,7 @@ from AStock.insider_buy import put_object_stocks
 from AStock.sectors import get_daily_data, all_etf_longname
 from AStock.util import plot_ohlc_daily
 from Indicators import RSI, TheStratInd
+import requests
 import matplotlib
 import base64
 
@@ -61,12 +62,20 @@ def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
         if df_t['volume'].rolling(14).mean()[-1] < minimum_volume:
             print(f'Filtered out ticker: {ticker} due to low avg volume')
             continue
+
         # df_tdf_t.rename(columns={'Close': 'close', 'Open': 'open', 'High': 'high', 'Low': 'low'}))
-        df_t = df_t.join((df_t['close'] / df_t['close'].shift(1) - 1).rename('d_chg_pct'))
-        df_t = df_t.join((df_t['close'] / df_t['close'].shift(7) - 1).rename('w_chg_pct'))
-        df_t = df_t.join((df_t['close'] / df_t['close'].shift(14) - 1).rename('2w_chg_pct'))
-        df_t = df_t.join((df_t['close'] / df_t['close'].shift(30) - 1).rename('m_chg_pct'))
-        df_t = df_t.join((df_t['close'] / df_t['close'].shift(90) - 1).rename('3m_chg_pct'))
+        def sub_dates_closest(df, days_back):
+            for delta in range(7):
+                index = df.index[-1] - pd.to_timedelta(f"{days_back + delta}D")
+                if index in df.index:
+                    return df.loc[index]
+
+        df_t = df_t.join((df_t['close'] / sub_dates_closest(df_t, 1)['close'] - 1).rename('D_chg_pct'))
+        df_t = df_t.join((df_t['close'] / sub_dates_closest(df_t, 7)['close'] - 1).rename('W_chg_pct'))
+        df_t = df_t.join((df_t['close'] / sub_dates_closest(df_t, 14)['close'] - 1).rename('2W_chg_pct'))
+        df_t = df_t.join((df_t['close'] / sub_dates_closest(df_t, 30)['close'] - 1).rename('M_chg_pct'))
+        df_t = df_t.join((df_t['close'] / sub_dates_closest(df_t, 90)['close'] - 1).rename('Q_chg_pct'))
+        df_t = df_t.join((df_t['close'] / sub_dates_closest(df_t, 365)['close'] - 1).rename('Y_chg_pct'))
         # df_t = df_t.join(calc_volume_change(df_t)) # TEST THIS
         df_t = df_t.join(add_sma_pct(df_t, 20))
         df_t = df_t.join(add_sma_pct(df_t, 50))
@@ -104,38 +113,29 @@ def add_cci(ohlc, length):
 
 
 def print_apply_html_formats(df):
-    pct_cols = [c for c in df.columns if c.endswith('pct')]
     cci_cols = [c for c in df.columns if c.startswith('cci_')]
     # df = df.round(2)
     # df['Volume'] = df['Volume'].apply(lambda x: f'{x / 1e6:0.1f}M')
     df.columns = [c.replace("thestrat_", "") for c in df.columns]
+    df.columns = [c.replace("_chg_pct", "") for c in df.columns]
+    pct_cols = ["D", "W", "2W", "M", "Q", "Y", "sma20_pct", "sma50_pct", "sma150_pct", "sma200_pct"]
     cols = df.columns.tolist()
     cols.remove("volume")
     cols.append("volume")
     img_ticker_s = '<div class="cont-img"> <img src="https://financialmodelingprep.com/image-stock/{}.png" class="ticker-img" /></div>'
     df[' '] = df.reset_index()['index'].apply(lambda x: img_ticker_s.format(x)).values
+
     df = df[[" "] + cols]
     mapper = {"Hammer": "🔨", "Shooter": "🔫"}
     df['cnd_type'] = df['cnd_type'].apply(lambda x: mapper.get(x, ""))
     df = df.rename(columns={"cnd_color": "c", "cnd_type": "t", "profile_volume": "Vol"})
     out_df = df.style
-    out_df = out_df.background_gradient(subset=pct_cols, cmap='RdYlGn', vmin=-0.25, vmax=.25, axis=0)
-    out_df = out_df.background_gradient(subset=['d_chg_pct', 'w_chg_pct'], cmap='RdYlGn', vmin=-0.07, vmax=.07, axis=0)
+    out_df = out_df.background_gradient(subset=pct_cols, cmap='RdYlGn', vmin=-0.3, vmax=.3, axis=0)
+    # out_df = out_df.background_gradient(subset=[c for c in df.columns if "sma" in c], cmap='RdYlGn', vmin=-0.25, vmax=.25, axis=0)
+
+    # out_df = out_df.background_gradient(subset=['d_chg_pct', 'w_chg_pct'], cmap='RdYlGn', vmin=-0.07, vmax=.07, axis=0)
     out_df = out_df.background_gradient(subset=cci_cols, cmap='RdYlGn_r', vmin=-101, vmax=101, axis=0)
     out_df = out_df.background_gradient(subset='RSI14', cmap='RdYlGn_r', vmin=30, vmax=70, axis=0)
-
-    def color_combo(combo):
-        color = 'White'
-        if 'RL' in combo:
-            color = '#006837'
-        elif 'CL' in combo:
-            color = '#1a9850'
-        elif 'RS' in combo:
-            color = '#a50026'
-        elif 'CS' in combo:
-            color = '#d73027'
-        return f'background-color: {color}; color: white'
-
     # format_cols = ["price", "cci_14", "RSI14"]
     out_df = out_df.applymap(subset=['combo'], func=color_combo)
 
@@ -185,6 +185,11 @@ def print_pct_html(df_index, df_stocks, data_date):
         border-radius: 50%;
         }
     """
+    fg = get_fear_greed()
+    if fg is not None:
+        fg_str = f"""<span style="color:{get_color(fg['score'])};">{fg['rating'].capitalize()} ({fg['score']})</span>"""
+    else:
+        fg_str = ""
     with open(file_name, 'w', encoding="utf-8") as f:
         out = f"""
         <html><head>
@@ -195,6 +200,7 @@ def print_pct_html(df_index, df_stocks, data_date):
         </head><body>
         <div class="main-cont">
         <h1>Swing Selected tickers, Relevant to: {data_date.strftime('%a, %B %d, %Y at %H:%M UTC')}</h1>
+        <h3>Fear&Greed - {fg_str} </h3>
         {out_df1_html}
         {out_df2_html}
         </div>
@@ -243,9 +249,9 @@ def get_swings():
     tickers = crypto + fintech + big_tech + semi + cyber + internet_software + saas + chinese + internet_retail + other + green + consumer + medical + customer_service + indexes
     tickers = high_growth + indexes + tickers
     tickers = list(set(tickers))
-    data = get_daily_data(tickers, days_before=300, group_by='ticker')
-    #data.to_pickle("data_swing.pk")
-    #data = pd.read_pickle("data_swing.pk")
+    data = get_daily_data(tickers, days_before=400, group_by='ticker')
+    # data.to_pickle("data_swing.pk")
+    # data = pd.read_pickle("data_swing.pk")
     # data = data[:-days_before]
     if data.iloc[-1].isna().all():
         data = data[:-1]
@@ -277,6 +283,40 @@ def pprint_screener(df):
     print(df)
 
 
+def get_fear_greed():
+    url = "https://production.dataviz.cnn.io/index/fearandgreed/graphdata"
+    headers = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64)"}
+    try:
+        res = requests.get(url, headers=headers).json()['fear_and_greed']
+    except:
+        return None
+    return res
+
+
+def get_color(x):
+    if x > 70:
+        return '#a50026'
+    if x > 60:
+        return '#d73027'
+    if x < 30:
+        return '#006837'
+    if x < 40:
+        return '#1a9850'
+    return "Black"
+
+def color_combo(combo):
+    color = 'White'
+    if 'RL' in combo:
+        color = '#006837'
+    elif 'CL' in combo:
+        color = '#1a9850'
+    elif 'RS' in combo:
+        color = '#a50026'
+    elif 'CS' in combo:
+        color = '#d73027'
+    return f'background-color: {color}; color: white'
+
+
 def get_short_interset():
     url = "https://www.benzinga.com/short-interest/most-shorted"
     import requests
@@ -289,4 +329,5 @@ def get_short_interset():
 
 if __name__ == '__main__':
     days_before = 0  # 11
+    # get_fear_greed()
     get_swings()
