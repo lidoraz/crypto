@@ -187,7 +187,8 @@ def print_pct_html(df_index, df_stocks):
     """
     fg = get_fear_greed()
     if fg is not None:
-        fg_str = f"""<span style="color:{get_color(fg['score'])};">{fg['rating'].capitalize()} ({round(fg['score'])})</span>"""
+        d_chg = fg['score'] / fg['previous_close'] - 1
+        fg_str = f"""<span style="color:{get_color(fg['score'])};">{fg['rating'].capitalize()}, {round(fg['score'])} ({"+" if d_chg >0 else ""}{d_chg :0.0%})</span>"""
     else:
         fg_str = ""
     with open(file_name, 'w', encoding="utf-8") as f:
