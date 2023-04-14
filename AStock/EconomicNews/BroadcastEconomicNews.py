@@ -4,6 +4,7 @@ import pandas as pd
 from AStock.EconomicNews.util import scrape_data
 from datetime import datetime
 import requests
+from requests.exceptions import RequestException
 import os
 import time
 
@@ -33,6 +34,17 @@ def check_env():
     assert os.environ.get('TELEGRAM_GROUP_NEWS')
 
 
+def send_safe(url, params, tries=10):
+    for _ in range(tries):
+        try:
+            res = requests.get(url, params=params)
+            print(f"Sent with code: {res.status_code}, {res.content=}")
+            break
+        except RequestException as e:
+            print(f"Caught an exception in send, {e=}")
+            time.sleep(1)
+
+
 def publish(msg, prod):
     if prod:
         # url = "https://api.telegram.org/bot{token}/sendMessage?chat_id={group_id}&text={msg}&parse_mode=HTML"
@@ -44,11 +56,7 @@ def publish(msg, prod):
             "text": msg,
             "parse_mode": "HTML",
         }
-        # print(url.format(token=token, group_id=group_id, msg=msg))
-        res = requests.get(url.format(token),
-                           params=params)
-        print(res.status_code)
-        print(res.content)
+        send_safe(url.format(token), params)
     else:
         print(msg)
 
