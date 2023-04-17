@@ -130,7 +130,7 @@ def print_apply_html_formats(df):
     df['cnd_type'] = df['cnd_type'].apply(lambda x: mapper.get(x, ""))
     df = df.rename(columns={"cnd_color": "c", "cnd_type": "t", "profile_volume": "Vol"})
     out_df = df.style
-    out_df = out_df.background_gradient(subset=pct_cols, cmap='RdYlGn', vmin=-0.3, vmax=.3, axis=0)
+    out_df = out_df.background_gradient(subset=pct_cols, cmap='RdYlGn', axis=0) #  vmin=-0.3, vmax=.3,
     # out_df = out_df.background_gradient(subset=[c for c in df.columns if "sma" in c], cmap='RdYlGn', vmin=-0.25, vmax=.25, axis=0)
 
     # out_df = out_df.background_gradient(subset=['d_chg_pct', 'w_chg_pct'], cmap='RdYlGn', vmin=-0.07, vmax=.07, axis=0)
