@@ -2,7 +2,7 @@ import pandas as pd
 from datetime import datetime
 
 from AStock.insider_buy import put_object_stocks
-from AStock.util import plot_ohlc_daily
+from AStock.util import plot_ohlc_daily, get_daily_data
 from Indicators import RSI, TheStratInd
 import requests
 import matplotlib
@@ -210,7 +210,10 @@ def print_pct_html(df_index, df_stocks):
         border-radius: 50%;
         }
         table.dataTable thead th, table.dataTable thead td {
-          padding: 0px; !important
+          padding: 3px 6px; !important
+        }
+        table.dataTable tbody th, table.dataTable tbody td{
+            padding: 3px 6px; !important
         }
     """
     fg = get_fear_greed()
@@ -262,24 +265,24 @@ def filter_nulls(data):
 
 
 def get_data_retry(tickers):
-    # data = get_daily_data(tickers, days_before=400, group_by='ticker')
-    #
-    # def _get_invalid_tickers(data):
-    #     return [ticker for ticker in data.columns.get_level_values(0).unique()
-    #             if data[ticker].iloc[-1].isna().any()]
-    #
-    # invalid_tickers = _get_invalid_tickers(data)
-    # tries = 0
-    # while len(invalid_tickers) and tries < 5:
-    #     print(f'{len(invalid_tickers)=}, {tries=}, {invalid_tickers=}')
-    #     missing_data = get_daily_data(invalid_tickers, days_before=0, group_by='ticker')
-    #     data[invalid_tickers].iloc[-1] = missing_data.squeeze()
-    #     invalid_tickers = _get_invalid_tickers(data)
-    #     tries += 1
-    # # if data.iloc[-1].isna().all():
-    # #     data = data[:-1]
-    # #     print(f'Calculating for date: {data.index[-1].date()}')
-    # data.to_pickle("data_swing.pk")
+    data = get_daily_data(tickers, days_before=400, group_by='ticker')
+
+    def _get_invalid_tickers(data):
+        return [ticker for ticker in data.columns.get_level_values(0).unique()
+                if data[ticker].iloc[-1].isna().any()]
+
+    invalid_tickers = _get_invalid_tickers(data)
+    tries = 0
+    while len(invalid_tickers) and tries < 5:
+        print(f'{len(invalid_tickers)=}, {tries=}, {invalid_tickers=}')
+        missing_data = get_daily_data(invalid_tickers, days_before=0, group_by='ticker')
+        data[invalid_tickers].iloc[-1] = missing_data.squeeze()
+        invalid_tickers = _get_invalid_tickers(data)
+        tries += 1
+    # if data.iloc[-1].isna().all():
+    #     data = data[:-1]
+    #     print(f'Calculating for date: {data.index[-1].date()}')
+    data.to_pickle("data_swing.pk")
     data = pd.read_pickle("data_swing.pk")
     return data
 
