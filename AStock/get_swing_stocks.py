@@ -210,6 +210,9 @@ def print_pct_html(df_index, df_stocks):
         border-radius: 50%;
         }
         table.dataTable thead th, table.dataTable thead td {
+          position: sticky;
+          top: 0;
+          background: white;
           padding: 3px 6px; !important
         }
         table.dataTable tbody th, table.dataTable tbody td{
@@ -242,6 +245,7 @@ def print_pct_html(df_index, df_stocks):
             $(document).ready( function () {{
                 $('#T_stocks').DataTable({{
                     // pageLength: 100,
+                    fixedHeader: true, // not working, fixed with sticky header
                     paging: false,   
                     order: [[10, 'desc']],
                     // scrollY: 400,
