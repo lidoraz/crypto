@@ -2,7 +2,6 @@ import pandas as pd
 from datetime import datetime
 
 from AStock.insider_buy import put_object_stocks
-from AStock.sectors import get_daily_data, all_etf_longname
 from AStock.util import plot_ohlc_daily
 from Indicators import RSI, TheStratInd
 import requests
@@ -13,6 +12,34 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 file_name = 'daily_swing.html'
+
+high_growth = ['AFRM', 'AMD', 'CFLT', 'CRWD', 'DDOG', 'DLO', 'GLBE', 'GTLB', 'MELI', 'NET', 'NVDA',
+               'OKTA', 'OPEN', 'RBLX', 'S', 'SHOP', 'SNOW', 'SOFI', 'TOST', 'TSLA', 'TWLO', 'ZI', 'ARKK', 'WOLF',
+               'MNDY', 'BILL', 'ENPH', 'ASAN', 'ESTC', 'TEAM', 'IOT', 'HCP', 'ZS', 'U', 'MDB', 'SEDG', 'DAVA',
+               'ENTG', 'FSLR', 'GLOB', 'PLTR', 'TTD', 'HUBS', 'NOW', 'PATH', 'PCOR', 'EPAM', 'PAYC', 'FIVN', 'CYBR',
+               'DT', 'FTNT', 'PCTY', 'APP', 'PANW', 'PAGS']
+crypto = ['MARA', 'HUT', 'MSTR', 'RIOT', 'COIN']
+# FILTER GROWTH VS VALUE STOCK
+fintech = ['AFRM', 'SOFI', 'PYPL', 'SQ', 'UPST', 'LMND']
+big_tech = ['TSLA', 'AAPL', 'MSFT', 'GOOGL']
+semi = ['NVDA', 'AMD', 'MU', 'TXN', 'TSM']  # 'ASML', 'AMAT'
+cyber = ['CRWD', 'S', 'PANW', 'CYBR']
+saas = ['MNDY', 'DDOG', 'DASH', 'PATH', 'SNOW', 'CRM', 'VEEV']
+internet_software = ['META', 'GOOGL', 'PINS', 'ADBE']
+chinese = ['BABA', 'NIO', 'JD', ]
+other = ['RBLX', 'ROKU', 'DIS', 'NFLX', 'BA', "ZIM", "GS", "SCHW"]
+green = ['SEDG', 'ENPH']
+consumer = ['AMZN', 'SHOP', 'CHWY', 'RIVN', 'LULU']
+internet_retail = ['AMZN', 'CHWY', 'LULU']
+
+medical = ['TDOC', 'MRNA', "JNJ"]
+indexes = ['SPY', 'QQQ', 'IWM', 'DIA', 'SOXX', 'ARKK']  # 'RTY=F'
+sector_indexes = ["XLK", "XLC", "XLU", "XLRE", "XLB", "XLP", "XLI", "XLY", "XLV", "XLE", "XLF"]
+customer_service = ['WING', 'CROX', 'LOVE', 'UBER']
+
+
+# ADD VIX TICKERS FOR BAROMETER: ^VIX, ^VIX9D, ^VIX3M
+# all_etf_longname
 
 
 def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
@@ -114,26 +141,24 @@ def add_cci(ohlc, length):
 
 def print_apply_html_formats(df):
     cci_cols = [c for c in df.columns if c.startswith('cci_')]
-    # df = df.round(2)
-    # df['Volume'] = df['Volume'].apply(lambda x: f'{x / 1e6:0.1f}M')
     df.columns = [c.replace("thestrat_", "") for c in df.columns]
     df.columns = [c.replace("_chg_pct", "") for c in df.columns]
-    pct_cols = ["D", "W", "2W", "M", "Q", "Y", "sma20_pct", "sma50_pct", "sma150_pct", "sma200_pct"]
-    cols = df.columns.tolist()
-    cols.remove("volume")
-    cols.append("volume")
-    img_ticker_s = '<div class="cont-img"> <img src="https://financialmodelingprep.com/image-stock/{}.png" class="ticker-img" /></div>'
-    df[' '] = df.reset_index()['index'].apply(lambda x: img_ticker_s.format(x)).values
-
-    df = df[[" "] + cols]
+    pct_cols = {"D": 0.08, "W": 0.15, "2W": 0.15, "M": 0.2, "Q": 0.25, "Y": 0.5, "sma20_pct": 0.1, "sma50_pct": 0.15,
+                "sma150_pct": 0.2, "sma200_pct": 0.3}
     mapper = {"Hammer": "🔨", "Shooter": "🔫"}
     df['cnd_type'] = df['cnd_type'].apply(lambda x: mapper.get(x, ""))
-    df = df.rename(columns={"cnd_color": "c", "cnd_type": "t", "profile_volume": "Vol"})
+    img_ticker_s = '<div class="cont-img"> <img src="https://financialmodelingprep.com/image-stock/{}.png" class="ticker-img" /></div>'
+    df['Ticker'] = df.index.values
+    df[' '] = df['Ticker'].apply(lambda x: img_ticker_s.format(x))
+    # df.index.name = "Ticker"
+    df = df.rename(columns={"cnd_color": "c", "cnd_type": "t", "profile_volume": "Vol", "index": "Ticker"})
+    cols = ['Ticker', ' ', 'close', 'D', 'W', '2W', 'M', 'Q', 'Y', 'Vol', 'sma20_pct', 'sma50_pct', 'sma150_pct', 'sma200_pct',
+            'cci_14', 'RSI14', 'num', 'c', 't', 'combo', 'volume']
+    df = df[cols]
     out_df = df.style
-    out_df = out_df.background_gradient(subset=pct_cols, cmap='RdYlGn', axis=0) #  vmin=-0.3, vmax=.3,
-    # out_df = out_df.background_gradient(subset=[c for c in df.columns if "sma" in c], cmap='RdYlGn', vmin=-0.25, vmax=.25, axis=0)
-
-    # out_df = out_df.background_gradient(subset=['d_chg_pct', 'w_chg_pct'], cmap='RdYlGn', vmin=-0.07, vmax=.07, axis=0)
+    for pct_col, vmax in pct_cols.items():
+        out_df = out_df.background_gradient(subset=pct_col, cmap='RdYlGn', axis=0, vmin=-vmax,
+                                            vmax=vmax)
     out_df = out_df.background_gradient(subset=cci_cols, cmap='RdYlGn_r', vmin=-101, vmax=101, axis=0)
     out_df = out_df.background_gradient(subset='RSI14', cmap='RdYlGn_r', vmin=30, vmax=70, axis=0)
     # format_cols = ["price", "cci_14", "RSI14"]
@@ -146,7 +171,7 @@ def print_apply_html_formats(df):
     formatters['close'] = '${:.2f}'
     formatters['volume'] = lambda x: "{:.1f}M".format(x * 1e-6)
     formatters.update({c: '{:.1f}' for c in ["cci_14", "RSI14"]})
-    out_df = out_df.format(formatters)
+    out_df = out_df.format(formatters).hide_index()
     return out_df
 
 
@@ -155,8 +180,8 @@ def print_pct_html(df_index, df_stocks):
     print(out_df1.columns)
     out_df2 = print_apply_html_formats(df_stocks)
     # out_df1 = out_df1.set_caption()
-    out_df1_html = out_df1.to_html()
-    out_df2_html = out_df2.to_html()
+    out_df1_html = out_df1.to_html(table_uuid="indexes")
+    out_df2_html = out_df2.to_html(table_uuid="stocks")
     style = """
         * {font-family: sans-serif;}
         h1 {
@@ -184,17 +209,21 @@ def print_pct_html(df_index, df_stocks):
         max-width: 30px;
         border-radius: 50%;
         }
+        table.dataTable thead th, table.dataTable thead td {
+          padding: 0px; !important
+        }
     """
     fg = get_fear_greed()
     if fg is not None:
         d_chg = fg['score'] / fg['previous_close'] - 1
-        fg_str = f"""<span style="color:{get_color(fg['score'])};">{fg['rating'].capitalize()}, {round(fg['score'])} ({"+" if d_chg >0 else ""}{d_chg :0.0%})</span>"""
+        fg_str = f"""<span style="color:{get_color(fg['score'])};">{fg['rating'].capitalize()}, {round(fg['score'])} ({"+" if d_chg > 0 else ""}{d_chg :0.0%})</span>"""
     else:
         fg_str = ""
     with open(file_name, 'w', encoding="utf-8") as f:
         out = f"""
         <html><head>
         <title>Swing Screener</title>
+        <link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet">
         <style>
         {style}
         </style>
@@ -204,6 +233,17 @@ def print_pct_html(df_index, df_stocks):
         <h3>Fear&Greed - {fg_str} </h3>
         {out_df1_html}
         {out_df2_html}
+        <script src="https://code.jquery.com/jquery-3.6.0.slim.min.js" integrity="sha256-u7e5khyithlIdTpu22PHhENmPcRdFiHRjhAuHcs05RI=" crossorigin="anonymous"></script>
+        <script type="text/javascript" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+        <script>
+            $(document).ready( function () {{
+                $('#T_stocks').DataTable({{
+                    // pageLength: 100,
+                    paging: false,    
+                    // scrollY: 400,
+                }});
+            }});
+        </script>
         </div>
         
         </body></html>
@@ -221,46 +261,37 @@ def filter_nulls(data):
     return data
 
 
-def get_swings():
-    high_growth = ['AFRM', 'AMD', 'CFLT', 'CRWD', 'DDOG', 'DLO', 'GLBE', 'GTLB', 'MELI', 'NET', 'NVDA',
-                   'OKTA', 'OPEN', 'RBLX', 'S', 'SHOP', 'SNOW', 'SOFI', 'TOST', 'TSLA', 'TWLO', 'ZI', 'ARKK', 'WOLF',
-                   'MNDY', 'BILL', 'ENPH', 'ASAN', 'ESTC', 'TEAM', 'IOT', 'HCP', 'ZS', 'U', 'MDB', 'SEDG', 'DAVA',
-                   'ENTG', 'FSLR', 'GLOB', 'PLTR', 'TTD', 'HUBS', 'NOW', 'PATH', 'PCOR', 'EPAM', 'PAYC', 'FIVN', 'CYBR',
-                   'DT', 'FTNT', 'PCTY', 'APP', 'PANW', 'PAGS']
-    crypto = ['MARA', 'HUT', 'MSTR', 'RIOT', 'COIN']
-    # FILTER GROWTH VS VALUE STOCK
-    fintech = ['AFRM', 'SOFI', 'PYPL', 'SQ', 'UPST', 'LMND']
-    big_tech = ['TSLA', 'AAPL', 'MSFT', 'GOOGL']
-    semi = ['NVDA', 'AMD', 'MU', 'TXN', 'TSM']  # 'ASML', 'AMAT'
-    cyber = ['CRWD', 'S', 'PANW', 'CYBR']
-    saas = ['MNDY', 'DDOG', 'DASH', 'PATH', 'SNOW', 'CRM', 'VEEV']
-    internet_software = ['META', 'GOOGL', 'PINS', 'ADBE']
-    chinese = ['BABA', 'NIO', 'JD', ]
-    other = ['RBLX', 'ROKU', 'DIS', 'NFLX', 'BA', "ZIM", "GS", "SCHW"]
-    green = ['SEDG', 'ENPH']
-    consumer = ['AMZN', 'SHOP', 'CHWY', 'RIVN', 'LULU']
-    internet_retail = ['AMZN', 'CHWY', 'LULU']
+def get_data_retry(tickers):
+    # data = get_daily_data(tickers, days_before=400, group_by='ticker')
+    #
+    # def _get_invalid_tickers(data):
+    #     return [ticker for ticker in data.columns.get_level_values(0).unique()
+    #             if data[ticker].iloc[-1].isna().any()]
+    #
+    # invalid_tickers = _get_invalid_tickers(data)
+    # tries = 0
+    # while len(invalid_tickers) and tries < 5:
+    #     print(f'{len(invalid_tickers)=}, {tries=}, {invalid_tickers=}')
+    #     missing_data = get_daily_data(invalid_tickers, days_before=0, group_by='ticker')
+    #     data[invalid_tickers].iloc[-1] = missing_data.squeeze()
+    #     invalid_tickers = _get_invalid_tickers(data)
+    #     tries += 1
+    # # if data.iloc[-1].isna().all():
+    # #     data = data[:-1]
+    # #     print(f'Calculating for date: {data.index[-1].date()}')
+    # data.to_pickle("data_swing.pk")
+    data = pd.read_pickle("data_swing.pk")
+    return data
 
-    medical = ['TDOC', 'MRNA', "JNJ"]
-    indexes = ['SPY', 'QQQ', 'IWM', 'DIA', 'SOXX', 'ARKK']  # 'RTY=F'
-    sector_indexes = ["XLK", "XLC", "XLU", "XLRE", "XLB", "XLP", "XLI", "XLY", "XLV", "XLE", "XLF"]
-    customer_service = ['WING', 'CROX', 'LOVE', 'UBER']
-    # ADD VIX TICKERS FOR BAROMETER: ^VIX, ^VIX9D, ^VIX3M
-    # all_etf_longname
+
+def get_swings():
     tickers = crypto + fintech + big_tech + semi + cyber + internet_software + saas + chinese + internet_retail + other + green + consumer + medical + customer_service + indexes
     tickers = high_growth + indexes + tickers
     tickers = list(set(tickers))
-    data = get_daily_data(tickers, days_before=400, group_by='ticker')
-    # data.to_pickle("data_swing.pk")
-    # data = pd.read_pickle("data_swing.pk")
-    # data = data[:-days_before]
-    if data.iloc[-1].isna().all():
-        data = data[:-1]
-        print(f'Calculating for date: {data.index[-1].date()}')
 
+    data = get_data_retry(tickers)
     df = check_ticker(data)
     df_index = df.reindex(indexes)  # filter and reindex
-    # pprint_screener(df_index)
     df_stocks = df[~df.index.isin(indexes)]
     # LONG - should be far from sma20, SHORT- higher than sma 20.
     # df_stocks = df_stocks.sort_values('sma20_pct', ascending=False)  # check long potentials
