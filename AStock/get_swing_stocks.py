@@ -108,7 +108,7 @@ def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
         df_t = df_t.join(add_sma_pct(df_t, 50))
         df_t = df_t.join(add_sma_pct(df_t, 150))
         df_t = df_t.join(add_sma_pct(df_t, 200))
-        df_t = df_t.join(add_cci(df_t, 14))
+        df_t = df_t.join(add_cci(df_t, 20))
         df_t = df_t.join(RSI(14).calc(df_t))
         df_t = df_t.join(TheStratInd(False).calc(df_t[-5:]).fillna(''))
         # add_sma_pct(df_t, 200)
@@ -136,15 +136,15 @@ def add_cci(ohlc, length):
     ma = ohlc['close'].rolling(length).mean()
     dev = ohlc['close'].rolling(length).std()
     cci = (src - ma) / (0.015 * dev)
-    return pd.Series(cci).rename(f'cci_{length}').round(2)
+    return pd.Series(cci).rename(f'CCI{length}').round(2)
 
 
 def print_apply_html_formats(df):
-    cci_cols = [c for c in df.columns if c.startswith('cci_')]
     df.columns = [c.replace("thestrat_", "") for c in df.columns]
     df.columns = [c.replace("_chg_pct", "") for c in df.columns]
-    pct_cols = {"D": 0.08, "W": 0.15, "2W": 0.15, "M": 0.2, "Q": 0.25, "Y": 0.5, "sma20_pct": 0.1, "sma50_pct": 0.15,
-                "sma150_pct": 0.2, "sma200_pct": 0.3}
+    df.columns = [c.replace("_pct", "") for c in df.columns]
+    pct_cols = {"D": 0.08, "W": 0.15, "2W": 0.15, "M": 0.2, "Q": 0.25, "Y": 0.5, "sma20": 0.1, "sma50": 0.15,
+                "sma150": 0.2, "sma200": 0.3}
     mapper = {"Hammer": "🔨", "Shooter": "🔫"}
     df['cnd_type'] = df['cnd_type'].apply(lambda x: mapper.get(x, ""))
     img_ticker_s = '<div class="cont-img"> <img src="https://financialmodelingprep.com/image-stock/{}.png" class="ticker-img" /></div>'
@@ -152,14 +152,14 @@ def print_apply_html_formats(df):
     df[' '] = df['Ticker'].apply(lambda x: img_ticker_s.format(x))
     # df.index.name = "Ticker"
     df = df.rename(columns={"cnd_color": "c", "cnd_type": "t", "profile_volume": "Vol", "index": "Ticker"})
-    cols = ['Ticker', ' ', 'close', 'D', 'W', '2W', 'M', 'Q', 'Y', 'Vol', 'sma20_pct', 'sma50_pct', 'sma150_pct', 'sma200_pct',
-            'cci_14', 'RSI14', 'num', 'c', 't', 'combo', 'volume']
+    cols = ['Ticker', ' ', 'close', 'D', 'W', '2W', 'M', 'Q', 'Y', 'Vol', 'sma20', 'sma50', 'sma150', 'sma200',
+            'CCI20', 'RSI14', 'num', 'c', 't', 'combo', 'volume']
     df = df[cols]
     out_df = df.style
     for pct_col, vmax in pct_cols.items():
         out_df = out_df.background_gradient(subset=pct_col, cmap='RdYlGn', axis=0, vmin=-vmax,
                                             vmax=vmax)
-    out_df = out_df.background_gradient(subset=cci_cols, cmap='RdYlGn_r', vmin=-101, vmax=101, axis=0)
+    out_df = out_df.background_gradient(subset="CCI20", cmap='RdYlGn_r', vmin=-101, vmax=101, axis=0)
     out_df = out_df.background_gradient(subset='RSI14', cmap='RdYlGn_r', vmin=30, vmax=70, axis=0)
     # format_cols = ["price", "cci_14", "RSI14"]
     out_df = out_df.applymap(subset=['combo'], func=color_combo)
@@ -167,10 +167,10 @@ def print_apply_html_formats(df):
     out_df = out_df.set_properties(**{'text-align': 'center'})
     # out_df.applymap(subset=['cnd_color' , 'thestrat_combo'], func=lambda v: "color:pink;" if v>4 else "color:darkblue;")
     # formatters = {c: '{:.2f}' for c in df.columns if c not in strat_cols}
-    formatters = {c: '{:.2%}' for c in pct_cols}
+    formatters = {c: '{:.1%}' for c in pct_cols}
     formatters['close'] = '${:.2f}'
     formatters['volume'] = lambda x: "{:.1f}M".format(x * 1e-6)
-    formatters.update({c: '{:.1f}' for c in ["cci_14", "RSI14"]})
+    formatters.update({c: '{:.1f}' for c in ["CCI20", "RSI14"]})
     out_df = out_df.format(formatters).hide_index()
     return out_df
 
@@ -299,7 +299,7 @@ def get_swings():
     df_stocks = df[~df.index.isin(indexes)]
     # LONG - should be far from sma20, SHORT- higher than sma 20.
     # df_stocks = df_stocks.sort_values('sma20_pct', ascending=False)  # check long potentials
-    df_stocks = df_stocks.sort_values(['sma20_pct', 'cnd_color', ], ascending=[False, True, ])  # check long potentials
+    # df_stocks = df_stocks.sort_values(['sma20_pct', 'cnd_color', ], ascending=[False, True, ])  # check long potentials
     # CHECK RSI, and CCI, check also for volume decrease for sells.
     # check that close price is not far from open, look for doji, or bullish, also can use thestrat for indicator.
     # pprint_screener(df_stocks)
