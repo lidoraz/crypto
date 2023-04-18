@@ -242,7 +242,8 @@ def print_pct_html(df_index, df_stocks):
             $(document).ready( function () {{
                 $('#T_stocks').DataTable({{
                     // pageLength: 100,
-                    paging: false,    
+                    paging: false,   
+                    order: [[10, 'desc']],
                     // scrollY: 400,
                 }});
             }});
