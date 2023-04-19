@@ -2,7 +2,6 @@ import pandas as pd
 from datetime import datetime
 
 from AStock.insider_buy import put_object_stocks
-from AStock.util import plot_ohlc_daily, get_daily_data
 from Indicators import RSI, TheStratInd
 import requests
 import matplotlib
@@ -12,9 +11,10 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 file_name = 'daily_swing.html'
-
+WITH_AFTER_HOURS = True
 high_growth = ['AFRM', 'AMD', 'CFLT', 'CRWD', 'DDOG', 'DLO', 'GLBE', 'GTLB', 'MELI', 'NET', 'NVDA',
-               'OKTA', 'OPEN', 'RBLX', 'S', 'SHOP', 'SNOW', 'SOFI', 'TOST', 'TSLA', 'TWLO', 'ZI', 'WOLF', 'SOXX', 'ARKK',
+               'OKTA', 'OPEN', 'RBLX', 'S', 'SHOP', 'SNOW', 'SOFI', 'TOST', 'TSLA', 'TWLO', 'ZI', 'WOLF', 'SOXX',
+               'ARKK',
                'MNDY', 'BILL', 'ENPH', 'ASAN', 'ESTC', 'TEAM', 'IOT', 'HCP', 'ZS', 'U', 'MDB', 'SEDG', 'DAVA',
                'ENTG', 'FSLR', 'GLOB', 'PLTR', 'TTD', 'HUBS', 'NOW', 'PATH', 'PCOR', 'EPAM', 'PAYC', 'FIVN', 'CYBR',
                'DT', 'FTNT', 'PCTY', 'APP', 'PANW', 'PAGS']
@@ -22,7 +22,7 @@ crypto = ['MARA', 'HUT', 'MSTR', 'RIOT', 'COIN']
 # FILTER GROWTH VS VALUE STOCK
 fintech = ['AFRM', 'SOFI', 'PYPL', 'SQ', 'UPST', 'LMND']
 big_tech = ['TSLA', 'AAPL', 'MSFT', 'GOOGL']
-semi = ['NVDA', 'AMD', 'MU', 'TXN', 'TSM']  # 'ASML', 'AMAT'
+semi = ['NVDA', 'AMD', 'MU', 'TXN', 'TSM', 'ASML', 'AMAT']
 cyber = ['CRWD', 'S', 'PANW', 'CYBR']
 saas = ['MNDY', 'DDOG', 'DASH', 'PATH', 'SNOW', 'CRM', 'VEEV']
 internet_software = ['META', 'GOOGL', 'PINS', 'ADBE']
@@ -30,24 +30,24 @@ chinese = ['BABA', 'NIO', 'JD', ]
 other = ['RBLX', 'ROKU', 'DIS', 'NFLX', 'BA', "ZIM", "GS", "SCHW"]
 green = ['SEDG', 'ENPH']
 consumer = ['AMZN', 'SHOP', 'CHWY', 'RIVN', 'LULU']
-internet_retail = ['AMZN', 'CHWY', 'LULU']
+internet_retail = ['AMZN', 'CHWY', 'LULU', 'SHOP', 'ETSY']
 
 medical = ['TDOC', 'MRNA', "JNJ"]
 indexes = ['SPY', 'QQQ', 'IWM', 'DIA']  # 'RTY=F'
 customer_service = ['WING', 'CROX', 'LOVE', 'UBER']
 tw_icons_path = "https://s3-symbol-logo.tradingview.com/sector/"
-sector_indexes = {"XLK": f"{tw_icons_path}technology--big.svg",
-                  "XLC": f"{tw_icons_path}communication-services--big.svg",
-                  "XLU": f"{tw_icons_path}utilities--big.svg",
-                  "XLRE": f"{tw_icons_path}real-estate--big.svg",
-                  "XLB": f"{tw_icons_path}materials--big.svg",
-                  "XLP": f"{tw_icons_path}consumer-staples--big.svg",
-                  "XLI": f"{tw_icons_path}industrial--big.svg",
-                  "XLY": f"{tw_icons_path}consumer-discretionary--big.svg",
-                  "XLV": f"{tw_icons_path}health-care--big.svg",
-                  "XLE": f"{tw_icons_path}energy--big.svg",
-                  "XLF": f"{tw_icons_path}financial--big.svg"}
-
+# technology--big.svg" for bigger icons
+sector_indexes = {"XLK": f"{tw_icons_path}technology.svg",
+                  "XLC": f"{tw_icons_path}communication-services.svg",
+                  "XLU": f"{tw_icons_path}utilities.svg",
+                  "XLRE": f"{tw_icons_path}real-estate.svg",
+                  "XLB": f"{tw_icons_path}materials.svg",
+                  "XLP": f"{tw_icons_path}consumer-staples.svg",
+                  "XLI": f"{tw_icons_path}industrial.svg",
+                  "XLY": f"{tw_icons_path}consumer-discretionary.svg",
+                  "XLV": f"{tw_icons_path}health-care.svg",
+                  "XLE": f"{tw_icons_path}energy.svg",
+                  "XLF": f"{tw_icons_path}financial.svg"}
 
 # ADD VIX TICKERS FOR BAROMETER: ^VIX, ^VIX9D, ^VIX3M
 # all_etf_longname
@@ -88,7 +88,7 @@ style = """
         #T_stocks thead th{
           position: sticky;
           top: 0;
-          background: white;
+          background-color: white;
           background-repeat: no-repeat;
         }
         #T_stocks_filter{
@@ -112,16 +112,6 @@ def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
 
     res = pd.DataFrame()
 
-    # x = list(df_t['Volume'].rolling(5))[-1]
-    def calc_volume_change(df):
-        n = 5
-        # vol_pct = df['Volume'].rolling(n).pct_change()
-        # price_pct = df['Close'].rolling(n).pct_change()
-        # Calculating only last 5 rows, needs to join them to the main table, this currently does not work.
-        last_row_vol = [x.pct_change().values for x in list(df['volume'][-n:].rolling(n))][-1][1:]
-        last_row_price = df['change_pct'][-n + 1:].values
-        return pd.Series(zip(last_row_vol, last_row_price)).rename('vol_price_trend')
-
     def volume_thumbnail(df_t, lk):
         lat_df = df_t[-lk:]
         color_bars = ['green' if x['close'] > x['open'] else 'red' for _, x in lat_df.iterrows()]
@@ -130,18 +120,11 @@ def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
         plt.savefig(f'AStock/img/{ticker}.png', bbox_inches='tight')
         plt.clf()
 
-    def candle_stick_thumbnail(df, lk):
-        df_t = df[-lk:]
-        fig = plot_ohlc_daily(df_t)
-        plt.axis('off')
-        plt.savefig(f'AStock/img/{ticker}_ohlc.png')
-        plt.clf()
-
     for ticker in tickers:
         df_t = data[ticker]
         df_t.columns = [c.lower() for c in df_t.columns]
         # minimum volume req:
-        if df_t['volume'].rolling(14).mean()[-1] < minimum_volume:
+        if df_t['volume'][-14:].rolling(14).mean()[-1] < minimum_volume:
             print(f'Filtered out ticker: {ticker} due to low avg volume')
             continue
 
@@ -152,36 +135,41 @@ def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
                 if index in df.index:
                     return df.loc[index]
 
-        df_t = df_t.join((df_t['close'] / sub_dates_closest(df_t, 1)['close'] - 1).rename('D_chg_pct'))
-        df_t = df_t.join((df_t['close'] / sub_dates_closest(df_t, 7)['close'] - 1).rename('W_chg_pct'))
-        df_t = df_t.join((df_t['close'] / sub_dates_closest(df_t, 14)['close'] - 1).rename('2W_chg_pct'))
-        df_t = df_t.join((df_t['close'] / sub_dates_closest(df_t, 30)['close'] - 1).rename('M_chg_pct'))
-        df_t = df_t.join((df_t['close'] / sub_dates_closest(df_t, 90)['close'] - 1).rename('Q_chg_pct'))
-        df_t = df_t.join((df_t['close'] / sub_dates_closest(df_t, 365)['close'] - 1).rename('Y_chg_pct'))
-        # df_t = df_t.join(calc_volume_change(df_t)) # TEST THIS
-        df_t = df_t.join(add_sma_pct(df_t, 20))
-        df_t = df_t.join(add_sma_pct(df_t, 50))
-        df_t = df_t.join(add_sma_pct(df_t, 150))
-        df_t = df_t.join(add_sma_pct(df_t, 200))
-        df_t = df_t.join(add_cci(df_t, 20))
-        df_t = df_t.join(RSI(14).calc(df_t))
-        df_t = df_t.join(TheStratInd(False).calc(df_t[-5:]).fillna(''))
-        # add_sma_pct(df_t, 200)
-        # dist to sma, if below, will be positive, if above, should be negative
+        price = df_t['close'].iloc[-1]
+        pct_values = {"D_chg_pct": price / sub_dates_closest(df_t, 1)['close'] - 1,
+                      "W_chg_pct": price / sub_dates_closest(df_t, 7)['close'] - 1,
+                      "2W_chg_pct": price / sub_dates_closest(df_t, 14)['close'] - 1,
+                      "M_chg_pct": price / sub_dates_closest(df_t, 30)['close'] - 1,
+                      "Q_chg_pct": price / sub_dates_closest(df_t, 90)['close'] - 1,
+                      "Y_chg_pct": price / sub_dates_closest(df_t, 365)['close'] - 1,
+                      "2Y_chg_pct": price / sub_dates_closest(df_t, 720)['close'] - 1}
+        sma_lookback = [20, 50, 150, 200]
+        ind_sma = {f'sma{x}_pct': add_sma_pct(df_t[-x:], x).iloc[-1] for x in sma_lookback}
+        ind_momentum = {
+            'CCI20': add_cci(df_t[-20:], 20).iloc[-1],
+            'RSI14': RSI(14).calc(df_t[-14:]).iloc[-1].squeeze(),
+            **TheStratInd(False).calc(df_t[-5:]).fillna('').iloc[-1].to_dict()
+        }
+        price_volume = df_t['volume'].iloc[-1] * df_t['close'].iloc[-1]
 
-        # curr_row = curr_row # [['Close', 'Volume']]
-        # curr_row.name = ticker
+        signals = {"Price": price,
+                   **pct_values,
+                   **ind_sma,
+                   **ind_momentum,
+                   "Volume": df_t['volume'].iloc[-1],
+                   "Vol($)": price_volume
+                   }
+        # dist to sma, if below, will be positive, if above, should be negative
         volume_thumbnail(df_t, 5)
-        # candle_stick_thumbnail(df_t, 10)
-        curr_row = df_t.iloc[-day_shift].rename(ticker)
-        curr_row = curr_row.drop(['adj close', 'open', 'high', 'low'])  # 'High', 'Low'
+        curr_row = pd.Series(signals, name=ticker)
+        # curr_row = df_t.iloc[-day_shift].rename(ticker)
+        # curr_row = curr_row.drop(['adj close', 'open', 'high', 'low'])  # 'High', 'Low'
         with open(f'AStock/img/{ticker}.png', 'rb') as f:
             b64 = base64.b64encode(open(f'AStock/img/{ticker}.png', 'rb').read()).decode("utf-8")
             src_b64 = f"data: image/png; base64,{b64}"
             curr_row['profile_volume'] = f'<img src="{src_b64}" height="27px"/>'
         # curr_row['profile_volume'] = f'<img src="img/{ticker}.png" height="27px"/>'
         res = pd.concat([res, curr_row.to_frame()], axis=1)
-    # [['Close', 'Volume']]
     res = res.T
     return res
 
@@ -198,7 +186,7 @@ def print_apply_html_formats(df, custom_icons=None):
     df.columns = [c.replace("thestrat_", "") for c in df.columns]
     df.columns = [c.replace("_chg_pct", "") for c in df.columns]
     df.columns = [c.replace("_pct", "") for c in df.columns]
-    pct_cols = {"D": 0.08, "W": 0.15, "2W": 0.15, "M": 0.2, "Q": 0.25, "Y": 0.5, "sma20": 0.1, "sma50": 0.15,
+    pct_cols = {"D": 0.08, "W": 0.15, "2W": 0.15, "M": 0.2, "Q": 0.25, "Y": 0.5, "2Y": 0.5, "sma20": 0.1, "sma50": 0.15,
                 "sma150": 0.2, "sma200": 0.3}
     mapper = {"Hammer": "🔨", "Shooter": "🔫"}
     df['cnd_type'] = df['cnd_type'].apply(lambda x: mapper.get(x, ""))
@@ -211,11 +199,14 @@ def print_apply_html_formats(df, custom_icons=None):
         df[' '] = df['Ticker'].apply(lambda x: img_ticker_s.format(x))
 
     df = df.rename(columns={"cnd_color": "c", "cnd_type": "t", "profile_volume": "Vol", "index": "Ticker"})
-    cols = ['Ticker', ' ', 'close', 'D', 'W', '2W', 'M', 'Q', 'Y', 'Vol', 'sma20', 'sma50', 'sma150', 'sma200',
-            'CCI20', 'RSI14', 'num', 'c', 't', 'combo', 'volume']
+    cols = ['Ticker', ' ', 'Price', 'Vol', *pct_cols,
+            'CCI20', 'RSI14', 'num', 'c', 't', 'combo', 'Volume', "Vol($)"]
     df = df[cols]
+    df['2Y'] = df['2Y'].fillna(0)
     out_df = df.style
     for pct_col, vmax in pct_cols.items():
+        if pct_col == "2Y":
+            print()
         out_df = out_df.background_gradient(subset=pct_col, cmap='RdYlGn', axis=0, vmin=-vmax,
                                             vmax=vmax)
     out_df = out_df.background_gradient(subset="CCI20", cmap='RdYlGn_r', vmin=-101, vmax=101, axis=0)
@@ -227,8 +218,10 @@ def print_apply_html_formats(df, custom_icons=None):
     # out_df.applymap(subset=['cnd_color' , 'thestrat_combo'], func=lambda v: "color:pink;" if v>4 else "color:darkblue;")
     # formatters = {c: '{:.2f}' for c in df.columns if c not in strat_cols}
     formatters = {c: '{:.1%}' for c in pct_cols}
-    formatters['close'] = '${:.2f}'
-    formatters['volume'] = lambda x: "{:.1f}M".format(x * 1e-6)
+    formatters['Price'] = '${:.2f}'
+    fun_vol = lambda x: round(x * 1e-6, 1)
+    formatters['Vol($)'] = fun_vol #lambda x: "{:.1f}M".format(x * 1e-6)
+    formatters['Volume'] = fun_vol # lambda x: "{:.1f}M".format(x * 1e-6)
     formatters.update({c: '{:.1f}' for c in ["CCI20", "RSI14"]})
     out_df = out_df.format(formatters).hide_index()
     return out_df
@@ -310,17 +303,30 @@ def filter_nulls(data):
 
 
 def get_data_retry(tickers):
-    data = get_daily_data(tickers, days_before=400, group_by='ticker')
+    import yfinance as yf
+
+    def _get_daily_data(tickers, period):
+        return yf.download(' '.join(tickers), period=period,
+                           rounding=True,
+                           prepost=WITH_AFTER_HOURS,
+                           group_by='ticker',  # default is on columns. ticker is easier to iterate
+                           auto_adjust=False,  # false on default, what does it do?
+                           show_errors=True,
+                           interval='1d', threads=True, progress=True)
+
+    data = _get_daily_data(tickers, '2y')
 
     def _get_invalid_tickers(data):
         return [ticker for ticker in data.columns.get_level_values(0).unique()
                 if data[ticker].iloc[-1].isna().any()]
 
+    if len(tickers) == 1:
+        return data
     invalid_tickers = _get_invalid_tickers(data)
     tries = 0
     while len(invalid_tickers) and tries < 5:
         print(f'{len(invalid_tickers)=}, {tries=}, {invalid_tickers=}')
-        missing_data = get_daily_data(invalid_tickers, days_before=0, group_by='ticker')
+        missing_data = _get_daily_data(invalid_tickers, '1d')
         data[invalid_tickers].iloc[-1] = missing_data.squeeze()
         invalid_tickers = _get_invalid_tickers(data)
         tries += 1
@@ -330,7 +336,7 @@ def get_data_retry(tickers):
     return data
 
 
-def get_swings():
+def get_swings(test=False):
     tickers = crypto + fintech + big_tech + semi + cyber + internet_software + saas + chinese + internet_retail + other + green + consumer + medical + customer_service + indexes
     sector_tickers = list(sector_indexes.keys())
     tickers += high_growth + indexes + sector_tickers
@@ -339,8 +345,8 @@ def get_swings():
     data = get_data_retry(tickers)
     df = check_ticker(data)
     df.to_pickle("data_swing.pk")
-
     df = pd.read_pickle("data_swing.pk")
+
     df_index = df.reindex(indexes)  # filter and reindex
     df_sectors = df.loc[sector_tickers]
     df_stocks = df[~df.index.isin(sector_tickers + indexes)]
@@ -353,17 +359,6 @@ def get_swings():
 
     print_pct_html(df_index, df_sectors, df_stocks)
     put_object_stocks(file_name, f'stocks/{file_name}')
-
-
-def pprint_screener(df):
-    df = df.copy()
-    df['volume'] = df['volume'].apply(lambda x: f'{x / 1e6:0.1f}M')
-    pct_cols = [c for c in df.columns if c.endswith('_pct')]
-    df = df.sort_values('sma20_pct', ascending=False)
-    df[pct_cols] = df[pct_cols].applymap(lambda x: f'{x:.2%}')
-    # out_df = out_df.style.format({c: '{:.2%}' for c in pct_cols})
-    # df = df.format()
-    print(df)
 
 
 def get_fear_greed():
