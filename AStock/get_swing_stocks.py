@@ -147,7 +147,7 @@ def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
         ind_sma = {f'sma{x}_pct': add_sma_pct(df_t[-x:], x).iloc[-1] for x in sma_lookback}
         ind_momentum = {
             'CCI20': add_cci(df_t[-20:], 20).iloc[-1],
-            'RSI14': RSI(14).calc(df_t[-14:]).iloc[-1].squeeze(),
+            'RSI14': RSI(14).calc(df_t[-70:]).iloc[-1].squeeze(),
             **TheStratInd(False).calc(df_t[-5:]).fillna('').iloc[-1].to_dict()
         }
         price_volume = df_t['volume'].iloc[-1] * df_t['close'].iloc[-1]
