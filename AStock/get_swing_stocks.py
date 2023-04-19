@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 file_name = 'daily_swing.html'
 
 high_growth = ['AFRM', 'AMD', 'CFLT', 'CRWD', 'DDOG', 'DLO', 'GLBE', 'GTLB', 'MELI', 'NET', 'NVDA',
-               'OKTA', 'OPEN', 'RBLX', 'S', 'SHOP', 'SNOW', 'SOFI', 'TOST', 'TSLA', 'TWLO', 'ZI', 'ARKK', 'WOLF',
+               'OKTA', 'OPEN', 'RBLX', 'S', 'SHOP', 'SNOW', 'SOFI', 'TOST', 'TSLA', 'TWLO', 'ZI', 'WOLF', 'SOXX', 'ARKK',
                'MNDY', 'BILL', 'ENPH', 'ASAN', 'ESTC', 'TEAM', 'IOT', 'HCP', 'ZS', 'U', 'MDB', 'SEDG', 'DAVA',
                'ENTG', 'FSLR', 'GLOB', 'PLTR', 'TTD', 'HUBS', 'NOW', 'PATH', 'PCOR', 'EPAM', 'PAYC', 'FIVN', 'CYBR',
                'DT', 'FTNT', 'PCTY', 'APP', 'PANW', 'PAGS']
@@ -33,13 +33,68 @@ consumer = ['AMZN', 'SHOP', 'CHWY', 'RIVN', 'LULU']
 internet_retail = ['AMZN', 'CHWY', 'LULU']
 
 medical = ['TDOC', 'MRNA', "JNJ"]
-indexes = ['SPY', 'QQQ', 'IWM', 'DIA', 'SOXX', 'ARKK']  # 'RTY=F'
-sector_indexes = ["XLK", "XLC", "XLU", "XLRE", "XLB", "XLP", "XLI", "XLY", "XLV", "XLE", "XLF"]
+indexes = ['SPY', 'QQQ', 'IWM', 'DIA']  # 'RTY=F'
 customer_service = ['WING', 'CROX', 'LOVE', 'UBER']
+tw_icons_path = "https://s3-symbol-logo.tradingview.com/sector/"
+sector_indexes = {"XLK": f"{tw_icons_path}technology--big.svg",
+                  "XLC": f"{tw_icons_path}communication-services--big.svg",
+                  "XLU": f"{tw_icons_path}utilities--big.svg",
+                  "XLRE": f"{tw_icons_path}real-estate--big.svg",
+                  "XLB": f"{tw_icons_path}materials--big.svg",
+                  "XLP": f"{tw_icons_path}consumer-staples--big.svg",
+                  "XLI": f"{tw_icons_path}industrial--big.svg",
+                  "XLY": f"{tw_icons_path}consumer-discretionary--big.svg",
+                  "XLV": f"{tw_icons_path}health-care--big.svg",
+                  "XLE": f"{tw_icons_path}energy--big.svg",
+                  "XLF": f"{tw_icons_path}financial--big.svg"}
 
 
 # ADD VIX TICKERS FOR BAROMETER: ^VIX, ^VIX9D, ^VIX3M
 # all_etf_longname
+
+style = """
+        * {font-family: sans-serif;}
+        h1 {
+        text-align: center;
+        }
+        main-cont{
+        margin: auto;
+        }
+        table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 11pt;
+        }
+        .cont-img {
+        height: 26px;
+        width: 26px;
+        background: white;
+        display: flex;
+        align-items: center;
+        border-radius: 50%;
+        }
+
+        .ticker-img {
+        max-height: 26px;
+        max-width: 26px;
+        border-radius: 50%;
+        }
+        table.dataTable thead th, table.dataTable thead td {
+          padding: 3px 6px; !important
+        }
+        table.dataTable tbody th, table.dataTable tbody td{
+            padding: 3px 6px; !important
+        }
+        #T_stocks thead th{
+          position: sticky;
+          top: 0;
+          background: white;
+          background-repeat: no-repeat;
+        }
+        #T_stocks_filter{
+            float: left;
+        }
+    """
 
 
 def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
@@ -139,7 +194,7 @@ def add_cci(ohlc, length):
     return pd.Series(cci).rename(f'CCI{length}').round(2)
 
 
-def print_apply_html_formats(df):
+def print_apply_html_formats(df, custom_icons=None):
     df.columns = [c.replace("thestrat_", "") for c in df.columns]
     df.columns = [c.replace("_chg_pct", "") for c in df.columns]
     df.columns = [c.replace("_pct", "") for c in df.columns]
@@ -147,10 +202,14 @@ def print_apply_html_formats(df):
                 "sma150": 0.2, "sma200": 0.3}
     mapper = {"Hammer": "🔨", "Shooter": "🔫"}
     df['cnd_type'] = df['cnd_type'].apply(lambda x: mapper.get(x, ""))
-    img_ticker_s = '<div class="cont-img"> <img src="https://financialmodelingprep.com/image-stock/{}.png" class="ticker-img" /></div>'
     df['Ticker'] = df.index.values
-    df[' '] = df['Ticker'].apply(lambda x: img_ticker_s.format(x))
-    # df.index.name = "Ticker"
+    if custom_icons:
+        img_ticker_s = '<div class="cont-img"> <img src="{}" class="ticker-img" /></div>'
+        df[' '] = df['Ticker'].apply(lambda x: img_ticker_s.format(sector_indexes[x]))
+    else:
+        img_ticker_s = '<div class="cont-img"> <img src="https://financialmodelingprep.com/image-stock/{}.png" class="ticker-img" /></div>'
+        df[' '] = df['Ticker'].apply(lambda x: img_ticker_s.format(x))
+
     df = df.rename(columns={"cnd_color": "c", "cnd_type": "t", "profile_volume": "Vol", "index": "Ticker"})
     cols = ['Ticker', ' ', 'close', 'D', 'W', '2W', 'M', 'Q', 'Y', 'Vol', 'sma20', 'sma50', 'sma150', 'sma200',
             'CCI20', 'RSI14', 'num', 'c', 't', 'combo', 'volume']
@@ -175,50 +234,15 @@ def print_apply_html_formats(df):
     return out_df
 
 
-def print_pct_html(df_index, df_stocks):
+def print_pct_html(df_index, df_sectors, df_stocks):
     out_df1 = print_apply_html_formats(df_index)
     print(out_df1.columns)
     out_df2 = print_apply_html_formats(df_stocks)
+    out_df3 = print_apply_html_formats(df_sectors, custom_icons=sector_indexes)
     # out_df1 = out_df1.set_caption()
     out_df1_html = out_df1.to_html(table_uuid="indexes")
     out_df2_html = out_df2.to_html(table_uuid="stocks")
-    style = """
-        * {font-family: sans-serif;}
-        h1 {
-        text-align: center;
-        }
-        main-cont{
-        margin: auto;
-        }
-        table {
-        border-collapse: collapse;
-        width: 100%;
-        font-size: 11pt;
-        }
-        .cont-img {
-        height: 30px;
-        width: 30px;
-        background: white;
-        display: flex;
-        align-items: center;
-        border-radius: 50%;
-        }
-        
-        .ticker-img {
-        max-height: 30px;
-        max-width: 30px;
-        border-radius: 50%;
-        }
-        table.dataTable thead th, table.dataTable thead td {
-          position: sticky;
-          top: 0;
-          background: white;
-          padding: 3px 6px; !important
-        }
-        table.dataTable tbody th, table.dataTable tbody td{
-            padding: 3px 6px; !important
-        }
-    """
+    out_df3_html = out_df3.to_html(table_uuid="sectors")
     fg = get_fear_greed()
     if fg is not None:
         d_chg = fg['score'] / fg['previous_close'] - 1
@@ -237,16 +261,32 @@ def print_pct_html(df_index, df_stocks):
         <div class="main-cont">
         <h1>Swing Selected tickers, Relevant to: {datetime.now().strftime('%a, %B %d, %Y at %H:%M UTC')}</h1>
         <h3>Fear&Greed - {fg_str} </h3>
-        {out_df1_html}
-        {out_df2_html}
         <script src="https://code.jquery.com/jquery-3.6.0.slim.min.js" integrity="sha256-u7e5khyithlIdTpu22PHhENmPcRdFiHRjhAuHcs05RI=" crossorigin="anonymous"></script>
         <script type="text/javascript" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+        <!-- <h3>Indexes</h3> -->
+        {out_df1_html}
+        <!-- <h3>Sectors</h3> -->
+        {out_df3_html}
+        <script>
+            $(document).ready( function () {{
+                $('#T_sectors').DataTable({{
+                    searching: false,
+                    info: false,
+                    fixedHeader: true, // not working, fixed with sticky header
+                    paging: false,   
+                    order: [[10, 'desc']],
+                    // scrollY: 400,
+                }});
+            }});
+        </script>
+        <!-- <h3>Stocks</h3> -->
+        {out_df2_html}
         <script>
             $(document).ready( function () {{
                 $('#T_stocks').DataTable({{
                     // pageLength: 100,
                     fixedHeader: true, // not working, fixed with sticky header
-                    paging: false,   
+                    paging: false,
                     order: [[10, 'desc']],
                     // scrollY: 400,
                 }});
@@ -287,20 +327,23 @@ def get_data_retry(tickers):
     # if data.iloc[-1].isna().all():
     #     data = data[:-1]
     #     print(f'Calculating for date: {data.index[-1].date()}')
-    data.to_pickle("data_swing.pk")
-    data = pd.read_pickle("data_swing.pk")
     return data
 
 
 def get_swings():
     tickers = crypto + fintech + big_tech + semi + cyber + internet_software + saas + chinese + internet_retail + other + green + consumer + medical + customer_service + indexes
-    tickers = high_growth + indexes + tickers
+    sector_tickers = list(sector_indexes.keys())
+    tickers += high_growth + indexes + sector_tickers
     tickers = list(set(tickers))
 
     data = get_data_retry(tickers)
     df = check_ticker(data)
+    df.to_pickle("data_swing.pk")
+
+    df = pd.read_pickle("data_swing.pk")
     df_index = df.reindex(indexes)  # filter and reindex
-    df_stocks = df[~df.index.isin(indexes)]
+    df_sectors = df.loc[sector_tickers]
+    df_stocks = df[~df.index.isin(sector_tickers + indexes)]
     # LONG - should be far from sma20, SHORT- higher than sma 20.
     # df_stocks = df_stocks.sort_values('sma20_pct', ascending=False)  # check long potentials
     # df_stocks = df_stocks.sort_values(['sma20_pct', 'cnd_color', ], ascending=[False, True, ])  # check long potentials
@@ -308,7 +351,7 @@ def get_swings():
     # check that close price is not far from open, look for doji, or bullish, also can use thestrat for indicator.
     # pprint_screener(df_stocks)
 
-    print_pct_html(df_index, df_stocks)
+    print_pct_html(df_index, df_sectors, df_stocks)
     put_object_stocks(file_name, f'stocks/{file_name}')
 
 
