@@ -1,7 +1,7 @@
 import pandas as pd
 from datetime import datetime
 
-from AStock.insider_buy import put_object_stocks
+from AStock.insider_buy import put_object_stocks, google_analytics
 from Indicators import RSI, TheStratInd
 import requests
 import matplotlib
@@ -249,6 +249,7 @@ def print_pct_html(df_index, df_sectors, df_stocks):
         <title>Swing Screener</title>
         <link rel="icon" type="image/x-icon" href="favicon.ico">
         <link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet">
+        {google_analytics}
         <style>
         {style}
         </style>
