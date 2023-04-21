@@ -6,6 +6,7 @@ from Indicators import RSI, TheStratInd
 import requests
 import matplotlib
 import base64
+from tqdm import tqdm
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -37,17 +38,17 @@ indexes = ['SPY', 'QQQ', 'IWM', 'DIA']  # 'RTY=F'
 customer_service = ['WING', 'CROX', 'LOVE', 'UBER']
 tw_icons_path = "https://s3-symbol-logo.tradingview.com/sector/"
 # technology--big.svg" for bigger icons
-sector_indexes = {"XLK": f"{tw_icons_path}technology.svg",
-                  "XLC": f"{tw_icons_path}communication-services.svg",
-                  "XLU": f"{tw_icons_path}utilities.svg",
-                  "XLRE": f"{tw_icons_path}real-estate.svg",
-                  "XLB": f"{tw_icons_path}materials.svg",
-                  "XLP": f"{tw_icons_path}consumer-staples.svg",
-                  "XLI": f"{tw_icons_path}industrial.svg",
-                  "XLY": f"{tw_icons_path}consumer-discretionary.svg",
-                  "XLV": f"{tw_icons_path}health-care.svg",
-                  "XLE": f"{tw_icons_path}energy.svg",
-                  "XLF": f"{tw_icons_path}financial.svg"}
+sector_indexes = {"XLK": f"{tw_icons_path}technology--big.svg",
+                  "XLC": f"{tw_icons_path}communication-services--big.svg",
+                  "XLU": f"{tw_icons_path}utilities--big.svg",
+                  "XLRE": f"{tw_icons_path}real-estate--big.svg",
+                  "XLB": f"{tw_icons_path}materials--big.svg",
+                  "XLP": f"{tw_icons_path}consumer-staples--big.svg",
+                  "XLI": f"{tw_icons_path}industrial--big.svg",
+                  "XLY": f"{tw_icons_path}consumer-discretionary--big.svg",
+                  "XLV": f"{tw_icons_path}health-care--big.svg",
+                  "XLE": f"{tw_icons_path}energy--big.svg",
+                  "XLF": f"{tw_icons_path}financial--big.svg"}
 
 # ADD VIX TICKERS FOR BAROMETER: ^VIX, ^VIX9D, ^VIX3M
 # all_etf_longname
@@ -57,7 +58,8 @@ style = """
         h1 {
         text-align: center;
         }
-        main-cont{
+        .main-cont{
+        max-width: 800px;
         margin: auto;
         }
         table {
@@ -106,8 +108,7 @@ def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
     def change_pct(new, old):
         return new / old - 1
 
-    def add_sma_pct(ohlc, len):
-        close = ohlc['close']
+    def add_sma_pct(close, len):
         return change_pct(close.rolling(len).mean(), close).rename(f'sma{len}_pct')
 
     res = pd.DataFrame()
@@ -119,16 +120,20 @@ def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
         plt.axis('off')
         plt.savefig(f'AStock/img/{ticker}.png', bbox_inches='tight')
         plt.clf()
-
-    for ticker in tickers:
+    for ticker in tqdm(tickers):
+        if ticker == 'XLE':
+            print()
         df_t = data[ticker]
         df_t.columns = [c.lower() for c in df_t.columns]
+        na_rows = df_t.isna()['close'].sum(axis=0)
+        if na_rows > 0:
+            print(f"{ticker=} has {na_rows=} !")
+        df_t = df_t.ffill()
         # minimum volume req:
         if df_t['volume'][-14:].rolling(14).mean()[-1] < minimum_volume:
             print(f'Filtered out ticker: {ticker} due to low avg volume')
             continue
 
-        # df_tdf_t.rename(columns={'Close': 'close', 'Open': 'open', 'High': 'high', 'Low': 'low'}))
         def sub_dates_closest(df, days_back):
             for delta in range(7):
                 index = df.index[-1] - pd.to_timedelta(f"{days_back + delta}D")
@@ -144,7 +149,7 @@ def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
                       "Y_chg_pct": price / sub_dates_closest(df_t, 365)['close'] - 1,
                       "2Y_chg_pct": price / sub_dates_closest(df_t, 720)['close'] - 1}
         sma_lookback = [20, 50, 150, 200]
-        ind_sma = {f'sma{x}_pct': add_sma_pct(df_t[-x:], x).iloc[-1] for x in sma_lookback}
+        ind_sma = {f'sma{x}_pct': add_sma_pct(df_t[-x:]['close'].dropna(), x).iloc[-1] for x in sma_lookback}
         ind_momentum = {
             'CCI20': add_cci(df_t[-20:], 20).iloc[-1],
             'RSI14': RSI(14).calc(df_t[-70:]).iloc[-1].squeeze(),
@@ -199,21 +204,17 @@ def print_apply_html_formats(df, custom_icons=None):
         df[' '] = df['Ticker'].apply(lambda x: img_ticker_s.format(x))
 
     df = df.rename(columns={"cnd_color": "c", "cnd_type": "t", "profile_volume": "Vol", "index": "Ticker"})
-    cols = ['Ticker', ' ', 'Price', 'Vol', *pct_cols,
-            'CCI20', 'RSI14', 'num', 'c', 't', 'combo', 'Volume', "Vol($)"]
+    cols = ['Ticker', ' ', 'Price', 'D', 'W', 'M', 'Q', 'Y', 'sma20', 'sma50', 'sma200', 'CCI20', 'RSI14', 'Volume', 'Vol']
+    # cols = ['Ticker', ' ', 'Price', 'Vol', *pct_cols,
+    #         'CCI20', 'RSI14', 'num', 'c', 't', 'combo', 'Volume', "Vol($)"]
     df = df[cols]
-    df['2Y'] = df['2Y'].fillna(0)
     out_df = df.style
     for pct_col, vmax in pct_cols.items():
-        if pct_col == "2Y":
-            print()
         out_df = out_df.background_gradient(subset=pct_col, cmap='RdYlGn', axis=0, vmin=-vmax,
-                                            vmax=vmax)
+                                            vmax=vmax) if pct_col in cols else out_df
     out_df = out_df.background_gradient(subset="CCI20", cmap='RdYlGn_r', vmin=-101, vmax=101, axis=0)
     out_df = out_df.background_gradient(subset='RSI14', cmap='RdYlGn_r', vmin=30, vmax=70, axis=0)
-    # format_cols = ["price", "cci_14", "RSI14"]
-    out_df = out_df.applymap(subset=['combo'], func=color_combo)
-
+    out_df = out_df.applymap(subset=['combo'], func=color_combo) if 'combo' in cols else out_df
     out_df = out_df.set_properties(**{'text-align': 'center'})
     # out_df.applymap(subset=['cnd_color' , 'thestrat_combo'], func=lambda v: "color:pink;" if v>4 else "color:darkblue;")
     # formatters = {c: '{:.2f}' for c in df.columns if c not in strat_cols}
@@ -252,8 +253,8 @@ def print_pct_html(df_index, df_sectors, df_stocks):
         </style>
         </head><body>
         <div class="main-cont">
-        <h1>Swing Selected tickers, Relevant to: {datetime.now().strftime('%a, %B %d, %Y at %H:%M UTC')}</h1>
-        <h3>Fear&Greed - {fg_str} </h3>
+        <h1>Swing Selected tickers</h1>
+        <h4>Fear&Greed - {fg_str} <span style="float: right;">Data Relevant to: {datetime.now().strftime('%a, %B %d, %Y at %H:%M UTC')}</span></h4>
         <script src="https://code.jquery.com/jquery-3.6.0.slim.min.js" integrity="sha256-u7e5khyithlIdTpu22PHhENmPcRdFiHRjhAuHcs05RI=" crossorigin="anonymous"></script>
         <script type="text/javascript" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
         <!-- <h3>Indexes</h3> -->
@@ -267,7 +268,7 @@ def print_pct_html(df_index, df_sectors, df_stocks):
                     info: false,
                     fixedHeader: true, // not working, fixed with sticky header
                     paging: false,   
-                    order: [[10, 'desc']],
+                    order: [['sma200', 'desc']],
                     // scrollY: 400,
                 }});
             }});
@@ -280,7 +281,7 @@ def print_pct_html(df_index, df_sectors, df_stocks):
                     // pageLength: 100,
                     fixedHeader: true, // not working, fixed with sticky header
                     paging: false,
-                    order: [[10, 'desc']],
+                    order: [[8, 'desc']],
                     // scrollY: 400,
                 }});
             }});
@@ -342,9 +343,9 @@ def get_swings(test=False):
     tickers += high_growth + indexes + sector_tickers
     tickers = list(set(tickers))
 
-    data = get_data_retry(tickers)
-    df = check_ticker(data)
-    df.to_pickle("data_swing.pk")
+    # data = get_data_retry(tickers)
+    # df = check_ticker(data)
+    # df.to_pickle("data_swing.pk")
     df = pd.read_pickle("data_swing.pk")
 
     df_index = df.reindex(indexes)  # filter and reindex
