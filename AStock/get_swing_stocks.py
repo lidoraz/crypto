@@ -255,7 +255,7 @@ def print_pct_html(df_index, df_sectors, df_stocks):
         </head><body>
         <div class="main-cont">
         <h1>Swing Selected tickers</h1>
-        <h4>Fear&Greed - {fg_str} <span style="float: right;">Data Relevant to: {datetime.now().strftime('%a, %B %d, %Y at %H:%M UTC')}</span></h4>
+        <h4>Fear&Greed - {fg_str} <span style="float: right;">Data Relevant to: {datetime.now().strftime('%a, %B %d, %Y at %H:%M UTC')}</span><a href="daily_insider.html">Insider✓</a></h4>
         <script src="https://code.jquery.com/jquery-3.6.0.slim.min.js" integrity="sha256-u7e5khyithlIdTpu22PHhENmPcRdFiHRjhAuHcs05RI=" crossorigin="anonymous"></script>
         <script type="text/javascript" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
         <!-- <h3>Indexes</h3> -->

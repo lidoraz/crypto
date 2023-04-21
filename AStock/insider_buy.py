@@ -183,7 +183,7 @@ def create_html(df):
         f.write('<div class="main-cont">')
         f.write("<h1> Insider Transactions, past week </h1>")
         f.write(
-            f"<h6> from openinsider.com, Updated to: {datetime.now(tz=None).strftime('%a, %B %d, %Y at %H:%M UTC')} </h6>")
+            f"""<h6> from openinsider.com, Updated to: {datetime.now(tz=None).strftime('%a, %B %d, %Y at %H:%M UTC')}<a href="daily_swing.html">Swing✓</a></h6>""")
         f.write(get_header(" -> Insider Buy ", "#21421e", h_num=2))
         f.write(df_1.to_html())
         f.write(get_header(" -> Insider Sale ", "#801818", h_num=2))
