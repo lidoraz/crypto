@@ -269,7 +269,7 @@ def print_pct_html(df_index, df_sectors, df_stocks):
                     info: false,
                     fixedHeader: true, // not working, fixed with sticky header
                     paging: false,   
-                    order: [['sma200', 'desc']],
+                    order: [[8, 'desc']],
                     // scrollY: 400,
                 }});
             }});
