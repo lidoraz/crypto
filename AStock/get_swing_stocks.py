@@ -344,9 +344,9 @@ def get_swings(test=False):
     tickers += high_growth + indexes + sector_tickers
     tickers = list(set(tickers))
 
-    # data = get_data_retry(tickers)
-    # df = check_ticker(data)
-    # df.to_pickle("data_swing.pk")
+    data = get_data_retry(tickers)
+    df = check_ticker(data)
+    df.to_pickle("data_swing.pk")
     df = pd.read_pickle("data_swing.pk")
 
     df_index = df.reindex(indexes)  # filter and reindex
