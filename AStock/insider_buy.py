@@ -176,6 +176,7 @@ def create_html(df):
     df_3 = color_by_cell(_sort_df(df[is_oe]), 'Value', 'Oranges')
     with open('daily_insider.html', 'w', encoding="utf-8") as f:
         f.write("<html><head><title>Insider Transactions</title>")
+        f.write('<link rel="icon" type="image/x-icon" href="favicon.ico">')
         f.write(google_analytics)
         f.write(style)
         f.write("</head>")
