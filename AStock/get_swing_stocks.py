@@ -11,7 +11,9 @@ from tqdm import tqdm
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-file_name = 'daily_swing.html'
+file_name_1 = 'daily_swing.html'
+file_name_2 = 'daily_swing_big.html'
+icon_url = "https://static.stocktitan.net/company-logo/{}.png"
 WITH_AFTER_HOURS = True
 high_growth = ['AFRM', 'AMD', 'CFLT', 'CRWD', 'DDOG', 'DLO', 'GLBE', 'GTLB', 'MELI', 'NET', 'NVDA',
                'OKTA', 'OPEN', 'RBLX', 'S', 'SHOP', 'SNOW', 'SOFI', 'TOST', 'TSLA', 'TWLO', 'ZI', 'WOLF', 'SOXX',
@@ -120,6 +122,7 @@ def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
         plt.axis('off')
         plt.savefig(f'AStock/img/{ticker}.png', bbox_inches='tight')
         plt.clf()
+
     for ticker in tqdm(tickers):
         if ticker == 'XLE':
             print()
@@ -187,7 +190,7 @@ def add_cci(ohlc, length):
     return pd.Series(cci).rename(f'CCI{length}').round(2)
 
 
-def print_apply_html_formats(df, custom_icons=None):
+def print_apply_html_formats(df, cols, custom_icons=None):
     df.columns = [c.replace("thestrat_", "") for c in df.columns]
     df.columns = [c.replace("_chg_pct", "") for c in df.columns]
     df.columns = [c.replace("_pct", "") for c in df.columns]
@@ -200,13 +203,10 @@ def print_apply_html_formats(df, custom_icons=None):
         img_ticker_s = '<div class="cont-img"> <img src="{}" class="ticker-img" /></div>'
         df[' '] = df['Ticker'].apply(lambda x: img_ticker_s.format(sector_indexes[x]))
     else:
-        img_ticker_s = '<div class="cont-img"> <img src="https://financialmodelingprep.com/image-stock/{}.png" class="ticker-img" /></div>'
+        img_ticker_s = f'<div class="cont-img"> <img src={icon_url} class="ticker-img" /></div>'
         df[' '] = df['Ticker'].apply(lambda x: img_ticker_s.format(x))
 
     df = df.rename(columns={"cnd_color": "c", "cnd_type": "t", "profile_volume": "Vol", "index": "Ticker"})
-    cols = ['Ticker', ' ', 'Price', 'D', 'W', 'M', 'Q', 'Y', 'sma20', 'sma50', 'sma200', 'CCI20', 'RSI14', 'Volume', 'Vol']
-    # cols = ['Ticker', ' ', 'Price', 'Vol', *pct_cols,
-    #         'CCI20', 'RSI14', 'num', 'c', 't', 'combo', 'Volume', "Vol($)"]
     df = df[cols]
     out_df = df.style
     for pct_col, vmax in pct_cols.items():
@@ -221,18 +221,17 @@ def print_apply_html_formats(df, custom_icons=None):
     formatters = {c: '{:.1%}' for c in pct_cols}
     formatters['Price'] = '${:.2f}'
     fun_vol = lambda x: round(x * 1e-6, 1)
-    formatters['Vol($)'] = fun_vol #lambda x: "{:.1f}M".format(x * 1e-6)
-    formatters['Volume'] = fun_vol # lambda x: "{:.1f}M".format(x * 1e-6)
+    formatters['Vol($)'] = fun_vol  # lambda x: "{:.1f}M".format(x * 1e-6)
+    formatters['Volume'] = fun_vol  # lambda x: "{:.1f}M".format(x * 1e-6)
     formatters.update({c: '{:.1f}' for c in ["CCI20", "RSI14"]})
     out_df = out_df.format(formatters).hide_index()
     return out_df
 
 
-def print_pct_html(df_index, df_sectors, df_stocks):
-    out_df1 = print_apply_html_formats(df_index)
-    print(out_df1.columns)
-    out_df2 = print_apply_html_formats(df_stocks)
-    out_df3 = print_apply_html_formats(df_sectors, custom_icons=sector_indexes)
+def print_pct_html(df_index, df_sectors, df_stocks, cols, order_by_col_id, file_name):
+    out_df1 = print_apply_html_formats(df_index, cols)
+    out_df2 = print_apply_html_formats(df_stocks, cols)
+    out_df3 = print_apply_html_formats(df_sectors, cols, custom_icons=sector_indexes)
     # out_df1 = out_df1.set_caption()
     out_df1_html = out_df1.to_html(table_uuid="indexes")
     out_df2_html = out_df2.to_html(table_uuid="stocks")
@@ -270,7 +269,7 @@ def print_pct_html(df_index, df_sectors, df_stocks):
                     info: false,
                     fixedHeader: true, // not working, fixed with sticky header
                     paging: false,   
-                    order: [[8, 'desc']],
+                    order: [[{order_by_col_id}, 'desc']],
                     // scrollY: 400,
                 }});
             }});
@@ -283,7 +282,7 @@ def print_pct_html(df_index, df_sectors, df_stocks):
                     // pageLength: 100,
                     fixedHeader: true, // not working, fixed with sticky header
                     paging: false,
-                    order: [[8, 'desc']],
+                    order: [[{order_by_col_id}, 'desc']],
                     // scrollY: 400,
                 }});
             }});
@@ -339,6 +338,21 @@ def get_data_retry(tickers):
     return data
 
 
+def build(df_index, df_sectors, df_stocks):
+    cols = ['Ticker', ' ', 'Price', 'D', 'W', 'M', 'Q', 'Y', 'sma20', 'sma50', 'sma200', 'CCI20', 'RSI14', 'Volume',
+            'Vol']
+    print_pct_html(df_index, df_sectors, df_stocks, cols, 8, file_name_1)
+    put_object_stocks(file_name_1, f'stocks/{file_name_1}')
+
+
+def build_big(df_index, df_sectors, df_stocks):
+    cols_big = ['Ticker', ' ', 'Price', 'Vol', 'D', 'W', '2W', 'M', 'Q', 'Y', '2Y', 'sma20', 'sma50', 'sma150',
+                'sma200',
+                'CCI20', 'RSI14', 'num', 'c', 't', 'combo', 'Volume', "Vol($)"]
+    print_pct_html(df_index, df_sectors, df_stocks, cols_big, 11, file_name_2)
+    put_object_stocks(file_name_2, f'stocks/{file_name_2}')
+
+
 def get_swings(test=False):
     tickers = crypto + fintech + big_tech + semi + cyber + internet_software + saas + chinese + internet_retail + other + green + consumer + medical + customer_service + indexes
     sector_tickers = list(sector_indexes.keys())
@@ -359,9 +373,8 @@ def get_swings(test=False):
     # CHECK RSI, and CCI, check also for volume decrease for sells.
     # check that close price is not far from open, look for doji, or bullish, also can use thestrat for indicator.
     # pprint_screener(df_stocks)
-
-    print_pct_html(df_index, df_sectors, df_stocks)
-    put_object_stocks(file_name, f'stocks/{file_name}')
+    build(df_index, df_sectors, df_stocks)
+    build_big(df_index, df_sectors, df_stocks)
 
 
 def get_fear_greed():
