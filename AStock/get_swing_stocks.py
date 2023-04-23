@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 file_name_1 = 'daily_swing.html'
 file_name_2 = 'daily_swing_big.html'
 icon_url = "https://static.stocktitan.net/company-logo/{}.png"
+# icon_url = "https://companiesmarketcap.com/img/company-logos/32/{}.png"
+
 WITH_AFTER_HOURS = True
 high_growth = ['AFRM', 'AMD', 'CFLT', 'CRWD', 'DDOG', 'DLO', 'GLBE', 'GTLB', 'MELI', 'NET', 'NVDA',
                'OKTA', 'OPEN', 'RBLX', 'S', 'SHOP', 'SNOW', 'SOFI', 'TOST', 'TSLA', 'TWLO', 'ZI', 'WOLF', 'SOXX',
@@ -70,8 +72,8 @@ style = """
         font-size: 11pt;
         }
         .cont-img {
-        height: 26px;
-        width: 26px;
+        height: 27px;
+        width: 27px;
         background: white;
         display: flex;
         align-items: center;
@@ -79,8 +81,8 @@ style = """
         }
 
         .ticker-img {
-        max-height: 26px;
-        max-width: 26px;
+        max-height: 27px;
+        max-width: 27px;
         border-radius: 50%;
         }
         table.dataTable thead th, table.dataTable thead td {
@@ -175,7 +177,7 @@ def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
         with open(f'AStock/img/{ticker}.png', 'rb') as f:
             b64 = base64.b64encode(open(f'AStock/img/{ticker}.png', 'rb').read()).decode("utf-8")
             src_b64 = f"data: image/png; base64,{b64}"
-            curr_row['profile_volume'] = f'<img src="{src_b64}" height="27px"/>'
+            curr_row['profile_volume'] = f'<img src="{src_b64}" loading="lazy" height="27px"/>'
         # curr_row['profile_volume'] = f'<img src="img/{ticker}.png" height="27px"/>'
         res = pd.concat([res, curr_row.to_frame()], axis=1)
     res = res.T
@@ -200,11 +202,11 @@ def print_apply_html_formats(df, cols, custom_icons=None):
     df['cnd_type'] = df['cnd_type'].apply(lambda x: mapper.get(x, ""))
     df['Ticker'] = df.index.values
     if custom_icons:
-        img_ticker_s = '<div class="cont-img"> <img src="{}" class="ticker-img" /></div>'
+        img_ticker_s = '<div class="cont-img"> <img src="{}" loading="lazy" class="ticker-img" /></div>'
         df[' '] = df['Ticker'].apply(lambda x: img_ticker_s.format(sector_indexes[x]))
     else:
-        img_ticker_s = f'<div class="cont-img"> <img src={icon_url} class="ticker-img" /></div>'
-        df[' '] = df['Ticker'].apply(lambda x: img_ticker_s.format(x))
+        img_ticker_s = f'<div class="cont-img"> <img src={icon_url} loading="lazy" class="ticker-img" /></div>'
+        df[' '] = df['Ticker'].apply(lambda x: img_ticker_s.format(x.upper()))
 
     df = df.rename(columns={"cnd_color": "c", "cnd_type": "t", "profile_volume": "Vol", "index": "Ticker"})
     df = df[cols]

@@ -8,6 +8,7 @@ from datetime import datetime
 
 # from AStock.long_term_gaps import get_daily_data
 icon_url = "https://static.stocktitan.net/company-logo/{}.png"
+# icon_url = "https://companiesmarketcap.com/img/company-logos/32/{}.png"
 google_analytics = """
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-Y093DMFS92"></script>
@@ -194,10 +195,9 @@ def create_html(df):
 
 
 def get_ticker_img(ticker):
-    ticker = ticker.upper()
-    path = icon_url.format(ticker)
+    path = icon_url.format(ticker.upper())
     # <a  target=_blank href="http://openinsider.com/{x}">{x}</a>
-    html_img = f"""<div class="cont-img"><img src="{path}" class="ticker-img"/> </div>"""
+    html_img = f"""<div class="cont-img"><img src="{path}" loading="lazy" class="ticker-img"/> </div>"""
     return html_img
 
 
