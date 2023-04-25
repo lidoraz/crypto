@@ -100,6 +100,9 @@ style = """
         #T_stocks_filter{
             float: left;
         }
+        a, a:visited, a:hover, a:active {
+        color: inherit;
+        }
     """
 
 
