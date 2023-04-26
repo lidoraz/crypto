@@ -1,7 +1,7 @@
 import pandas as pd
 from datetime import datetime
 
-from AStock.insider_buy import put_object_stocks, google_analytics
+from AStock.insider_buy import put_object_stocks, google_analytics, get_link
 from Indicators import RSI, TheStratInd
 import requests
 import matplotlib
@@ -99,6 +99,10 @@ style = """
         }
         #T_stocks_filter{
             float: left;
+        }
+        a {
+          color: inherit; /* blue colors for links too */
+          text-decoration: inherit; /* no underline */
         }
     """
 
@@ -207,7 +211,7 @@ def print_apply_html_formats(df, cols, custom_icons=None):
     else:
         img_ticker_s = f'<div class="cont-img"> <img src={icon_url} loading="lazy" class="ticker-img" /></div>'
         df[' '] = df['Ticker'].apply(lambda x: img_ticker_s.format(x.upper()))
-
+    df['Ticker'] = df['Ticker'].apply(get_link)
     df = df.rename(columns={"cnd_color": "c", "cnd_type": "t", "profile_volume": "Vol", "index": "Ticker"})
     df = df[cols]
     out_df = df.style
