@@ -151,8 +151,11 @@ a:link {
         width:812px;
     }
     .main-cont tr td{
-        font-size: 12pt;
+        font-size: 12pt;    
     }
+}
+a, a:visited, a:hover, a:active {
+color: inherit;
 }
 </style>
 """
