@@ -196,7 +196,7 @@ def add_cci(ohlc, length):
     return pd.Series(cci).rename(f'CCI{length}').round(2)
 
 
-def print_apply_html_formats(df, cols, custom_icons=None):
+def print_apply_html_formats(df, cols, pct_mul=1, custom_icons=None):
     df.columns = [c.replace("thestrat_", "") for c in df.columns]
     df.columns = [c.replace("_chg_pct", "") for c in df.columns]
     df.columns = [c.replace("_pct", "") for c in df.columns]
@@ -216,6 +216,7 @@ def print_apply_html_formats(df, cols, custom_icons=None):
     df = df[cols]
     out_df = df.style
     for pct_col, vmax in pct_cols.items():
+        vmax *= pct_mul
         out_df = out_df.background_gradient(subset=pct_col, cmap='RdYlGn', axis=0, vmin=-vmax,
                                             vmax=vmax) if pct_col in cols else out_df
     out_df = out_df.background_gradient(subset="CCI20", cmap='RdYlGn_r', vmin=-101, vmax=101, axis=0)
@@ -235,9 +236,9 @@ def print_apply_html_formats(df, cols, custom_icons=None):
 
 
 def print_pct_html(df_index, df_sectors, df_stocks, cols, order_by_col_id, file_name):
-    out_df1 = print_apply_html_formats(df_index, cols)
-    out_df2 = print_apply_html_formats(df_stocks, cols)
-    out_df3 = print_apply_html_formats(df_sectors, cols, custom_icons=sector_indexes)
+    out_df1 = print_apply_html_formats(df_index, cols, 0.2)
+    out_df2 = print_apply_html_formats(df_stocks, cols, 1.0)
+    out_df3 = print_apply_html_formats(df_sectors, cols, 0.4, custom_icons=sector_indexes)
     # out_df1 = out_df1.set_caption()
     out_df1_html = out_df1.to_html(table_uuid="indexes")
     out_df2_html = out_df2.to_html(table_uuid="stocks")
