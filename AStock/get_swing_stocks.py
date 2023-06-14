@@ -150,11 +150,13 @@ def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
                     return df.loc[index]
 
         price = df_t['close'].iloc[-1]
+        ytd_date = pd.to_datetime(f"{datetime.today().year}-01-01")
         pct_values = {"D_chg_pct": price / sub_dates_closest(df_t, 1)['close'] - 1,
                       "W_chg_pct": price / sub_dates_closest(df_t, 7)['close'] - 1,
                       "2W_chg_pct": price / sub_dates_closest(df_t, 14)['close'] - 1,
                       "M_chg_pct": price / sub_dates_closest(df_t, 30)['close'] - 1,
                       "Q_chg_pct": price / sub_dates_closest(df_t, 90)['close'] - 1,
+                      "YTD_chg_pct": price / sub_dates_closest(df_t, (datetime.today() - ytd_date).days)['close'] - 1,
                       "Y_chg_pct": price / sub_dates_closest(df_t, 365)['close'] - 1,
                       "2Y_chg_pct": price / sub_dates_closest(df_t, 720)['close'] - 1}
         sma_lookback = [20, 50, 150, 200]
@@ -200,7 +202,7 @@ def print_apply_html_formats(df, cols, pct_mul=1, custom_icons=None):
     df.columns = [c.replace("thestrat_", "") for c in df.columns]
     df.columns = [c.replace("_chg_pct", "") for c in df.columns]
     df.columns = [c.replace("_pct", "") for c in df.columns]
-    pct_cols = {"D": 0.08, "W": 0.15, "2W": 0.15, "M": 0.2, "Q": 0.25, "Y": 0.5, "2Y": 0.5, "sma20": 0.1, "sma50": 0.15,
+    pct_cols = {"D": 0.08, "W": 0.15, "2W": 0.15, "M": 0.2, "Q": 0.25, "YTD": 0.25, "Y": 0.5, "2Y": 0.5, "sma20": 0.1, "sma50": 0.15,
                 "sma150": 0.2, "sma200": 0.3}
     mapper = {"Hammer": "🔨", "Shooter": "🔫"}
     df['cnd_type'] = df['cnd_type'].apply(lambda x: mapper.get(x, ""))
@@ -219,7 +221,7 @@ def print_apply_html_formats(df, cols, pct_mul=1, custom_icons=None):
         vmax *= pct_mul
         out_df = out_df.background_gradient(subset=pct_col, cmap='RdYlGn', axis=0, vmin=-vmax,
                                             vmax=vmax) if pct_col in cols else out_df
-    out_df = out_df.background_gradient(subset="CCI20", cmap='RdYlGn_r', vmin=-101, vmax=101, axis=0)
+    # out_df = out_df.background_gradient(subset="CCI20", cmap='RdYlGn_r', vmin=-101, vmax=101, axis=0)
     out_df = out_df.background_gradient(subset='RSI14', cmap='RdYlGn_r', vmin=30, vmax=70, axis=0)
     out_df = out_df.applymap(subset=['combo'], func=color_combo) if 'combo' in cols else out_df
     out_df = out_df.set_properties(**{'text-align': 'center'})
@@ -230,12 +232,13 @@ def print_apply_html_formats(df, cols, pct_mul=1, custom_icons=None):
     fun_vol = lambda x: round(x * 1e-6, 1)
     formatters['Vol($)'] = fun_vol  # lambda x: "{:.1f}M".format(x * 1e-6)
     formatters['Volume'] = fun_vol  # lambda x: "{:.1f}M".format(x * 1e-6)
-    formatters.update({c: '{:.1f}' for c in ["CCI20", "RSI14"]})
+    formatters.update({c: '{:.1f}' for c in ["RSI14"]})
+    # formatters.update({c: '{:.1f}' for c in ["CCI20", "RSI14"]})
     out_df = out_df.format(formatters).hide_index()
     return out_df
 
 
-def print_pct_html(df_index, df_sectors, df_stocks, cols, order_by_col_id, file_name):
+def print_pct_html(df_index, df_sectors, df_stocks, cols, file_name):
     out_df1 = print_apply_html_formats(df_index, cols, 0.2)
     out_df2 = print_apply_html_formats(df_stocks, cols, 1.0)
     out_df3 = print_apply_html_formats(df_sectors, cols, 0.4, custom_icons=sector_indexes)
@@ -276,7 +279,7 @@ def print_pct_html(df_index, df_sectors, df_stocks, cols, order_by_col_id, file_
                     info: false,
                     fixedHeader: true, // not working, fixed with sticky header
                     paging: false,   
-                    order: [[{order_by_col_id}, 'desc']],
+                    order: [[{cols.index('D')}, 'desc']],
                     // scrollY: 400,
                 }});
             }});
@@ -289,7 +292,7 @@ def print_pct_html(df_index, df_sectors, df_stocks, cols, order_by_col_id, file_
                     // pageLength: 100,
                     fixedHeader: true, // not working, fixed with sticky header
                     paging: false,
-                    order: [[{order_by_col_id}, 'desc']],
+                    order: [[{cols.index('sma20')}, 'desc']],
                     // scrollY: 400,
                 }});
             }});
@@ -346,17 +349,17 @@ def get_data_retry(tickers):
 
 
 def build(df_index, df_sectors, df_stocks):
-    cols = ['Ticker', ' ', 'Price', 'D', 'W', 'M', 'Q', 'Y', 'sma20', 'sma50', 'sma200', 'CCI20', 'RSI14', 'Volume',
+    cols = ['Ticker', ' ', 'Price', 'D', 'W', 'M', 'Q', 'YTD', 'Y', 'sma20', 'sma50', 'sma200', 'RSI14',
             'Vol']
-    print_pct_html(df_index, df_sectors, df_stocks, cols, 8, file_name_1)
+    print_pct_html(df_index, df_sectors, df_stocks, cols, file_name_1)
     put_object_stocks(file_name_1, f'stocks/{file_name_1}')
 
 
 def build_big(df_index, df_sectors, df_stocks):
-    cols_big = ['Ticker', ' ', 'Price', 'Vol', 'D', 'W', '2W', 'M', 'Q', 'Y', '2Y', 'sma20', 'sma50', 'sma150',
+    cols_big = ['Ticker', ' ', 'Price', 'Vol', 'D', 'W', '2W', 'M', 'Q', 'YTD', 'Y', '2Y', 'sma20', 'sma50', 'sma150',
                 'sma200',
                 'CCI20', 'RSI14', 'num', 'c', 't', 'combo', 'Volume', "Vol($)"]
-    print_pct_html(df_index, df_sectors, df_stocks, cols_big, 11, file_name_2)
+    print_pct_html(df_index, df_sectors, df_stocks, cols_big, file_name_2)
     put_object_stocks(file_name_2, f'stocks/{file_name_2}')
 
 
