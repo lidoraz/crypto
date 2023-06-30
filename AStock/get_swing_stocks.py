@@ -16,6 +16,8 @@ file_name_2 = 'daily_swing_big.html'
 icon_url = "https://static.stocktitan.net/company-logo/{}.png"
 # icon_url = "https://companiesmarketcap.com/img/company-logos/32/{}.png"
 
+finviz_valuation_url = "https://finviz.com/screener.ashx?v=121&o=-forwardpe&t={}"
+
 WITH_AFTER_HOURS = True
 high_growth = ['AFRM', 'AMD', 'CFLT', 'CRWD', 'DDOG', 'DLO', 'GLBE', 'GTLB', 'MELI', 'NET', 'NVDA',
                'OKTA', 'OPEN', 'RBLX', 'S', 'SHOP', 'SNOW', 'SOFI', 'TOST', 'TSLA', 'TWLO', 'ZI', 'WOLF', 'SOXX',
@@ -246,6 +248,7 @@ def print_pct_html(df_index, df_sectors, df_stocks, cols, file_name):
     out_df1_html = out_df1.to_html(table_uuid="indexes")
     out_df2_html = out_df2.to_html(table_uuid="stocks")
     out_df3_html = out_df3.to_html(table_uuid="sectors")
+    finviz_valuation_link = finviz_valuation_url.format(','.join(df_stocks.index.to_list()))
     fg = get_fear_greed()
     if fg is not None:
         d_chg = fg['score'] / fg['previous_close'] - 1
@@ -265,7 +268,7 @@ def print_pct_html(df_index, df_sectors, df_stocks, cols, file_name):
         </head><body>
         <div class="main-cont">
         <h1>Swing Selected tickers</h1>
-        <h4>Fear&Greed - {fg_str} <span style="float: right;">Data Relevant to: {datetime.now().strftime('%a, %B %d, %Y at %H:%M UTC')}</span><a href="daily_insider.html">Insider✓</a></h4>
+        <h4>Fear&Greed - {fg_str} <span style="float: right;"><a href={finviz_valuation_link}>Valuation Screener✓</a>, Data Relevant to: {datetime.now().strftime('%a, %B %d, %Y at %H:%M UTC')}</span><a href="daily_insider.html">Insider✓</a></h4>
         <script src="https://code.jquery.com/jquery-3.6.0.slim.min.js" integrity="sha256-u7e5khyithlIdTpu22PHhENmPcRdFiHRjhAuHcs05RI=" crossorigin="anonymous"></script>
         <script type="text/javascript" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
         <!-- <h3>Indexes</h3> -->
