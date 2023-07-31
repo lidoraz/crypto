@@ -241,9 +241,10 @@ def print_apply_html_formats(df, cols, pct_mul=1, custom_icons=None):
 
 
 def print_pct_html(df_index, df_sectors, df_stocks, cols, file_name):
-    out_df1 = print_apply_html_formats(df_index, cols, 0.2)
-    out_df2 = print_apply_html_formats(df_stocks, cols, 1.0)
+    out_df1 = print_apply_html_formats(df_index, cols, 0.35)
     out_df3 = print_apply_html_formats(df_sectors, cols, 0.4, custom_icons=sector_indexes)
+    out_df2 = print_apply_html_formats(df_stocks, cols, 1.0)
+
     # out_df1 = out_df1.set_caption()
     out_df1_html = out_df1.to_html(table_uuid="indexes")
     out_df2_html = out_df2.to_html(table_uuid="stocks")
