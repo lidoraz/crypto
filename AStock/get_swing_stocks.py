@@ -13,8 +13,9 @@ import matplotlib.pyplot as plt
 
 file_name_1 = 'daily_swing.html'
 file_name_2 = 'daily_swing_big.html'
-icon_url = "https://static.stocktitan.net/company-logo/{}.png"
+# icon_url = "https://static.stocktitan.net/company-logo/{}.png"
 # icon_url = "https://companiesmarketcap.com/img/company-logos/32/{}.png"
+icon_url = "https://companiesmarketcap.com/img/company-logos/64/{}.webp"
 
 finviz_valuation_url = "https://finviz.com/screener.ashx?v=121&o=-forwardpe&t={}"
 
