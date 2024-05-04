@@ -7,8 +7,8 @@ from Indicators.Indicator import human_format
 from datetime import datetime
 
 # from AStock.long_term_gaps import get_daily_data
-icon_url = "https://static.stocktitan.net/company-logo/{}.png"
-# icon_url = "https://companiesmarketcap.com/img/company-logos/32/{}.png"
+# icon_url = "https://static.stocktitan.net/company-logo/{}.png"
+icon_url = "https://companiesmarketcap.com/img/company-logos/64/{}.webp"
 google_analytics = """
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-Y093DMFS92"></script>
