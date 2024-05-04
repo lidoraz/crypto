@@ -122,7 +122,7 @@ border-radius: 50%;
 .ticker-img {
 max-height: 35px;
 max-width: 35px;
-border-radius: 50%;
+border-radius: 10%;
 }
 
 table {
