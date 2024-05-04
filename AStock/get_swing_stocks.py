@@ -86,7 +86,7 @@ style = """
         .ticker-img {
         max-height: 27px;
         max-width: 27px;
-        border-radius: 50%;
+        border-radius: 5%;
         }
         table.dataTable thead th, table.dataTable thead td {
           padding: 3px 6px; !important
