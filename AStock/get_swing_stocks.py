@@ -133,62 +133,66 @@ def check_ticker(data, day_shift=1, minimum_volume=1e6 / 2):
         plt.clf()
 
     for ticker in tqdm(tickers):
-        if ticker == 'XLE':
-            print()
-        df_t = data[ticker]
-        df_t.columns = [c.lower() for c in df_t.columns]
-        na_rows = df_t.isna()['close'].sum(axis=0)
-        if na_rows > 0:
-            print(f"{ticker=} has {na_rows=} !")
-        df_t = df_t.ffill()
-        # minimum volume req:
-        if df_t['volume'][-14:].rolling(14).mean()[-1] < minimum_volume:
-            print(f'Filtered out ticker: {ticker} due to low avg volume')
+        try:
+            if ticker == 'XLE':
+                print()
+            df_t = data[ticker]
+            df_t.columns = [c.lower() for c in df_t.columns]
+            na_rows = df_t.isna()['close'].sum(axis=0)
+            if na_rows > 0:
+                print(f"{ticker=} has {na_rows=} !")
+            df_t = df_t.ffill()
+            # minimum volume req:
+            if df_t['volume'][-14:].rolling(14).mean()[-1] < minimum_volume:
+                print(f'Filtered out ticker: {ticker} due to low avg volume')
+                continue
+
+            def sub_dates_closest(df, days_back):
+                for delta in range(7):
+                    index = df.index[-1] - pd.to_timedelta(f"{days_back + delta}D")
+                    if index in df.index:
+                        return df.loc[index]
+
+            price = df_t['close'].iloc[-1]
+            ytd_date = pd.to_datetime(f"{datetime.today().year}-01-01")
+            pct_values = {"D_chg_pct": price / sub_dates_closest(df_t, 1)['close'] - 1,
+                          "W_chg_pct": price / sub_dates_closest(df_t, 7)['close'] - 1,
+                          "2W_chg_pct": price / sub_dates_closest(df_t, 14)['close'] - 1,
+                          "M_chg_pct": price / sub_dates_closest(df_t, 30)['close'] - 1,
+                          "Q_chg_pct": price / sub_dates_closest(df_t, 90)['close'] - 1,
+                          "YTD_chg_pct": price / sub_dates_closest(df_t, (datetime.today() - ytd_date).days)['close'] - 1,
+                          "Y_chg_pct": price / sub_dates_closest(df_t, 365)['close'] - 1,
+                          "2Y_chg_pct": price / sub_dates_closest(df_t, 720)['close'] - 1}
+            sma_lookback = [20, 50, 150, 200]
+            ind_sma = {f'sma{x}_pct': add_sma_pct(df_t[-x:]['close'].dropna(), x).iloc[-1] for x in sma_lookback}
+            ind_momentum = {
+                'CCI20': add_cci(df_t[-20:], 20).iloc[-1],
+                'RSI14': RSI(14).calc(df_t[-70:]).iloc[-1].squeeze(),
+                **TheStratInd(False).calc(df_t[-5:]).fillna('').iloc[-1].to_dict()
+            }
+            price_volume = df_t['volume'].iloc[-1] * df_t['close'].iloc[-1]
+
+            signals = {"Price": price,
+                       **pct_values,
+                       **ind_sma,
+                       **ind_momentum,
+                       "Volume": df_t['volume'].iloc[-1],
+                       "Vol($)": price_volume
+                       }
+            # dist to sma, if below, will be positive, if above, should be negative
+            volume_thumbnail(df_t, 5)
+            curr_row = pd.Series(signals, name=ticker)
+            # curr_row = df_t.iloc[-day_shift].rename(ticker)
+            # curr_row = curr_row.drop(['adj close', 'open', 'high', 'low'])  # 'High', 'Low'
+            with open(f'AStock/img/{ticker}.png', 'rb') as f:
+                b64 = base64.b64encode(open(f'AStock/img/{ticker}.png', 'rb').read()).decode("utf-8")
+                src_b64 = f"data: image/png; base64,{b64}"
+                curr_row['profile_volume'] = f'<img src="{src_b64}" loading="lazy" height="27px"/>'
+            # curr_row['profile_volume'] = f'<img src="img/{ticker}.png" height="27px"/>'
+            res = pd.concat([res, curr_row.to_frame()], axis=1)
+        except Exception as e:
+            print(f"Error in ticker {ticker}: {e}")
             continue
-
-        def sub_dates_closest(df, days_back):
-            for delta in range(7):
-                index = df.index[-1] - pd.to_timedelta(f"{days_back + delta}D")
-                if index in df.index:
-                    return df.loc[index]
-
-        price = df_t['close'].iloc[-1]
-        ytd_date = pd.to_datetime(f"{datetime.today().year}-01-01")
-        pct_values = {"D_chg_pct": price / sub_dates_closest(df_t, 1)['close'] - 1,
-                      "W_chg_pct": price / sub_dates_closest(df_t, 7)['close'] - 1,
-                      "2W_chg_pct": price / sub_dates_closest(df_t, 14)['close'] - 1,
-                      "M_chg_pct": price / sub_dates_closest(df_t, 30)['close'] - 1,
-                      "Q_chg_pct": price / sub_dates_closest(df_t, 90)['close'] - 1,
-                      "YTD_chg_pct": price / sub_dates_closest(df_t, (datetime.today() - ytd_date).days)['close'] - 1,
-                      "Y_chg_pct": price / sub_dates_closest(df_t, 365)['close'] - 1,
-                      "2Y_chg_pct": price / sub_dates_closest(df_t, 720)['close'] - 1}
-        sma_lookback = [20, 50, 150, 200]
-        ind_sma = {f'sma{x}_pct': add_sma_pct(df_t[-x:]['close'].dropna(), x).iloc[-1] for x in sma_lookback}
-        ind_momentum = {
-            'CCI20': add_cci(df_t[-20:], 20).iloc[-1],
-            'RSI14': RSI(14).calc(df_t[-70:]).iloc[-1].squeeze(),
-            **TheStratInd(False).calc(df_t[-5:]).fillna('').iloc[-1].to_dict()
-        }
-        price_volume = df_t['volume'].iloc[-1] * df_t['close'].iloc[-1]
-
-        signals = {"Price": price,
-                   **pct_values,
-                   **ind_sma,
-                   **ind_momentum,
-                   "Volume": df_t['volume'].iloc[-1],
-                   "Vol($)": price_volume
-                   }
-        # dist to sma, if below, will be positive, if above, should be negative
-        volume_thumbnail(df_t, 5)
-        curr_row = pd.Series(signals, name=ticker)
-        # curr_row = df_t.iloc[-day_shift].rename(ticker)
-        # curr_row = curr_row.drop(['adj close', 'open', 'high', 'low'])  # 'High', 'Low'
-        with open(f'AStock/img/{ticker}.png', 'rb') as f:
-            b64 = base64.b64encode(open(f'AStock/img/{ticker}.png', 'rb').read()).decode("utf-8")
-            src_b64 = f"data: image/png; base64,{b64}"
-            curr_row['profile_volume'] = f'<img src="{src_b64}" loading="lazy" height="27px"/>'
-        # curr_row['profile_volume'] = f'<img src="img/{ticker}.png" height="27px"/>'
-        res = pd.concat([res, curr_row.to_frame()], axis=1)
     res = res.T
     return res
 
@@ -328,7 +332,6 @@ def get_data_retry(tickers):
                            prepost=WITH_AFTER_HOURS,
                            group_by='ticker',  # default is on columns. ticker is easier to iterate
                            auto_adjust=False,  # false on default, what does it do?
-                           show_errors=True,
                            interval='1d', threads=True, progress=True)
 
     data = _get_daily_data(tickers, '2y')
@@ -344,6 +347,8 @@ def get_data_retry(tickers):
     while len(invalid_tickers) and tries < 5:
         print(f'{len(invalid_tickers)=}, {tries=}, {invalid_tickers=}')
         missing_data = _get_daily_data(invalid_tickers, '1d')
+        if missing_data.empty:
+            break
         data[invalid_tickers].iloc[-1] = missing_data.squeeze()
         invalid_tickers = _get_invalid_tickers(data)
         tries += 1
